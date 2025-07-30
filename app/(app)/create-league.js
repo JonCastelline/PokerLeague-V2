@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
+import { API_BASE_URL } from '../../src/config';
 
 const CreateLeaguePage = () => {
   const [leagueName, setLeagueName] = useState('');
@@ -13,7 +14,7 @@ const CreateLeaguePage = () => {
       Alert.alert('Error', 'Please enter a name for your league.');
       return;
     }
-    fetch('http://192.168.4.21:8080/api/leagues', {
+    fetch(`${API_BASE_URL}/api/leagues`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

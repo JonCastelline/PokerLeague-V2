@@ -54,9 +54,7 @@ const HomePage = () => {
   if (leagues.length > 0) {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Welcome to your league!</Text>
-
-        {leagues.length > 1 && (
+        {leagues.length > 1 ? (
           <Picker
             selectedValue={selectedLeagueId}
             style={styles.picker}
@@ -66,18 +64,20 @@ const HomePage = () => {
               <Picker.Item key={league.id} label={league.leagueName} value={league.id} />
             ))}
           </Picker>
+        ) : (
+          <Text style={styles.title}>{leagues[0].leagueName}</Text>
         )}
 
-        <TouchableOpacity style={styles.button} onPress={() => router.push({ pathname: '/play', params: { leagueId: selectedLeagueId } })}>
+        <TouchableOpacity style={styles.button} onPress={() => router.push({ pathname: '/(app)/play', params: { leagueId: selectedLeagueId } })}>
           <Text style={styles.buttonText}>Play</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.button} onPress={() => router.push({ pathname: '/standings', params: { leagueId: selectedLeagueId } })}>
+        <TouchableOpacity style={styles.button} onPress={() => router.push({ pathname: '/(app)/standings', params: { leagueId: selectedLeagueId } })}>
           <Text style={styles.buttonText}>Standings</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.button} onPress={() => router.push({ pathname: '/history', params: { leagueId: selectedLeagueId } })}>
+        <TouchableOpacity style={styles.button} onPress={() => router.push({ pathname: '/(app)/history', params: { leagueId: selectedLeagueId } })}>
           <Text style={styles.buttonText}>History</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.button} onPress={() => router.push({ pathname: '/settings', params: { leagueId: selectedLeagueId } })}>
+        <TouchableOpacity style={styles.button} onPress={() => router.push({ pathname: '/(app)/settings', params: { leagueId: selectedLeagueId } })}>
           <Text style={styles.buttonText}>Settings</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
