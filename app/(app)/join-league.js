@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
+import { API_BASE_URL } from '../../src/config';
 
 const JoinLeaguePage = () => {
   const [inviteCode, setInviteCode] = useState('');
@@ -13,7 +14,7 @@ const JoinLeaguePage = () => {
       Alert.alert('Error', 'Please enter an invite code.');
       return;
     }
-    fetch('http://192.168.4.21:8080/api/leagues/join', {
+    fetch(`${API_BASE_URL}/api/leagues/join`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
