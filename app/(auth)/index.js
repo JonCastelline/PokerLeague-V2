@@ -1,56 +1,56 @@
-import { useRouter } from 'expo-router';
+import { useRouter, Link } from 'expo-router';
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { useAuth } from '../../context/AuthContext';
+import { API_BASE_URL } from '../../src/config';
 
-export default function SignUpPage() {
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const router = useRouter();
+  const { signIn } = useAuth();
 
-  const handleSignUp = () => {
-    fetch('http://192.168.0.79:8080/api/auth/signup', {
+  const handleLogin = () => {
+    fetch(`${API_BASE_URL}/api/auth/signin`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        firstName: firstName,
-        lastName: lastName,
         email: email,
         password: password,
       }),
     })
-      .then(response => response.json())
+      .then(response => {
+        if (!response.ok) {
+          if (response.status === 401) {
+            throw new Error('Invalid email or password. Please try again or sign up.');
+          }
+          return response.text().then(text => {
+            try {
+              const errorData = JSON.parse(text);
+              throw new Error(errorData.message || 'Login failed. An unknown error occurred.');
+            } catch (e) {
+              throw new Error(text || 'Login failed. An unknown error occurred.');
+            }
+          });
+        }
+        return response.json();
+      })
       .then(data => {
-        console.log(data);
-        router.push('/'); // Navigate back to login after successful signup
+        signIn(data.accessToken);
+        console.log('Login successful:');
+        router.replace('/(app)/home');
       })
       .catch(error => {
         console.error(error);
+        Alert.alert('Login Error', error.message);
       });
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.logo}>Sign Up</Text>
-      <View style={styles.inputView}>
-        <TextInput
-          style={styles.inputText}
-          placeholder="First Name"
-          placeholderTextColor="#003f5c"
-          onChangeText={text => setFirstName(text)}
-        />
-      </View>
-      <View style={styles.inputView}>
-        <TextInput
-          style={styles.inputText}
-          placeholder="Last Name"
-          placeholderTextColor="#003f5c"
-          onChangeText={text => setLastName(text)}
-        />
-      </View>
+      <Text style={styles.logo}>Login</Text>
       <View style={styles.inputView}>
         <TextInput
           style={styles.inputText}
@@ -68,9 +68,12 @@ export default function SignUpPage() {
           onChangeText={text => setPassword(text)}
         />
       </View>
-      <TouchableOpacity style={styles.signupBtn} onPress={handleSignUp}>
-        <Text style={styles.signupText}>SIGN UP</Text>
+      <TouchableOpacity style={styles.loginBtn} onPress={handleLogin}>
+        <Text style={styles.loginText}>LOGIN</Text>
       </TouchableOpacity>
+      <Link href="/signup" style={styles.signupText}>
+        Don't have an account? Sign up
+      </Link>
     </View>
   );
 }
@@ -101,7 +104,7 @@ const styles = StyleSheet.create({
     height: 50,
     color: 'black',
   },
-  signupBtn: {
+  loginBtn: {
     width: '80%',
     backgroundColor: '#fb5b5a',
     borderRadius: 25,
@@ -111,7 +114,10 @@ const styles = StyleSheet.create({
     marginTop: 40,
     marginBottom: 10,
   },
-  signupText: {
+  loginText: {
     color: 'white',
+  },
+  signupText: {
+    color: '#003f5c',
   },
 });

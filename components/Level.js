@@ -1,7 +1,7 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import Timer from './Timer';
-import { Audio } from 'expo-av';
+import { Audio } from 'expo-audio';
 
 const Level = forwardRef(
   (

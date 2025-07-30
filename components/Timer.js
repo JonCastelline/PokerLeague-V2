@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, TextInput } from 'react-native';
 import { CountdownCircleTimer } from 'react-native-countdown-circle-timer';
-import { Audio } from 'expo-av';
+import { Audio } from 'expo-audio';
 
 const Timer = ({defaultDuration, levels}) => {
 

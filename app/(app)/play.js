@@ -1,7 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, TextInput, ScrollView } from 'react-native';
-import Timer from '../components/Timer';
-import PlayersContext from '../context/PlayersContext';
+import Timer from '../../components/Timer';
+import PlayersContext from '../../context/PlayersContext';
 
 const PlayPage = () => {
   const { players, updatePlayers } = useContext(PlayersContext);
