@@ -2,6 +2,7 @@ import { useLocalSearchParams } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
+import PageWrapper from '../../components/PageWrapper';
 
 const StandingsPage = () => {
   const [standings, setStandings] = useState([]);
@@ -48,53 +49,61 @@ const StandingsPage = () => {
 
   if (loading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#fb5b5a" />
-        <Text>Loading Standings...</Text>
-      </View>
+      <PageWrapper>
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color="#fb5b5a" />
+          <Text>Loading Standings...</Text>
+        </View>
+      </PageWrapper>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.centered}>
-        <Text style={styles.errorText}>Error: {error}</Text>
-      </View>
+      <PageWrapper>
+        <View style={styles.centered}>
+          <Text style={styles.errorText}>Error: {error}</Text>
+        </View>
+      </PageWrapper>
     );
   }
 
   if (standings.length === 0) {
     return (
-      <View style={styles.centered}>
-        <Text>No standings data available for this league and season.</Text>
-      </View>
+      <PageWrapper>
+        <View style={styles.centered}>
+          <Text>No standings data available for this league and season.</Text>
+        </View>
+      </PageWrapper>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Standings</Text>
-      <View style={styles.tableHeader}>
-        <Text style={styles.headerCell}>Player</Text>
-        <Text style={styles.headerCell}>Kills</Text>
-        <Text style={styles.headerCell}>Bounty</Text>
-        <Text style={styles.headerCell}>Points</Text>
-        <Text style={styles.headerCell}>Overall</Text>
+    <PageWrapper>
+      <View style={styles.contentContainer}> {/* New container for content */}
+        <Text style={styles.title}>Standings</Text>
+        <View style={styles.tableHeader}>
+          <Text style={styles.headerCell}>Player</Text>
+          <Text style={styles.headerCell}>Kills</Text>
+          <Text style={styles.headerCell}>Bounty</Text>
+          <Text style={styles.headerCell}>Points</Text>
+          <Text style={styles.headerCell}>Overall</Text>
+        </View>
+        <FlatList
+          data={standings}
+          keyExtractor={item => item.playerId.toString()}
+          renderItem={renderItem}
+          style={styles.table}
+        />
       </View>
-      <FlatList
-        data={standings}
-        keyExtractor={item => item.playerId.toString()}
-        renderItem={renderItem}
-        style={styles.table}
-      />
-    </View>
+    </PageWrapper>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  contentContainer: {
     flex: 1,
-    padding: 20,
+    width: '100%',
     backgroundColor: '#f8f8f8',
   },
   centered: {

@@ -1,21 +1,24 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import PageWrapper from '../../components/PageWrapper';
 
 const HistoryPage = () => {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>History Page</Text>
-      <Text>This page will display past games and seasons.</Text>
-    </View>
+    <PageWrapper>
+      <View style={styles.contentContainer}>
+        <Text style={styles.title}>History Page</Text>
+        <Text>This page will display past games and seasons.</Text>
+      </View>
+    </PageWrapper>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  contentContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
+    width: '100%',
   },
   title: {
     fontSize: 24,

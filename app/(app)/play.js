@@ -2,6 +2,7 @@ import React, { useState, useContext } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import Timer from '../../components/Timer';
 import PlayersContext from '../../context/PlayersContext';
+import PageWrapper from '../../components/PageWrapper';
 
 const PlayPage = () => {
   const { players, updatePlayers } = useContext(PlayersContext);
@@ -50,8 +51,6 @@ const PlayPage = () => {
         eliminatedPlayer.eliminated = true;
         eliminatedPlayer.place = totalPlayed - eliminatedPlayerCount; // Assign place for eliminated player
         updatedPlayers.push(eliminatedPlayer); // Use updatedPlayers here instead of players
-        setSelectedPlayerIndex(null);
-
         updatedPlayers.sort((a, b) => a.place - b.place);
 
         // Check if there's only one active player left
@@ -102,7 +101,7 @@ const PlayPage = () => {
     };
 
     return (
-      <View style={styles.container}>
+      <PageWrapper>
           <ScrollView contentContainerStyle={styles.scrollContainer}>
             {mode === 'setup' ? (
               <>
@@ -178,18 +177,11 @@ const PlayPage = () => {
             </>
           )}
         </ScrollView>
-      </View>
+      </PageWrapper>
     );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
   scrollContainer: {
       flexGrow: 1,
       justifyContent: 'center',

@@ -4,6 +4,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'rea
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
 import { Picker } from '@react-native-picker/picker';
+import PageWrapper from '../../components/PageWrapper'; // Import PageWrapper
 
 const HomePage = () => {
   const router = useRouter();
@@ -35,7 +36,7 @@ const HomePage = () => {
 
   if (leagues && leagues.length > 0) {
     return (
-      <View style={styles.container}>
+      <PageWrapper>
         {leagues.length > 1 ? (
           <Picker
             selectedValue={selectedLeagueId}
@@ -65,12 +66,12 @@ const HomePage = () => {
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Text style={styles.buttonText}>Logout</Text>
         </TouchableOpacity>
-      </View>
+      </PageWrapper>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <PageWrapper>
       <Text style={styles.title}>Welcome!</Text>
       <Text style={styles.subtitle}>You're not in any leagues yet.</Text>
 
@@ -84,7 +85,7 @@ const HomePage = () => {
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Text style={styles.buttonText}>Logout</Text>
       </TouchableOpacity>
-    </View>
+    </PageWrapper>
   );
 };
 
@@ -92,7 +93,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
     padding: 20,
   },
   title: {
