@@ -1,9 +1,35 @@
 
 import { Stack } from 'expo-router';
+import { View, Image, ActivityIndicator, StyleSheet } from 'react-native';
+import { LeagueProvider, useLeague } from '../../context/LeagueContext';
 
-export default function AppLayout() {
+const AppHeader = () => {
+  const { leagueHomeContent, loadingContent } = useLeague();
+
   return (
-    <Stack>
+    <View style={styles.headerContainer}>
+      {loadingContent ? (
+        <ActivityIndicator color="#fff" />
+      ) : (
+        leagueHomeContent && leagueHomeContent.logoImageUrl && (
+          <Image
+            source={{ uri: leagueHomeContent.logoImageUrl }}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        )
+      )}
+    </View>
+  );
+};
+
+function AppLayout() {
+  return (
+    <Stack
+      screenOptions={{
+        header: () => <AppHeader />,
+      }}
+    >
       <Stack.Screen name="home" options={{ title: 'Home' }} />
       <Stack.Screen name="play" options={{ title: 'Play' }} />
       <Stack.Screen name="standings" options={{ title: 'Standings' }} />
@@ -14,3 +40,26 @@ export default function AppLayout() {
     </Stack>
   );
 }
+
+export default function AppLayoutWrapper() {
+  return (
+    <LeagueProvider>
+      <AppLayout />
+    </LeagueProvider>
+  );
+}
+
+const styles = StyleSheet.create({
+  headerContainer: {
+    backgroundColor: '#fb5b5a', // Example background color
+    paddingTop: 50, // Adjust for status bar height
+    paddingBottom: 10,
+    paddingHorizontal: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logo: {
+    width: 100,
+    height: 50, // Adjust as needed
+  },
+});
