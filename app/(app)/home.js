@@ -1,38 +1,20 @@
 import { useRouter } from 'expo-router';
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
+import { useLeague } from '../../context/LeagueContext';
 import { Picker } from '@react-native-picker/picker';
-import { API_BASE_URL } from '../../src/config';
 
 const HomePage = () => {
   const router = useRouter();
-  const { token, signOut } = useAuth();
-  const [leagues, setLeagues] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedLeagueId, setSelectedLeagueId] = useState(null);
-
-  useEffect(() => {
-    if (token) {
-      fetch(`${API_BASE_URL}/api/leagues`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      })
-        .then(response => response.json())
-        .then(data => {
-          setLeagues(data);
-          if (data.length > 0) {
-            setSelectedLeagueId(data[0].id);
-          }
-          setLoading(false);
-        })
-        .catch(error => {
-          console.error(error);
-          setLoading(false);
-        });
-    }
-  }, [token]);
+  const { signOut } = useAuth();
+  const { 
+    leagues, 
+    loadingLeagues, 
+    selectedLeagueId, 
+    switchLeague, 
+    currentLeague 
+  } = useLeague();
 
   const handleCreateLeague = () => {
     router.push('/(app)/create-league');
@@ -47,25 +29,25 @@ const HomePage = () => {
     router.replace('/(auth)');
   };
 
-  if (loading) {
+  if (loadingLeagues) {
     return <ActivityIndicator size="large" color="#fb5b5a" />;
   }
 
-  if (leagues.length > 0) {
+  if (leagues && leagues.length > 0) {
     return (
       <View style={styles.container}>
         {leagues.length > 1 ? (
           <Picker
             selectedValue={selectedLeagueId}
             style={styles.picker}
-            onValueChange={(itemValue) => setSelectedLeagueId(itemValue)}
+            onValueChange={(itemValue) => switchLeague(itemValue)}
           >
             {leagues.map(league => (
               <Picker.Item key={league.id} label={league.leagueName} value={league.id} />
             ))}
           </Picker>
         ) : (
-          <Text style={styles.title}>{leagues[0].leagueName}</Text>
+          <Text style={styles.title}>{currentLeague?.leagueName}</Text>
         )}
 
         <TouchableOpacity style={styles.button} onPress={() => router.push({ pathname: '/(app)/play', params: { leagueId: selectedLeagueId } })}>
@@ -116,7 +98,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 20,
   },
   subtitle: {
     fontSize: 18,
