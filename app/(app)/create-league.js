@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { API_BASE_URL } from '../../src/config';
+import PageWrapper from '../../components/PageWrapper';
 
 const CreateLeaguePage = () => {
   const [leagueName, setLeagueName] = useState('');
@@ -49,27 +50,29 @@ const CreateLeaguePage = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Create a New League</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="League Name"
-        value={leagueName}
-        onChangeText={setLeagueName}
-      />
-      <TouchableOpacity style={styles.button} onPress={handleCreateLeague}>
-        <Text style={styles.buttonText}>Create League</Text>
-      </TouchableOpacity>
-    </View>
+    <PageWrapper>
+      <View style={styles.contentContainer}>
+        <Text style={styles.title}>Create a New League</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="League Name"
+          value={leagueName}
+          onChangeText={setLeagueName}
+        />
+        <TouchableOpacity style={styles.button} onPress={handleCreateLeague}>
+          <Text style={styles.buttonText}>Create League</Text>
+        </TouchableOpacity>
+      </View>
+    </PageWrapper>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  contentContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
+    width: '100%',
   },
   title: {
     fontSize: 24,
