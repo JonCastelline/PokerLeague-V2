@@ -24,7 +24,9 @@ const PageWrapper = ({ children }) => {
           )
         )}
       </View>
-      {children}
+      <View style={styles.contentWrapper}>
+        {children}
+      </View>
     </View>
   );
 };
@@ -33,6 +35,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
+  },
+  contentWrapper: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   header: {
     flexDirection: 'row',
