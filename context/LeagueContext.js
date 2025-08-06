@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { API_BASE_URL } from '../src/config';
 
@@ -11,33 +11,31 @@ export const LeagueProvider = ({ children }) => {
   const [leagueHomeContent, setLeagueHomeContent] = useState(null);
   const [loadingLeagues, setLoadingLeagues] = useState(true);
   const [loadingContent, setLoadingContent] = useState(false);
+  const [inviteCode, setInviteCode] = useState(null);
 
-  useEffect(() => {
+  const reloadLeagues = useCallback(async () => {
     if (token) {
       setLoadingLeagues(true);
-      fetch(`${API_BASE_URL}/api/leagues`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      })
-        .then(response => response.json())
-        .then(data => {
-          setLeagues(data);
-          if (data && data.length > 0) {
-            // Set the first league as selected by default
-            setSelectedLeagueId(data[0].id);
-          }
-          setLoadingLeagues(false);
-        })
-        .catch(error => {
-          console.error('Failed to fetch leagues:', error);
-          setLoadingLeagues(false);
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/leagues`, {
+          headers: { 'Authorization': `Bearer ${token}` },
         });
-    } else {
-      // If no token, reset state
-      setLeagues([]);
-      setSelectedLeagueId(null);
-      setLoadingLeagues(false);
+        const data = await response.json();
+        setLeagues(data);
+        if (data && data.length > 0 && !selectedLeagueId) {
+          setSelectedLeagueId(data[0].id);
+        }
+      } catch (error) {
+        console.error('Failed to fetch leagues:', error);
+      } finally {
+        setLoadingLeagues(false);
+      }
     }
-  }, [token]);
+  }, [token, selectedLeagueId]);
+
+  useEffect(() => {
+    reloadLeagues();
+  }, [reloadLeagues]);
 
   useEffect(() => {
     if (selectedLeagueId && token) {
@@ -66,6 +64,26 @@ export const LeagueProvider = ({ children }) => {
     setSelectedLeagueId(leagueId);
   };
 
+  const refreshInviteCode = async (leagueId) => {
+    if (!token) return;
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/leagues/${leagueId}/refresh-invite`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setInviteCode(data.inviteCode);
+        await reloadLeagues(); // Refetch leagues to get the new code
+      }
+    } catch (error) {
+      console.error('Failed to refresh invite code:', error);
+    }
+  };
+
+  const currentLeague = leagues.find(l => l.id === selectedLeagueId);
+  const currentUserMembership = currentLeague;
+
   const value = {
     leagues,
     selectedLeagueId,
@@ -73,7 +91,12 @@ export const LeagueProvider = ({ children }) => {
     loadingLeagues,
     loadingContent,
     switchLeague,
-    currentLeague: leagues.find(l => l.id === selectedLeagueId),
+    currentLeague,
+    currentUserMembership,
+    refreshInviteCode,
+    reloadLeagues,
+    inviteCode,
+    setInviteCode,
   };
 
   return (
