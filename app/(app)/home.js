@@ -138,6 +138,7 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+    paddingHorizontal: 10, // Add horizontal padding
   },
   inviteContainer: {
     alignItems: 'center',
