@@ -4,7 +4,9 @@ import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'rea
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
 import { Picker } from '@react-native-picker/picker';
-import PageWrapper from '../../components/PageWrapper'; // Import PageWrapper
+import PageWrapper from '../../components/PageWrapper';
+import Markdown from 'react-native-markdown-display';
+import * as Clipboard from 'expo-clipboard';
 
 const HomePage = () => {
   const router = useRouter();
@@ -14,7 +16,12 @@ const HomePage = () => {
     loadingLeagues, 
     selectedLeagueId, 
     switchLeague, 
-    currentLeague 
+    currentLeague,
+    currentUserMembership,
+    refreshInviteCode,
+    leagueHomeContent,
+    inviteCode,
+    reloadLeagues
   } = useLeague();
 
   const handleCreateLeague = () => {
@@ -34,6 +41,8 @@ const HomePage = () => {
     return <ActivityIndicator size="large" color="#fb5b5a" />;
   }
 
+  const isAdmin = currentUserMembership?.role === 'Admin' || currentUserMembership?.isOwner;
+
   if (leagues && leagues.length > 0) {
     return (
       <PageWrapper>
@@ -51,21 +60,20 @@ const HomePage = () => {
           <Text style={styles.title}>{currentLeague?.leagueName}</Text>
         )}
 
-        <TouchableOpacity style={styles.button} onPress={() => router.push({ pathname: '/(app)/play', params: { leagueId: selectedLeagueId } })}>
-          <Text style={styles.buttonText}>Play</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.button} onPress={() => router.push({ pathname: '/(app)/standings', params: { leagueId: selectedLeagueId } })}>
-          <Text style={styles.buttonText}>Standings</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.button} onPress={() => router.push({ pathname: '/(app)/history', params: { leagueId: selectedLeagueId } })}>
-          <Text style={styles.buttonText}>History</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.button} onPress={() => router.push({ pathname: '/(app)/settings', params: { leagueId: selectedLeagueId } })}>
-          <Text style={styles.buttonText}>Settings</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.buttonText}>Logout</Text>
-        </TouchableOpacity>
+        {leagueHomeContent && leagueHomeContent.content && (
+          <View style={styles.contentContainer}>
+            <Markdown style={markdownStyles}>{leagueHomeContent.content}</Markdown>
+          </View>
+        )}
+
+        {isAdmin && (
+          <View style={styles.inviteContainer}>
+            {inviteCode && <Text style={styles.inviteCodeText}>{inviteCode} <TouchableOpacity style={[styles.button, styles.copyButton]} onPress={() => Clipboard.setString(inviteCode)}><Text style={styles.buttonText}>Copy</Text></TouchableOpacity></Text>}
+            <TouchableOpacity style={styles.button} onPress={() => refreshInviteCode(selectedLeagueId)}>
+              <Text style={styles.buttonText}>Generate Invite Code</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </PageWrapper>
     );
   }
@@ -82,9 +90,6 @@ const HomePage = () => {
       <TouchableOpacity style={styles.button} onPress={handleJoinLeague}>
         <Text style={styles.buttonText}>Join a League</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-        <Text style={styles.buttonText}>Logout</Text>
-      </TouchableOpacity>
     </PageWrapper>
   );
 };
@@ -99,6 +104,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     marginBottom: 20,
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: 18,
@@ -132,6 +138,59 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  inviteContainer: {
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  inviteCode: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  inviteCodeText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  copyButton: {
+    width: 60,
+    height: 30,
+    marginLeft: 10,
+  },
+  contentContainer: {
+    width: '100%',
+    padding: 15,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 10,
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+});
+
+const markdownStyles = StyleSheet.create({
+  text: {
+    textAlign: 'center',
+  },
+  heading1: {
+    textAlign: 'center',
+  },
+  heading2: {
+    textAlign: 'center',
+  },
+  heading3: {
+    textAlign: 'center',
+  },
+  heading4: {
+    textAlign: 'center',
+  },
+  heading5: {
+    textAlign: 'center',
+  },
+  heading6: {
+    textAlign: 'center',
   },
 });
 
