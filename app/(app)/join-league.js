@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
+import { useLeague } from '../../context/LeagueContext';
 import { API_BASE_URL } from '../../src/config';
 import PageWrapper from '../../components/PageWrapper';
 
@@ -9,6 +10,7 @@ const JoinLeaguePage = () => {
   const [inviteCode, setInviteCode] = useState('');
   const router = useRouter();
   const { token } = useAuth();
+  const { reloadLeagues } = useLeague();
 
   const handleJoinLeague = () => {
     if (!inviteCode.trim()) {
@@ -34,6 +36,7 @@ const JoinLeaguePage = () => {
         return response.json();
       })
       .then(data => {
+        reloadLeagues(); // Reload leagues after successful join
         Alert.alert('Success', `You have joined the league "${data.leagueName}"!`, [
           { text: 'OK', onPress: () => router.replace('/(app)/home') },
         ]);
