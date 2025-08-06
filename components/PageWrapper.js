@@ -39,7 +39,6 @@ const styles = StyleSheet.create({
   contentWrapper: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
   },
   header: {
     flexDirection: 'row',
