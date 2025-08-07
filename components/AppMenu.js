@@ -1,24 +1,36 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useLeague } from '../context/LeagueContext';
 import { useAuth } from '../context/AuthContext';
+import * as Animatable from 'react-native-animatable';
 
 const AppMenu = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const router = useRouter();
   const { selectedLeagueId } = useLeague();
   const { signOut } = useAuth();
+  const animatableRef = useRef(null);
 
   const navigateTo = (path) => {
-    setModalVisible(false);
+    closeMenu();
     router.push({ pathname: path, params: { leagueId: selectedLeagueId } });
   };
 
   const handleLogout = () => {
+    closeMenu();
     signOut();
-    setModalVisible(false);
     router.replace('/(auth)');
+  };
+
+  const closeMenu = () => {
+    if (animatableRef.current) {
+      animatableRef.current.zoomOut(500).then(() => {
+        setModalVisible(false);
+      });
+    } else {
+        setModalVisible(false);
+    }
   };
 
   return (
@@ -27,15 +39,18 @@ const AppMenu = () => {
         <Text style={styles.menuIcon}>☰</Text>
       </TouchableOpacity>
       <Modal
-        animationType="fade"
+        animationType="none" // We are handling it with animatable
         transparent={true}
         visible={modalVisible}
-        onRequestClose={() => {
-          setModalVisible(!modalVisible);
-        }}
+        onRequestClose={closeMenu}
       >
-        <View style={styles.centeredView}>
-          <View style={styles.modalView}>
+        <Pressable style={styles.modalOverlay} onPress={closeMenu}>
+          <Animatable.View
+            ref={animatableRef}
+            animation="zoomIn"
+            duration={500}
+            style={styles.modalView}
+          >
             <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('/(app)/home')}>
               <Text style={styles.menuItemText}>Home</Text>
             </TouchableOpacity>
@@ -54,11 +69,11 @@ const AppMenu = () => {
             <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
               <Text style={styles.menuItemText}>Logout</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
+            <TouchableOpacity style={styles.closeButton} onPress={closeMenu}>
               <Text style={styles.closeButtonText}>Close</Text>
             </TouchableOpacity>
-          </View>
-        </View>
+          </Animatable.View>
+        </Pressable>
       </Modal>
     </View>
   );
@@ -67,19 +82,21 @@ const AppMenu = () => {
 const styles = StyleSheet.create({
   menuIcon: {
     fontSize: 30,
+    paddingLeft: 10, // Give it some space from the edge
   },
-  centeredView: {
+  modalOverlay: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 22,
+    justifyContent: 'flex-start', // Align to the top
+    alignItems: 'flex-start', // Align to the left
+    backgroundColor: 'rgba(0,0,0,0.5)', // Semi-transparent background
   },
   modalView: {
-    margin: 20,
+    margin: 10, // Margin from the top-left corner
+    marginTop: 50, // Adjust for status bar
     backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 35,
-    alignItems: 'center',
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'flex-start',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -90,17 +107,19 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   menuItem: {
-    padding: 10,
+    paddingVertical: 10,
+    width: '100%',
   },
   menuItemText: {
     fontSize: 18,
   },
   closeButton: {
-    marginTop: 20,
+    marginTop: 15,
     backgroundColor: '#fb5b5a',
     borderRadius: 20,
     padding: 10,
     elevation: 2,
+    alignSelf: 'center',
   },
   closeButtonText: {
     color: 'white',
