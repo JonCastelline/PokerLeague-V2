@@ -1,15 +1,15 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import PageWrapper from '../../components/PageWrapper';
+import PageLayout from '../../components/PageLayout';
 
 const HistoryPage = () => {
   return (
-    <PageWrapper>
+    <PageLayout>
       <View style={styles.contentContainer}>
         <Text style={styles.title}>History Page</Text>
         <Text>This page will display past games and seasons.</Text>
       </View>
-    </PageWrapper>
+    </PageLayout>
   );
 };
 

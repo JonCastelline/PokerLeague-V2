@@ -2,7 +2,7 @@ import { useLocalSearchParams } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
-import PageWrapper from '../../components/PageWrapper';
+import PageLayout from '../../components/PageLayout';
 
 const StandingsPage = () => {
   const [standings, setStandings] = useState([]);
@@ -49,37 +49,37 @@ const StandingsPage = () => {
 
   if (loading) {
     return (
-      <PageWrapper>
+      <PageLayout>
         <View style={styles.centered}>
           <ActivityIndicator size="large" color="#fb5b5a" />
           <Text>Loading Standings...</Text>
         </View>
-      </PageWrapper>
+      </PageLayout>
     );
   }
 
   if (error) {
     return (
-      <PageWrapper>
+      <PageLayout>
         <View style={styles.centered}>
           <Text style={styles.errorText}>Error: {error}</Text>
         </View>
-      </PageWrapper>
+      </PageLayout>
     );
   }
 
   if (standings.length === 0) {
     return (
-      <PageWrapper>
+      <PageLayout>
         <View style={styles.centered}>
           <Text>No standings data available for this league and season.</Text>
         </View>
-      </PageWrapper>
+      </PageLayout>
     );
   }
 
   return (
-    <PageWrapper>
+    <PageLayout>
       <View style={styles.contentContainer}> {/* New container for content */}
         <Text style={styles.title}>Standings</Text>
         <View style={styles.tableHeader}>
@@ -96,7 +96,7 @@ const StandingsPage = () => {
           style={styles.table}
         />
       </View>
-    </PageWrapper>
+    </PageLayout>
   );
 };
 

@@ -2,7 +2,7 @@ import React, { useState, useContext } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import Timer from '../../components/Timer';
 import PlayersContext from '../../context/PlayersContext';
-import PageWrapper from '../../components/PageWrapper';
+import PageLayout from '../../components/PageLayout';
 
 const PlayPage = () => {
   const { players, updatePlayers } = useContext(PlayersContext);
@@ -101,7 +101,7 @@ const PlayPage = () => {
     };
 
     return (
-      <PageWrapper>
+      <PageLayout>
           <ScrollView contentContainerStyle={styles.scrollContainer}>
             {mode === 'setup' ? (
               <>
@@ -177,7 +177,7 @@ const PlayPage = () => {
             </>
           )}
         </ScrollView>
-      </PageWrapper>
+      </PageLayout>
     );
 };
 

@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'rea
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
 import { Picker } from '@react-native-picker/picker';
-import PageWrapper from '../../components/PageWrapper';
+import PageLayout from '../../components/PageLayout';
 import Markdown from 'react-native-markdown-display';
 import * as Clipboard from 'expo-clipboard';
 
@@ -45,7 +45,7 @@ const HomePage = () => {
 
   if (leagues && leagues.length > 0) {
     return (
-      <PageWrapper>
+      <PageLayout>
         {leagues.length > 1 ? (
           <Picker
             selectedValue={selectedLeagueId}
@@ -74,12 +74,12 @@ const HomePage = () => {
             </TouchableOpacity>
           </View>
         )}
-      </PageWrapper>
+      </PageLayout>
     );
   }
 
   return (
-    <PageWrapper>
+    <PageLayout>
       <Text style={styles.title}>Welcome!</Text>
       <Text style={styles.subtitle}>You're not in any leagues yet.</Text>
 
@@ -90,7 +90,7 @@ const HomePage = () => {
       <TouchableOpacity style={styles.button} onPress={handleJoinLeague}>
         <Text style={styles.buttonText}>Join a League</Text>
       </TouchableOpacity>
-    </PageWrapper>
+    </PageLayout>
   );
 };
 

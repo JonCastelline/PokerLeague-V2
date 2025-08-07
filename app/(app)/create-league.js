@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { API_BASE_URL } from '../../src/config';
-import PageWrapper from '../../components/PageWrapper';
+import PageLayout from '../../components/PageLayout';
 
 const CreateLeaguePage = () => {
   const [leagueName, setLeagueName] = useState('');
@@ -50,7 +50,7 @@ const CreateLeaguePage = () => {
   };
 
   return (
-    <PageWrapper>
+    <PageLayout>
       <View style={styles.contentContainer}>
         <Text style={styles.title}>Create a New League</Text>
         <TextInput
@@ -63,7 +63,7 @@ const CreateLeaguePage = () => {
           <Text style={styles.buttonText}>Create League</Text>
         </TouchableOpacity>
       </View>
-    </PageWrapper>
+    </PageLayout>
   );
 };
 
