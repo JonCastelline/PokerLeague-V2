@@ -51,19 +51,19 @@ const AppMenu = () => {
             duration={500}
             style={styles.modalView}
           >
-            <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('/(app)/home')}>
+            <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('home')}>
               <Text style={styles.menuItemText}>Home</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('/(app)/play')}>
+            <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('play')}>
               <Text style={styles.menuItemText}>Play</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('/(app)/standings')}>
+            <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('standings')}>
               <Text style={styles.menuItemText}>Standings</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('/(app)/history')}>
+            <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('history')}>
               <Text style={styles.menuItemText}>History</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('/(app)/settings')}>
+            <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('settings')}>
               <Text style={styles.menuItemText}>Settings</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>

@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'reac
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
 import { API_BASE_URL } from '../../src/config';
-import PageWrapper from '../../components/PageWrapper';
+import PageLayout from '../../components/PageLayout';
 
 const JoinLeaguePage = () => {
   const [inviteCode, setInviteCode] = useState('');
@@ -48,7 +48,7 @@ const JoinLeaguePage = () => {
   };
 
   return (
-    <PageWrapper>
+    <PageLayout>
       <View style={styles.contentContainer}>
         <Text style={styles.title}>Join a League</Text>
         <TextInput
@@ -62,7 +62,7 @@ const JoinLeaguePage = () => {
           <Text style={styles.buttonText}>Join League</Text>
         </TouchableOpacity>
       </View>
-    </PageWrapper>
+    </PageLayout>
   );
 };
 
