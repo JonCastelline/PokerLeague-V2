@@ -13,16 +13,20 @@ export function AuthProvider({ children }) {
     token: null,
     authenticated: false,
     isLoading: true,
+    user: null,
   });
 
   useEffect(() => {
     const loadToken = async () => {
       try {
         const token = await AsyncStorage.getItem('token');
+        const userString = await AsyncStorage.getItem('user');
+        const user = userString ? JSON.parse(userString) : null;
         setAuthState({
           token: token,
           authenticated: !!token,
           isLoading: false,
+          user: user,
         });
       } catch (e) {
         console.error('Failed to load token:', e);
@@ -33,26 +37,33 @@ export function AuthProvider({ children }) {
     loadToken();
   }, []);
 
-  const signIn = async (token) => {
+  const signIn = async (token, user) => {
     await AsyncStorage.setItem('token', token);
+    await AsyncStorage.setItem('user', JSON.stringify(user));
     setAuthState({
       token: token,
       authenticated: true,
       isLoading: false,
+      user: user,
     });
   };
 
   const signOut = async () => {
     await AsyncStorage.removeItem('token');
+    await AsyncStorage.removeItem('user');
     setAuthState({
       token: null,
       authenticated: false,
       isLoading: false,
+      user: null,
     });
   };
 
   const value = {
-    ...authState,
+    user: authState.user,
+    token: authState.token,
+    authenticated: authState.authenticated,
+    isLoading: authState.isLoading,
     signIn,
     signOut,
   };
