@@ -1,19 +1,20 @@
-import { useLocalSearchParams } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import PageLayout from '../../components/PageLayout';
+import { useLeague } from '../../context/LeagueContext';
+import { API_BASE_URL } from '../../src/config';
 
 const StandingsPage = () => {
   const [standings, setStandings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { token } = useAuth();
-  const { leagueId } = useLocalSearchParams();
+  const { currentLeague } = useLeague();
 
   useEffect(() => {
-    if (token && leagueId) {
-      fetch(`http://192.168.4.21:8080/api/leagues/${leagueId}/standings`, {
+    if (token && currentLeague) {
+      fetch(`${API_BASE_URL}/api/leagues/${currentLeague.id}/standings`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -35,7 +36,7 @@ const StandingsPage = () => {
           setLoading(false);
         });
     }
-  }, [token, leagueId]);
+  }, [token, currentLeague]);
 
   const renderItem = ({ item }) => (
     <View style={styles.tableRow}>
@@ -104,7 +105,8 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
     width: '100%',
-    backgroundColor: '#f8f8f8',
+    padding: 20, // Add padding here
+    alignItems: 'center', // Add this to center children horizontally
   },
   centered: {
     flex: 1,
@@ -112,7 +114,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
     marginBottom: 20,
     textAlign: 'center',
@@ -120,31 +122,45 @@ const styles = StyleSheet.create({
   },
   tableHeader: {
     flexDirection: 'row',
-    backgroundColor: '#eee',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
+    backgroundColor: '#fb5b5a',
+    paddingVertical: 12,
+    paddingHorizontal: 5,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
   },
   headerCell: {
     flex: 1,
     fontWeight: 'bold',
     textAlign: 'center',
-    color: '#555',
+    color: 'white',
+    fontSize: 16,
   },
   tableRow: {
     flexDirection: 'row',
+    backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
-    paddingVertical: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 5,
   },
   tableCell: {
     flex: 1,
     textAlign: 'center',
     color: '#333',
+    fontSize: 16,
   },
   errorText: {
     color: 'red',
     fontSize: 16,
+  },
+  noStandingsText: {
+    textAlign: 'center',
+    fontSize: 16,
+    color: '#666',
+  },
+  table: {
+    borderRadius: 8,
+    overflow: 'hidden',
   },
 });
 
