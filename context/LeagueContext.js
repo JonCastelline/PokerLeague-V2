@@ -22,11 +22,17 @@ export const LeagueProvider = ({ children }) => {
         });
         const data = await response.json();
         setLeagues(data);
-        if (data && data.length > 0 && !selectedLeagueId) {
-          setSelectedLeagueId(data[0].id);
+        if (data && data.length > 0) {
+          if (!selectedLeagueId || !data.some(league => league.id === selectedLeagueId)) {
+            setSelectedLeagueId(data[0].id);
+          }
+        } else {
+          setSelectedLeagueId(null);
         }
       } catch (error) {
         console.error('Failed to fetch leagues:', error);
+        setLeagues([]);
+        setSelectedLeagueId(null);
       } finally {
         setLoadingLeagues(false);
       }
@@ -53,6 +59,7 @@ export const LeagueProvider = ({ children }) => {
         })
         .catch(error => {
           console.error('Failed to fetch league home content:', error);
+          setLeagueHomeContent(null);
           setLoadingContent(false);
         });
     } else {
