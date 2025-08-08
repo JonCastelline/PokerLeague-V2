@@ -40,7 +40,7 @@ export default function LoginPage() {
       .then(data => {
         const user = { firstName: data.firstName, lastName: data.lastName };
         signIn(data.accessToken, user);
-        console.log('Login successful:');
+        console.log(`Login successful for ${user.firstName} ${user.lastName}`);
         router.replace('/(app)/home');
       })
       .catch(error => {

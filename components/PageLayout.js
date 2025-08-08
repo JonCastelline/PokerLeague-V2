@@ -8,8 +8,6 @@ const PageLayout = ({ children }) => {
   const { currentLeague, loadingLeagues } = useLeague();
   const { user } = useAuth();
 
-  console.log('User from AuthContext in PageLayout:', user);
-
   if (loadingLeagues) {
     return (
       <View style={styles.centered}>
