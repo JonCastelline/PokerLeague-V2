@@ -14,6 +14,7 @@ const StandingsPage = () => {
 
   useEffect(() => {
     if (token && currentLeague) {
+      console.log('Fetching standings for league ID:', currentLeague.id);
       fetch(`${API_BASE_URL}/api/leagues/${currentLeague.id}/standings`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -40,11 +41,11 @@ const StandingsPage = () => {
 
   const renderItem = ({ item }) => (
     <View style={styles.tableRow}>
+      <Text style={styles.tableCell}>{item.rank}</Text>
       <Text style={styles.tableCell}>{item.playerName}</Text>
-      <Text style={styles.tableCell}>{item.kills}</Text>
-      <Text style={styles.tableCell}>{item.bounties}</Text>
-      <Text style={styles.tableCell}>{item.points}</Text>
-      <Text style={styles.tableCell}>{item.overallScore}</Text>
+      <Text style={styles.tableCell}>{item.totalKills}</Text>
+      <Text style={styles.tableCell}>{item.totalBounties}</Text>
+      <Text style={styles.tableCell}>{item.totalPoints}</Text>
     </View>
   );
 
@@ -84,11 +85,11 @@ const StandingsPage = () => {
       <View style={styles.contentContainer}> {/* New container for content */}
         <Text style={styles.title}>Standings</Text>
         <View style={styles.tableHeader}>
+          <Text style={styles.headerCell}>Rank</Text>
           <Text style={styles.headerCell}>Player</Text>
           <Text style={styles.headerCell}>Kills</Text>
           <Text style={styles.headerCell}>Bounty</Text>
           <Text style={styles.headerCell}>Points</Text>
-          <Text style={styles.headerCell}>Overall</Text>
         </View>
         <FlatList
           data={standings}
