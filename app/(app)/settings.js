@@ -154,14 +154,14 @@ const SettingsPage = () => {
     try {
       let targetSeasonId = seasonIdToFetch;
 
-      // If no specific seasonId is provided, try to get the latest season
+      // If no specific seasonId is provided, try to get the active season
       if (!targetSeasonId) {
-        const seasonResponse = await fetch(`${API_BASE_URL}/api/leagues/${selectedLeagueId}/seasons/latest`, {
+        const seasonResponse = await fetch(`${API_BASE_URL}/api/leagues/${selectedLeagueId}/seasons/active`, { // Changed to /active
           headers: { 'Authorization': `Bearer ${token}` },
         });
         if (!seasonResponse.ok) {
           if (seasonResponse.status === 404) {
-            // This means no seasons exist yet, which is a valid state
+            // This means no active season exists yet, which is a valid state
             setSettings(null);
             setSelectedSeason(null);
             setLoadingSettings(false);
@@ -232,10 +232,8 @@ const SettingsPage = () => {
   // Effect to set the initial selected season after all seasons are fetched
   useEffect(() => {
     if (!selectedSeason && seasons.length > 0) {
-      // If no season is selected, and we have seasons, select the latest one
-      const latest = seasons.reduce((prev, current) => (prev.id > current.id ? prev : current));
-      setSelectedSeason(latest);
-      fetchSettings(latest.id);
+      // If no season is selected, and we have seasons, try to fetch the active one
+      fetchSettings(); // Call fetchSettings without a specific ID to get the active season
     } else if (seasons.length === 0 && !loadingSeasons) {
       // If no seasons and not loading, ensure settings are cleared
       setSettings(null);
