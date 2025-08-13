@@ -63,8 +63,11 @@ const AppMenu = () => {
             <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('history')}>
               <Text style={styles.menuItemText}>History</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('settings')}>
-              <Text style={styles.menuItemText}>Settings</Text>
+            <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('season-settings')}>
+              <Text style={styles.menuItemText}>Season</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('league-settings')}>
+              <Text style={styles.menuItemText}>League</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
               <Text style={styles.menuItemText}>Logout</Text>

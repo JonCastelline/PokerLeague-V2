@@ -5,7 +5,7 @@ import AppMenu from './AppMenu';
 import { useLeague } from '../context/LeagueContext';
 
 const PageLayout = ({ children }) => {
-  const { currentLeague, loadingLeagues } = useLeague();
+  const { currentLeague, loadingLeagues, leagueHomeContent } = useLeague();
   const { user } = useAuth();
 
   if (loadingLeagues) {
@@ -23,8 +23,8 @@ const PageLayout = ({ children }) => {
           <AppMenu />
         </View>
         <View style={styles.logoContainer}>
-          {!!currentLeague?.logoImageUrl && (
-            <Image source={{ uri: currentLeague.logoImageUrl }} style={styles.logo} resizeMode="contain" />
+          {!!leagueHomeContent?.logoImageUrl && (
+            <Image source={{ uri: leagueHomeContent.logoImageUrl }} style={styles.logo} resizeMode="contain" />
           )}
         </View>
         <View style={styles.userContainer}>
