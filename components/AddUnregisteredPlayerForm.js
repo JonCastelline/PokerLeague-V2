@@ -82,8 +82,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#4CAF50',
     padding: 10,
     borderRadius: 5,
-    width: '90%',
     alignItems: 'center',
+    alignSelf: 'center', // Center the button if it's not full width
   },
   buttonText: {
     color: 'white',

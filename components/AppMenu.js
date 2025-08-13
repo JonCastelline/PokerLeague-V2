@@ -39,7 +39,7 @@ const AppMenu = () => {
         <Text style={styles.menuIcon}>☰</Text>
       </TouchableOpacity>
       <Modal
-        animationType="none" // We are handling it with animatable
+        animationType="none"
         transparent={true}
         visible={modalVisible}
         onRequestClose={closeMenu}
@@ -68,9 +68,6 @@ const AppMenu = () => {
             </TouchableOpacity>
             <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
               <Text style={styles.menuItemText}>Logout</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.closeButton} onPress={closeMenu}>
-              <Text style={styles.closeButtonText}>Close</Text>
             </TouchableOpacity>
           </Animatable.View>
         </Pressable>
@@ -112,19 +109,6 @@ const styles = StyleSheet.create({
   },
   menuItemText: {
     fontSize: 18,
-  },
-  closeButton: {
-    marginTop: 15,
-    backgroundColor: '#fb5b5a',
-    borderRadius: 20,
-    padding: 10,
-    elevation: 2,
-    alignSelf: 'center',
-  },
-  closeButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    textAlign: 'center',
   },
 });
 

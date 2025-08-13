@@ -23,7 +23,7 @@ const PageLayout = ({ children }) => {
           <AppMenu />
         </View>
         <View style={styles.logoContainer}>
-          {currentLeague?.logoImageUrl && (
+          {!!currentLeague?.logoImageUrl && (
             <Image source={{ uri: currentLeague.logoImageUrl }} style={styles.logo} resizeMode="contain" />
           )}
         </View>
@@ -54,6 +54,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     minHeight: 150, // Increased minHeight to ensure space
     position: 'relative',
+    width: '100%', // Explicitly set width to 100%
   },
   menuContainer: {
     position: 'absolute',
@@ -66,7 +67,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    width: 400,
+    width: '100%', // Make logo responsive to its container
     height: 150,
   },
   userContainer: {
@@ -81,7 +82,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 20,
     alignItems: 'center',
     justifyContent: 'flex-start',
   },
