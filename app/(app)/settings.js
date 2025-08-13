@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, FlatList, ScrollView, Switch, TextInput, Button, Modal, TouchableOpacity, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, FlatList, ScrollView, Switch, TextInput, Modal, TouchableOpacity, Alert, Platform, Dimensions } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { DateTime } from 'luxon';
@@ -11,7 +11,7 @@ import { API_BASE_URL } from '../../src/config';
 
 const SettingsPage = () => {
   const { token } = useAuth();
-  const { selectedLeagueId, currentUserMembership } = useLeague();
+  const { selectedLeagueId, currentUserMembership, loadingCurrentUserMembership } = useLeague();
 
   // Existing state for members
   const [members, setMembers] = useState([]);
@@ -60,7 +60,7 @@ const SettingsPage = () => {
     hideDatePicker();
   };
 
-  const isAdmin = currentUserMembership?.role === 'Admin' || currentUserMembership?.isOwner;
+  const isAdmin = currentUserMembership?.role === 'ADMIN' || currentUserMembership?.isOwner;
 
   const handleUpdateRole = async (newRole) => {
     if (!selectedMember) return;
@@ -71,7 +71,7 @@ const SettingsPage = () => {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ role: newRole }),
+        body: JSON.stringify({ newRole: newRole }),
       });
       if (!response.ok) {
         const errorData = await response.text();
@@ -247,6 +247,35 @@ const SettingsPage = () => {
     setSettings(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleNumericInputBlur = (field, currentValue) => {
+    // 1. Clean the input: remove commas, allow only one decimal point
+    let cleanedValue = currentValue.toString().replace(/,/g, ''); // Remove all commas
+    const decimalCount = (cleanedValue.match(/\./g) || []).length;
+    if (decimalCount > 1) {
+      // If more than one decimal, keep only the first one
+      cleanedValue = cleanedValue.substring(0, cleanedValue.indexOf('.') + 1) +
+                     cleanedValue.substring(cleanedValue.indexOf('.') + 1).replace(/\./g, '');
+    }
+
+    const numValue = parseFloat(cleanedValue);
+
+    if (isNaN(numValue)) {
+      alert('Please enter a valid number.');
+      setSettings(prev => ({ ...prev, [field]: 0 })); // Revert to 0 or previous valid value
+      return;
+    }
+
+    // Check for maximum 1 decimal place after parsing
+    const parts = numValue.toString().split('.'); // Use numValue.toString() after parsing
+    if (parts.length > 1 && parts[1].length > 2) { // Change from > 1 to > 2
+      alert('Please enter a number with a maximum of 2 decimal places.'); // Update alert message
+      setSettings(prev => ({ ...prev, [field]: parseFloat(numValue.toFixed(2)) })); // Change to toFixed(2)
+      return;
+    }
+
+    setSettings(prev => ({ ...prev, [field]: numValue }));
+  };
+
   const handleCreateSeason = async () => {
     if (!selectedLeagueId || !token || !newSeasonName || !newSeasonStartDate || !newSeasonEndDate) {
       alert('Please fill in all season details.');
@@ -326,10 +355,10 @@ const SettingsPage = () => {
   };
 
   const saveSettings = async () => {
-      if (!latestSeasonId || !token || !settings) return;
+      if (!selectedSeason?.id || !token || !settings) return; // Use selectedSeason?.id
       setLoadingSettings(true);
       try {
-          const response = await fetch(`${API_BASE_URL}/api/seasons/${latestSeasonId}/settings`, {
+          const response = await fetch(`${API_BASE_URL}/api/seasons/${selectedSeason.id}/settings`, { // Use selectedSeason.id
               method: 'PUT',
               headers: {
                   'Authorization': `Bearer ${token}`,
@@ -354,14 +383,14 @@ const SettingsPage = () => {
       <View>
         <Text style={styles.memberName}>{item.playerName}</Text>
         <Text style={styles.memberRole}>{item.role} {item.isOwner ? '(Owner)' : ''}</Text>
-        {item.email && <Text style={styles.memberEmail}>{item.email}</Text>}
+        {!!item.email && <Text style={styles.memberEmail}>{item.email}</Text>}
         {!item.playerAccountId && <Text style={styles.unregisteredTag}> (Unregistered)</Text>}
       </View>
-      {isAdmin && item.id !== currentUserMembership.id && (
+      {((currentUserMembership?.isOwner || (isAdmin && settings?.nonOwnerAdminsCanManageRoles)) && item.id !== currentUserMembership.id && (!item.isOwner || currentUserMembership?.isOwner)) ? ( // Added check for target being owner
         <TouchableOpacity onPress={() => openManageModal(item)} style={styles.manageButton}>
           <Text style={styles.manageButtonText}>Manage</Text>
         </TouchableOpacity>
-      )}
+      ) : null}
     </View>
   );
 
@@ -384,28 +413,39 @@ const SettingsPage = () => {
 
     return (
         <View style={styles.modalButtonContainer}>
-            {canManageRoles && (
+            {/* Demote to Player button (only for owner, if target is Admin) */}
+            {isOwner && selectedMember.role === 'ADMIN' ? (
                 <TouchableOpacity
-                    style={[styles.button, styles.buttonPrimary]}
-                    onPress={() => handleUpdateRole(selectedMember.role === 'Admin' ? 'Player' : 'Admin')}
+                    style={[styles.button, styles.buttonDestructive]} // Use destructive style for demote
+                    onPress={() => handleUpdateRole('PLAYER')}
                 >
-                    <Text style={styles.textStyle}>Make {selectedMember.role === 'Admin' ? 'Player' : 'Admin'}</Text>
+                    <Text style={styles.textStyle}>Demote to Player</Text>
                 </TouchableOpacity>
-            )}
-            {isOwner && (
+            ) : null}
+
+            {/* Promote to Admin button (if target is Player and canManageRoles) */}
+            {canManageRoles && selectedMember.role === 'PLAYER' && selectedMember.playerAccountId !== null ? ( // Added check for playerAccountId
+                <TouchableOpacity
+                    style={[styles.button, styles.buttonPrimary, { marginTop: 10 }]} // Add margin for spacing
+                    onPress={() => handleUpdateRole('ADMIN')}
+                >
+                    <Text style={styles.textStyle}>Promote to Admin</Text>
+                </TouchableOpacity>
+            ) : null}
+            {isOwner && selectedMember.playerAccountId !== null ? ( // Added check for playerAccountId
                 <TouchableOpacity
                     style={[styles.button, styles.buttonDestructive, { marginTop: 10 }]}
                     onPress={handleTransferOwnership}
                 >
                     <Text style={styles.textStyle}>Transfer Ownership</Text>
                 </TouchableOpacity>
-            )}
+            ) : null}
         </View>
     );
   };
 
   const renderSettings = () => {
-    if (loadingSettings) {
+    if (loadingSettings || loadingCurrentUserMembership) { // Add loadingCurrentUserMembership
       return <ActivityIndicator size="large" color="#fb5b5a" />;
     }
     if (errorSettings) {
@@ -419,117 +459,134 @@ const SettingsPage = () => {
 
     return (
       <View style={styles.settingsContainer}>
-        {isSeasonFinalized && (
+        {isSeasonFinalized ? (
           <Text style={styles.finalizedMessage}>This season has been finalized and is now read-only.</Text>
-        )}
+        ) : null}
         <View style={styles.settingItem}>
-            <Text>Track Kills</Text>
+            <Text style={styles.settingLabel}>Track Kills</Text>
             <Switch
                 value={settings.trackKills}
                 onValueChange={(value) => handleSettingChange('trackKills', value)}
                 disabled={isSeasonFinalized || !isAdmin}
             />
         </View>
-        {settings.trackKills && (
+        {settings.trackKills ? (
             <View style={styles.settingItem}>
-                <Text>Kill Points</Text>
+                <Text style={styles.settingLabel}>Kill Points</Text>
                 <TextInput
-                    style={styles.input}
+                    style={styles.numericInput}
                     value={String(settings.killPoints)}
-                    onChangeText={(value) => handleSettingChange('killPoints', parseFloat(value) || 0)}
-                    keyboardType="numeric"
-                    editable={!isSeasonFinalized && isAdmin}
+                    onChangeText={(value) => handleSettingChange('killPoints', value)}
+                    keyboardType="decimal-pad"
+                    onBlur={() => handleNumericInputBlur('killPoints', settings.killPoints)}
+                    editable={isSeasonFinalized ? false : (isAdmin ? true : false)}
                 />
             </View>
-        )}
+        ) : null}
 
         <View style={styles.settingItem}>
-            <Text>Track Bounties</Text>
+            <Text style={styles.settingLabel}>Track Bounties</Text>
             <Switch
                 value={settings.trackBounties}
                 onValueChange={(value) => handleSettingChange('trackBounties', value)}
                 disabled={isSeasonFinalized || !isAdmin}
             />
         </View>
-        {settings.trackBounties && (
+        {settings.trackBounties ? (
             <View style={styles.settingItem}>
-                <Text>Bounty Points</Text>
+                <Text style={styles.settingLabel}>Bounty Points</Text>
                 <TextInput
-                    style={styles.input}
+                    style={styles.numericInput}
                     value={String(settings.bountyPoints)}
-                    onChangeText={(value) => handleSettingChange('bountyPoints', parseFloat(value) || 0)}
-                    keyboardType="numeric"
-                    editable={!isSeasonFinalized && isAdmin}
+                    onChangeText={(value) => handleSettingChange('bountyPoints', value)}
+                    keyboardType="decimal-pad"
+                    onBlur={() => handleNumericInputBlur('bountyPoints', settings.bountyPoints)}
+                    editable={isSeasonFinalized ? false : (isAdmin ? true : false)}
                 />
             </View>
-        )}
+        ) : null}
 
         <View style={styles.settingItem}>
-            <Text>Enable Attendance Points</Text>
+            <Text style={styles.settingLabel}>Enable Attendance Points</Text>
             <Switch
                 value={settings.enableAttendancePoints}
                 onValueChange={(value) => handleSettingChange('enableAttendancePoints', value)}
                 disabled={isSeasonFinalized || !isAdmin}
             />
         </View>
-        {settings.enableAttendancePoints && (
+        {settings.enableAttendancePoints ? (
             <View style={styles.settingItem}>
-                <Text>Attendance Points</Text>
+                <Text style={styles.settingLabel}>Attendance Points</Text>
                 <TextInput
-                    style={styles.input}
+                    style={styles.numericInput}
                     value={String(settings.attendancePoints)}
-                    onChangeText={(value) => handleSettingChange('attendancePoints', parseFloat(value) || 0)}
-                    keyboardType="numeric"
-                    editable={!isSeasonFinalized && isAdmin}
+                    onChangeText={(value) => handleSettingChange('attendancePoints', value)}
+                    keyboardType="decimal-pad"
+                    onBlur={() => handleNumericInputBlur('attendancePoints', settings.attendancePoints)}
+                    editable={isSeasonFinalized ? false : (isAdmin ? true : false)}
                 />
             </View>
-        )}
+        ) : null}
 
         <View style={styles.settingItem}>
-            <Text>Timer Duration (seconds)</Text>
+            <Text style={styles.settingLabel}>Timer Duration (seconds)</Text>
             <TextInput
-                style={styles.input}
+                style={styles.numericInput}
                 value={String(settings.durationSeconds)}
                 onChangeText={(value) => handleSettingChange('durationSeconds', parseInt(value, 10) || 0)}
                 keyboardType="numeric"
-                editable={!isSeasonFinalized && isAdmin}
+                editable={isSeasonFinalized ? false : (isAdmin ? true : false)}
             />
         </View>
 
         <View style={styles.settingItem}>
-            <Text>Starting Stack</Text>
+            <Text style={styles.settingLabel}>Starting Stack</Text>
             <TextInput
-                style={styles.input}
+                style={styles.numericInput}
                 value={String(settings.startingStack)}
                 onChangeText={(value) => handleSettingChange('startingStack', parseInt(value, 10) || 0)}
                 keyboardType="numeric"
-                editable={!isSeasonFinalized && isAdmin}
+                editable={isSeasonFinalized ? false : (isAdmin ? true : false)}
             />
         </View>
 
         <View style={styles.settingItem}>
-            <Text>Admins Can Manage Roles</Text>
+            <Text style={styles.settingLabel}>Admins Can Manage Roles</Text>
             <Switch
                 value={settings.nonOwnerAdminsCanManageRoles}
                 onValueChange={(value) => handleSettingChange('nonOwnerAdminsCanManageRoles', value)}
-                disabled={isSeasonFinalized || !isAdmin}
+                disabled={isSeasonFinalized || !currentUserMembership?.isOwner}
             />
         </View>
 
         <View style={styles.settingItem}>
-            <Text>Bounty on Leader Absence</Text>
-            <Picker
-                selectedValue={settings.bountyOnLeaderAbsenceRule}
-                style={styles.picker}
-                onValueChange={(itemValue) => handleSettingChange('bountyOnLeaderAbsenceRule', itemValue)}
-                enabled={!isSeasonFinalized && isAdmin}
-            >
-                <Picker.Item label="No Bounty" value="NO_BOUNTY" />
-                <Picker.Item label="Next Highest Player" value="NEXT_HIGHEST_PLAYER" />
-            </Picker>
+            <View style={{ flexDirection: 'column', width: '100%' }}>
+                <Text style={styles.settingLabel}>Bounty on Leader Absence</Text>
+                <Picker
+                    selectedValue={settings.bountyOnLeaderAbsenceRule}
+                    style={styles.pickerBounty}
+                    onValueChange={(itemValue) => handleSettingChange('bountyOnLeaderAbsenceRule', itemValue)}
+                    enabled={isSeasonFinalized ? false : (isAdmin ? true : false)}
+                >
+                    <Picker.Item label="No Bounty" value="NO_BOUNTY" />
+                    <Picker.Item label="Next Highest Player" value="NEXT_HIGHEST_PLAYER" />
+                </Picker>
+            </View>
         </View>
 
-        {!isSeasonFinalized && isAdmin && <Button title="Save Settings" onPress={saveSettings} color="#fb5b5a" />}
+        {isSeasonFinalized
+          ? null
+          : (isAdmin
+              ? (
+                <TouchableOpacity
+                  style={[styles.button, styles.buttonPrimaryRed, styles.actionButton]}
+                  onPress={saveSettings}
+                >
+                  <Text style={styles.textStyle}>Save Settings</Text>
+                </TouchableOpacity>
+              )
+              : null)
+        }
       </View>
     );
   };
@@ -548,39 +605,62 @@ const SettingsPage = () => {
           <View style={styles.noSeasonsContainer}>
             <Text style={styles.noSeasonsText}>No seasons found for this league.</Text>
             <Text style={styles.noSeasonsText}>Create your first season to get started!</Text>
-            {isAdmin && (
+            {isAdmin ? (
               <TouchableOpacity
                 style={[styles.button, styles.buttonPrimaryRed]}
                 onPress={() => setCreateSeasonModalVisible(true)}
               >
                 <Text style={styles.textStyle}>Create First Season</Text>
               </TouchableOpacity>
-            )}
+            )
+            : null}
           </View>
         ) : (
           <View>
             <View style={styles.seasonSelectorContainer}>
-              <Text style={styles.subtitle}>Current Season:</Text>
-              <Picker
-                selectedValue={selectedSeason?.id}
-                style={styles.picker}
-                onValueChange={(itemValue) => handleSeasonChange(itemValue)}
-                enabled={!selectedSeason?.isFinalized} // Disable picker if season is finalized
-              >
-                {seasons.map(s => (
-                  <Picker.Item key={s.id} label={s.seasonName} value={s.id} />
-                ))}
-              </Picker>
-              {isAdmin && !selectedSeason?.isFinalized && (
-                <Button title="Create New Season" onPress={() => setCreateSeasonModalVisible(true)} color="#fb5b5a" />
-              )}
+              <View style={{ flexDirection: 'column', width: '100%' }}>
+                <Text style={styles.subtitle}>Current Season:</Text>
+                <Picker
+                  selectedValue={String(selectedSeason?.id)}
+                  style={styles.picker}
+                  onValueChange={(itemValue) => handleSeasonChange(Number(itemValue))}
+                >
+                  {seasons.map((s) => {
+                    const label = typeof s.seasonName === 'string' ? s.seasonName : String(s.seasonName ?? 'Unnamed');
+                    const value = String(s.id);
+                    return (
+                      <Picker.Item key={value} label={label} value={value} />
+                    );
+                  })}
+                </Picker>
+              </View>
             </View>
+            {(isAdmin ? (!selectedSeason?.isFinalized ? (
+              <TouchableOpacity
+                style={[styles.button, styles.buttonPrimaryRed, styles.actionButton]}
+                onPress={() => setCreateSeasonModalVisible(true)}
+              >
+                <Text style={styles.textStyle}>Create New Season</Text>
+              </TouchableOpacity>
+            ) : null) : null)}
 
-            {selectedSeason && renderSettings()}
 
-            {selectedSeason && isAdmin && !selectedSeason.isFinalized && (
-              <Button title="Finalize Season" onPress={handleFinalizeSeason} color="#dc3545" />
-            )}
+            {selectedSeason ? renderSettings() : null}
+
+            {selectedSeason
+              ? (isAdmin
+                  ? (!selectedSeason.isFinalized
+                      ? (
+                        <TouchableOpacity
+                          style={[styles.button, styles.buttonDestructive, styles.actionButton]}
+                          onPress={handleFinalizeSeason}
+                        >
+                          <Text style={styles.textStyle}>Finalize Season</Text>
+                        </TouchableOpacity>
+                      )
+                      : null)
+                  : null)
+              : null}
           </View>
         )}
 
@@ -595,15 +675,14 @@ const SettingsPage = () => {
             keyExtractor={(item) => item.id.toString()}
             renderItem={renderMemberItem}
             style={styles.memberList}
-            scrollEnabled={false} // To prevent nested scroll views warning
+            scrollEnabled={false}
           />
         )}
 
-        {isAdmin && (
+        {isAdmin ? (
           <AddUnregisteredPlayerForm leagueId={selectedLeagueId} onPlayerAdded={fetchLeagueMembers} />
-        )}
+        ) : null}
 
-        {/* Create Season Modal */}
         <Modal
           animationType="slide"
           transparent={true}
@@ -614,7 +693,7 @@ const SettingsPage = () => {
             <View style={styles.modalView}>
               <Text style={styles.modalText}>Create New Season</Text>
               <TextInput
-                style={[styles.input, styles.modalInput]} // Apply modalInput style for fixed width
+                style={[styles.input, styles.modalInput]}
                 placeholder="Season Name (e.g., 2025 Season)"
                 value={newSeasonName}
                 onChangeText={setNewSeasonName}
@@ -654,7 +733,7 @@ const SettingsPage = () => {
           date={datePickerField === 'startDate' ? (newSeasonStartDate || new Date()) : (newSeasonEndDate || new Date())}
         />
 
-        {selectedMember && (
+        {selectedMember ? (
             <Modal
                 animationType="slide"
                 transparent={true}
@@ -678,7 +757,7 @@ const SettingsPage = () => {
                     </View>
                 </View>
             </Modal>
-        )}
+        ) : null}
       </ScrollView>
     </PageLayout>
   );
@@ -688,6 +767,8 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     padding: 20,
+    width: '100%', // Ensure the container takes full width
+    maxWidth: Dimensions.get('window').width - 40, // 20px padding on each side
   },
   title: {
     fontSize: 24,
@@ -716,31 +797,42 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    width: '100%',
+    alignSelf: 'stretch', // Make it stretch to fill parent's width
     marginBottom: 20,
-    paddingHorizontal: 10,
+    marginHorizontal: 10, // Add horizontal margin for spacing
   },
   settingsContainer: {
-    width: '100%',
     backgroundColor: '#f0f0f0',
     borderRadius: 10,
-    padding: 15,
+    padding: 15, // Keep internal padding
     marginBottom: 20,
+    alignSelf: 'stretch', // Make it stretch to fill parent's width
+    marginHorizontal: 10, // Add horizontal margin for spacing
   },
   settingItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start', // Align items to the start
     alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#ddd',
+    flexWrap: 'wrap', // Allow items to wrap if needed
   },
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 5,
     padding: 8,
-    width: '100%',
+    flex: 1, // Take available space
+    marginBottom: 10,
+  },
+  numericInput: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+    padding: 8,
+    width: 60, // Fixed width for 6 characters
+    textAlign: 'center',
     marginBottom: 10,
   },
   modalInput: {
@@ -759,7 +851,17 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   picker: {
-    width: 180,
+    backgroundColor: 'white', // Make background white for visibility
+  },
+  pickerBounty: {
+    width: 210,
+    backgroundColor: 'white', // Make background white for visibility
+  },
+  pickerWrapper: {
+    justifyContent: 'center',
+    paddingLeft: 10,
+    flex: 1, // allows it to fill remaining space and align nicely
+    borderRadius: 10, // Rounded corners
   },
   modalButton: {
     width: '80%',
@@ -799,6 +901,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: 'red',
     fontWeight: 'bold',
+  },
+  settingLabel: { // New style for setting labels
+    marginRight: 10, // Space between label and input/switch
+    flexShrink: 1, // Allow text to shrink
   },
   errorText: {
     color: 'red',
@@ -861,6 +967,11 @@ const styles = StyleSheet.create({
   },
   buttonDestructive: {
     backgroundColor: '#dc3545',
+  },
+  actionButton: { // New style for action buttons
+    width: 'auto', // Allow button to size to content
+    alignSelf: 'center', // Center the button
+    marginTop: 10, // Add some top margin for spacing
   },
   textStyle: {
     color: "white",

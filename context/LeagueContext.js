@@ -5,13 +5,15 @@ import { API_BASE_URL } from '../src/config';
 const LeagueContext = createContext();
 
 export const LeagueProvider = ({ children }) => {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [leagues, setLeagues] = useState([]);
   const [selectedLeagueId, setSelectedLeagueId] = useState(null);
   const [leagueHomeContent, setLeagueHomeContent] = useState(null);
   const [loadingLeagues, setLoadingLeagues] = useState(true);
   const [loadingContent, setLoadingContent] = useState(false);
   const [inviteCode, setInviteCode] = useState(null);
+  const [currentUserMembership, setCurrentUserMembership] = useState(null); // New state for current user's membership
+  const [loadingCurrentUserMembership, setLoadingCurrentUserMembership] = useState(true); // New loading state
 
   const reloadLeagues = useCallback(async () => {
     if (token) {
@@ -42,6 +44,38 @@ export const LeagueProvider = ({ children }) => {
   useEffect(() => {
     reloadLeagues();
   }, [reloadLeagues]);
+
+  const fetchCurrentUserMembership = useCallback(async () => {
+    setLoadingCurrentUserMembership(true);
+    if (!token || !selectedLeagueId || !user?.id) {
+      setCurrentUserMembership(null);
+      setLoadingCurrentUserMembership(false); // Stop loading if no dependencies
+      return;
+    }
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/leagues/${selectedLeagueId}/members/me`, { // Call the new 'me' endpoint
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (!response.ok) {
+        if (response.status === 404) {
+          setCurrentUserMembership(null);
+          return;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      setCurrentUserMembership(data);
+    } catch (error) {
+      console.error('Failed to fetch current user membership:', error);
+      setCurrentUserMembership(null);
+    } finally {
+      setLoadingCurrentUserMembership(false); // Stop loading in finally block
+    }
+  }, [token, selectedLeagueId, user?.id]); // Depend on token, selectedLeagueId, and user.id
+
+  useEffect(() => {
+    fetchCurrentUserMembership();
+  }, [fetchCurrentUserMembership]); // Trigger fetch when dependencies change
 
   useEffect(() => {
     if (selectedLeagueId && token) {
@@ -89,7 +123,6 @@ export const LeagueProvider = ({ children }) => {
   };
 
   const currentLeague = leagues.find(l => l.id === selectedLeagueId);
-  const currentUserMembership = currentLeague;
 
   const value = {
     leagues,
@@ -99,7 +132,9 @@ export const LeagueProvider = ({ children }) => {
     loadingContent,
     switchLeague,
     currentLeague,
-    currentUserMembership,
+    currentUserMembership, // Now from state
+    setCurrentUserMembership,
+    loadingCurrentUserMembership, // Expose loading state
     refreshInviteCode,
     reloadLeagues,
     inviteCode,
