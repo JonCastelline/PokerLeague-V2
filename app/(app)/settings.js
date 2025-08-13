@@ -821,7 +821,6 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     borderRadius: 5,
     padding: 8,
-    flex: 1, // Take available space
     marginBottom: 10,
   },
   numericInput: {
@@ -834,7 +833,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   modalInput: {
-    width: '80%', // Fixed width for modal text inputs
+    width: 250, // Fixed width for modal text inputs
   },
   dateInputButton: {
     borderWidth: 1,
