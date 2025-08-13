@@ -156,7 +156,7 @@ const SettingsPage = () => {
 
       // If no specific seasonId is provided, try to get the active season
       if (!targetSeasonId) {
-        const seasonResponse = await fetch(`${API_BASE_URL}/api/leagues/${selectedLeagueId}/seasons/active`, { // Changed to /active
+        const seasonResponse = await fetch(`${API_BASE_URL}/api/leagues/${selectedLeagueId}/seasons/active`, {
           headers: { 'Authorization': `Bearer ${token}` },
         });
         if (!seasonResponse.ok) {
@@ -233,7 +233,7 @@ const SettingsPage = () => {
   useEffect(() => {
     if (!selectedSeason && seasons.length > 0) {
       // If no season is selected, and we have seasons, try to fetch the active one
-      fetchSettings(); // Call fetchSettings without a specific ID to get the active season
+      fetchSettings();
     } else if (seasons.length === 0 && !loadingSeasons) {
       // If no seasons and not loading, ensure settings are cleared
       setSettings(null);
@@ -263,11 +263,11 @@ const SettingsPage = () => {
       return;
     }
 
-    // Check for maximum 1 decimal place after parsing
-    const parts = numValue.toString().split('.'); // Use numValue.toString() after parsing
-    if (parts.length > 1 && parts[1].length > 2) { // Change from > 1 to > 2
-      alert('Please enter a number with a maximum of 2 decimal places.'); // Update alert message
-      setSettings(prev => ({ ...prev, [field]: parseFloat(numValue.toFixed(2)) })); // Change to toFixed(2)
+    // Check for maximum 2 decimal place after parsing
+    const parts = numValue.toString().split('.');
+    if (parts.length > 1 && parts[1].length > 2) {
+      alert('Please enter a number with a maximum of 2 decimal places.');
+      setSettings(prev => ({ ...prev, [field]: parseFloat(numValue.toFixed(2)) }));
       return;
     }
 
@@ -353,10 +353,10 @@ const SettingsPage = () => {
   };
 
   const saveSettings = async () => {
-      if (!selectedSeason?.id || !token || !settings) return; // Use selectedSeason?.id
+      if (!selectedSeason?.id || !token || !settings) return;
       setLoadingSettings(true);
       try {
-          const response = await fetch(`${API_BASE_URL}/api/seasons/${selectedSeason.id}/settings`, { // Use selectedSeason.id
+          const response = await fetch(`${API_BASE_URL}/api/seasons/${selectedSeason.id}/settings`, {
               method: 'PUT',
               headers: {
                   'Authorization': `Bearer ${token}`,
@@ -384,7 +384,7 @@ const SettingsPage = () => {
         {!!item.email && <Text style={styles.memberEmail}>{item.email}</Text>}
         {!item.playerAccountId && <Text style={styles.unregisteredTag}> (Unregistered)</Text>}
       </View>
-      {((currentUserMembership?.isOwner || (isAdmin && settings?.nonOwnerAdminsCanManageRoles)) && item.id !== currentUserMembership.id && (!item.isOwner || currentUserMembership?.isOwner)) ? ( // Added check for target being owner
+      {((currentUserMembership?.isOwner || (isAdmin && settings?.nonOwnerAdminsCanManageRoles)) && item.id !== currentUserMembership.id && (!item.isOwner || currentUserMembership?.isOwner)) ? (
         <TouchableOpacity onPress={() => openManageModal(item)} style={styles.manageButton}>
           <Text style={styles.manageButtonText}>Manage</Text>
         </TouchableOpacity>
@@ -411,26 +411,23 @@ const SettingsPage = () => {
 
     return (
         <View style={styles.modalButtonContainer}>
-            {/* Demote to Player button (only for owner, if target is Admin) */}
             {isOwner && selectedMember.role === 'ADMIN' ? (
                 <TouchableOpacity
-                    style={[styles.button, styles.buttonDestructive]} // Use destructive style for demote
+                    style={[styles.button, styles.buttonDestructive]}
                     onPress={() => handleUpdateRole('PLAYER')}
                 >
                     <Text style={styles.textStyle}>Demote to Player</Text>
                 </TouchableOpacity>
             ) : null}
-
-            {/* Promote to Admin button (if target is Player and canManageRoles) */}
-            {canManageRoles && selectedMember.role === 'PLAYER' && selectedMember.playerAccountId !== null ? ( // Added check for playerAccountId
+            {canManageRoles && selectedMember.role === 'PLAYER' && selectedMember.playerAccountId !== null ? (
                 <TouchableOpacity
-                    style={[styles.button, styles.buttonPrimary, { marginTop: 10 }]} // Add margin for spacing
+                    style={[styles.button, styles.buttonPrimary, { marginTop: 10 }]}
                     onPress={() => handleUpdateRole('ADMIN')}
                 >
                     <Text style={styles.textStyle}>Promote to Admin</Text>
                 </TouchableOpacity>
             ) : null}
-            {isOwner && selectedMember.playerAccountId !== null ? ( // Added check for playerAccountId
+            {isOwner && selectedMember.playerAccountId !== null ? (
                 <TouchableOpacity
                     style={[styles.button, styles.buttonDestructive, { marginTop: 10 }]}
                     onPress={handleTransferOwnership}
@@ -443,7 +440,7 @@ const SettingsPage = () => {
   };
 
   const renderSettings = () => {
-    if (loadingSettings || loadingCurrentUserMembership) { // Add loadingCurrentUserMembership
+    if (loadingSettings || loadingCurrentUserMembership) {
       return <ActivityIndicator size="large" color="#fb5b5a" />;
     }
     if (errorSettings) {

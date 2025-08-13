@@ -12,8 +12,8 @@ export const LeagueProvider = ({ children }) => {
   const [loadingLeagues, setLoadingLeagues] = useState(true);
   const [loadingContent, setLoadingContent] = useState(false);
   const [inviteCode, setInviteCode] = useState(null);
-  const [currentUserMembership, setCurrentUserMembership] = useState(null); // New state for current user's membership
-  const [loadingCurrentUserMembership, setLoadingCurrentUserMembership] = useState(true); // New loading state
+  const [currentUserMembership, setCurrentUserMembership] = useState(null);
+  const [loadingCurrentUserMembership, setLoadingCurrentUserMembership] = useState(true);
 
   const reloadLeagues = useCallback(async () => {
     if (token) {
@@ -53,7 +53,7 @@ export const LeagueProvider = ({ children }) => {
       return;
     }
     try {
-      const response = await fetch(`${API_BASE_URL}/api/leagues/${selectedLeagueId}/members/me`, { // Call the new 'me' endpoint
+      const response = await fetch(`${API_BASE_URL}/api/leagues/${selectedLeagueId}/members/me`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       if (!response.ok) {
@@ -69,9 +69,9 @@ export const LeagueProvider = ({ children }) => {
       console.error('Failed to fetch current user membership:', error);
       setCurrentUserMembership(null);
     } finally {
-      setLoadingCurrentUserMembership(false); // Stop loading in finally block
+      setLoadingCurrentUserMembership(false);
     }
-  }, [token, selectedLeagueId, user?.id]); // Depend on token, selectedLeagueId, and user.id
+  }, [token, selectedLeagueId, user?.id]);
 
   useEffect(() => {
     fetchCurrentUserMembership();
@@ -132,9 +132,9 @@ export const LeagueProvider = ({ children }) => {
     loadingContent,
     switchLeague,
     currentLeague,
-    currentUserMembership, // Now from state
+    currentUserMembership,
     setCurrentUserMembership,
-    loadingCurrentUserMembership, // Expose loading state
+    loadingCurrentUserMembership,
     refreshInviteCode,
     reloadLeagues,
     inviteCode,
