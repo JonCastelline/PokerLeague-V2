@@ -144,7 +144,7 @@ export const LeagueProvider = ({ children }) => {
     reloadLeagues,
     inviteCode,
     setInviteCode,
-    reloadHomeContent, // Expose the new function
+    reloadHomeContent,
   };
 
   return (

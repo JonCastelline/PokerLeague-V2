@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Switch, TextInput, Modal, TouchableOpacity, Alert, Dimensions } from 'react-native'; // Removed FlatList, Platform
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Switch, TextInput, Modal, TouchableOpacity, Alert, Dimensions } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { DateTime } from 'luxon';

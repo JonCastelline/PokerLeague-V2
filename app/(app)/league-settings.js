@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Image } from 'react-native'; // Add Image import
+import { Image } from 'react-native';
 import { View, Text, StyleSheet, ActivityIndicator, FlatList, ScrollView, Switch, TextInput, Modal, TouchableOpacity, Alert, Dimensions } from 'react-native';
 import PageLayout from '../../components/PageLayout';
 import AddUnregisteredPlayerForm from '../../components/AddUnregisteredPlayerForm';
@@ -20,12 +20,6 @@ const LeagueSettingsPage = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
 
-  // State for league settings (e.g., nonOwnerAdminsCanManageRoles)
-  // This will need to be fetched from the backend as a league-level setting
-  // For now, we'll use a placeholder or assume it's part of currentUserMembership if that's how it's currently handled
-  // Based on settings?.nonOwnerAdminsCanManageRoles, it seems to be a season setting currently.
-  // We need to move this to a league-level setting in the backend as well.
-  // For the frontend move, I'll assume it's a league setting and will need to be fetched.
   const [nonOwnerAdminsCanManageRoles, setNonOwnerAdminsCanManageRoles] = useState(false);
   const [loadingLeagueSettings, setLoadingLeagueSettings] = useState(true);
   const [errorLeagueSettings, setErrorLeagueSettings] = useState(null);
@@ -40,8 +34,6 @@ const LeagueSettingsPage = () => {
     if (!selectedLeagueId || !token) return;
     setLoadingLeagueSettings(true);
     try {
-      // Assuming a new endpoint for league-level settings
-      // This will need to be implemented in the backend
       const response = await fetch(`${API_BASE_URL}/api/leagues/${selectedLeagueId}/settings`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
@@ -209,8 +201,8 @@ const LeagueSettingsPage = () => {
 
   useEffect(() => {
     fetchLeagueMembers();
-    fetchLeagueSettings(); // Fetch league-level settings
-    fetchHomeContent(); // Fetch home content including logo URL
+    fetchLeagueSettings();
+    fetchHomeContent();
   }, [fetchLeagueMembers, fetchLeagueSettings, fetchHomeContent]);
 
   const renderMemberItem = ({ item }) => (
@@ -232,7 +224,6 @@ const LeagueSettingsPage = () => {
   const renderManagementOptions = () => {
     if (!selectedMember) return null;
 
-    // No season finalization check here, as this is league-level management
     const isOwner = currentUserMembership?.isOwner;
     const canAdminsManage = nonOwnerAdminsCanManageRoles; // Use the league-level setting
     const canManageRoles = isOwner || (isAdmin && canAdminsManage);
@@ -254,7 +245,7 @@ const LeagueSettingsPage = () => {
             ) : null}
             {canManageRoles && selectedMember.role === 'PLAYER' && selectedMember.playerAccountId !== null ? (
                 <TouchableOpacity
-                    style={[styles.button, styles.buttonPrimary, { marginTop: 10 }]} // Add margin for spacing
+                    style={[styles.button, styles.buttonPrimary, { marginTop: 10 }]}
                     onPress={() => handleUpdateRole('ADMIN')}
                 >
                     <Text style={styles.textStyle}>Promote to Admin</Text>
@@ -289,7 +280,7 @@ const LeagueSettingsPage = () => {
         </View>
 
         {/* Logo Image URL Input */}
-        {isAdmin ? ( // Only admins/owners can edit
+        {isAdmin ? (
           <View style={styles.settingItem}>
             <Text style={styles.settingLabel}>Logo Image URL</Text>
             <TextInput
@@ -305,7 +296,7 @@ const LeagueSettingsPage = () => {
         {isAdmin ? (
           <TouchableOpacity
             style={[styles.button, styles.buttonPrimaryRed, styles.actionButton]}
-            onPress={handleSaveLogoImageUrl} // This function needs to be created
+            onPress={handleSaveLogoImageUrl}
           >
             <Text style={styles.textStyle}>Save Logo</Text>
           </TouchableOpacity>
@@ -407,16 +398,16 @@ const styles = StyleSheet.create({
     width: 150,
     height: 150,
     borderRadius: 75,
-    overflow: 'hidden', // Clip image to border radius
+    overflow: 'hidden',
     marginBottom: 20,
-    backgroundColor: '#e0e0e0', // Fallback background
+    backgroundColor: '#e0e0e0',
     justifyContent: 'center',
     alignItems: 'center',
   },
   logoImage: {
     width: '100%',
     height: '100%',
-    resizeMode: 'cover', // Cover the container, cropping if necessary
+    resizeMode: 'cover',
   },
   logoPlaceholder: {
     width: 150,
