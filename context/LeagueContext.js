@@ -77,29 +77,34 @@ export const LeagueProvider = ({ children }) => {
     fetchCurrentUserMembership();
   }, [fetchCurrentUserMembership]); // Trigger fetch when dependencies change
 
-  useEffect(() => {
-    if (selectedLeagueId && token) {
-      setLoadingContent(true);
-      fetch(`${API_BASE_URL}/api/leagues/${selectedLeagueId}/home-content`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      })
-        .then(response => {
-          if (response.ok) return response.json();
-          return null;
-        })
-        .then(data => {
-          setLeagueHomeContent(data);
-          setLoadingContent(false);
-        })
-        .catch(error => {
-          console.error('Failed to fetch league home content:', error);
-          setLeagueHomeContent(null);
-          setLoadingContent(false);
-        });
-    } else {
+  const reloadHomeContent = useCallback(async () => {
+    if (!selectedLeagueId || !token) {
       setLeagueHomeContent(null);
+      setLoadingContent(false);
+      return;
+    }
+    setLoadingContent(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/leagues/${selectedLeagueId}/home-content`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setLeagueHomeContent(data);
+      } else {
+        setLeagueHomeContent(null);
+      }
+    } catch (error) {
+      console.error('Failed to fetch league home content:', error);
+      setLeagueHomeContent(null);
+    } finally {
+      setLoadingContent(false);
     }
   }, [selectedLeagueId, token]);
+
+  useEffect(() => {
+    reloadHomeContent();
+  }, [reloadHomeContent]);
 
   const switchLeague = (leagueId) => {
     setSelectedLeagueId(leagueId);
@@ -139,6 +144,7 @@ export const LeagueProvider = ({ children }) => {
     reloadLeagues,
     inviteCode,
     setInviteCode,
+    reloadHomeContent,
   };
 
   return (

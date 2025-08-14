@@ -1,22 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, FlatList, ScrollView, Switch, TextInput, Modal, TouchableOpacity, Alert, Platform, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Switch, TextInput, Modal, TouchableOpacity, Alert, Dimensions } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { DateTime } from 'luxon';
 import PageLayout from '../../components/PageLayout';
-import AddUnregisteredPlayerForm from '../../components/AddUnregisteredPlayerForm';
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
 import { API_BASE_URL } from '../../src/config';
 
-const SettingsPage = () => {
+const SeasonSettingsPage = () => {
   const { token } = useAuth();
   const { selectedLeagueId, currentUserMembership, loadingCurrentUserMembership } = useLeague();
 
-  // Existing state for members
-  const [members, setMembers] = useState([]);
-  const [loadingMembers, setLoadingMembers] = useState(true);
-  const [errorMembers, setErrorMembers] = useState(null);
+  
 
   // State for all seasons
   const [seasons, setSeasons] = useState([]);
@@ -29,9 +25,7 @@ const SettingsPage = () => {
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [errorSettings, setErrorSettings] = useState(null);
 
-  // State for player management modal
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedMember, setSelectedMember] = useState(null);
+  
 
   // State for create season modal
   const [createSeasonModalVisible, setCreateSeasonModalVisible] = useState(false);
@@ -62,91 +56,14 @@ const SettingsPage = () => {
 
   const isAdmin = currentUserMembership?.role === 'ADMIN' || currentUserMembership?.isOwner;
 
-  const handleUpdateRole = async (newRole) => {
-    if (!selectedMember) return;
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/leagues/${selectedLeagueId}/members/${selectedMember.id}/role`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ newRole: newRole }),
-      });
-      if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(`Failed to update role: ${errorData}`);
-      }
-      await fetchLeagueMembers(); // Refresh member list
-      setModalVisible(false);
-    } catch (e) {
-      console.error(e);
-      alert(e.message);
-    }
-  };
+  
 
-  const handleTransferOwnership = async () => {
-    if (!selectedMember) return;
-    Alert.alert(
-      "Transfer Ownership",
-      `Are you sure you want to make ${selectedMember.playerName} the new owner?\n\nThis action is irreversible.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Confirm",
-          onPress: async () => {
-            try {
-              const response = await fetch(`${API_BASE_URL}/api/leagues/${selectedLeagueId}/transfer-ownership`, {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ newOwnerId: selectedMember.id }),
-              });
-              if (!response.ok) {
-                const errorData = await response.text();
-                throw new Error(`Failed to transfer ownership: ${errorData}`);
-              }
-              await fetchLeagueMembers(); // Refresh member list
-              // It might be necessary to refresh the entire user/league context as well
-              // For now, just closing the modal.
-              setModalVisible(false);
-              alert('Ownership transferred successfully.');
-            } catch (e) {
-              console.error(e);
-              alert(e.message);
-            }
-          },
-          style: "destructive",
-        },
-      ]
-    );
-  };
+  
 
 
-  const openManageModal = (member) => {
-    setSelectedMember(member);
-    setModalVisible(true);
-  };
+  
 
-  const fetchLeagueMembers = useCallback(async () => {
-    if (!selectedLeagueId || !token) return;
-    setLoadingMembers(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/leagues/${selectedLeagueId}/members`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
-      setMembers(data);
-    } catch (e) {
-      console.error("Failed to fetch league members:", e);
-      setErrorMembers(e.message);
-    } finally {
-      setLoadingMembers(false);
-    }
-  }, [selectedLeagueId, token]);
+  
 
   const fetchSettings = useCallback(async (seasonIdToFetch = null) => {
     if (!selectedLeagueId || !token) return;
@@ -225,9 +142,8 @@ const SettingsPage = () => {
   };
 
   useEffect(() => {
-    fetchLeagueMembers();
     fetchAllSeasons(); // Fetch all seasons first
-  }, [fetchLeagueMembers, fetchAllSeasons]);
+  }, [fetchAllSeasons]);
 
   // Effect to set the initial selected season after all seasons are fetched
   useEffect(() => {
@@ -376,68 +292,9 @@ const SettingsPage = () => {
   };
 
 
-  const renderMemberItem = ({ item }) => (
-    <View style={styles.memberItem}>
-      <View>
-        <Text style={styles.memberName}>{item.playerName}</Text>
-        <Text style={styles.memberRole}>{item.role} {item.isOwner ? '(Owner)' : ''}</Text>
-        {!!item.email && <Text style={styles.memberEmail}>{item.email}</Text>}
-        {!item.playerAccountId && <Text style={styles.unregisteredTag}> (Unregistered)</Text>}
-      </View>
-      {((currentUserMembership?.isOwner || (isAdmin && settings?.nonOwnerAdminsCanManageRoles)) && item.id !== currentUserMembership.id && (!item.isOwner || currentUserMembership?.isOwner)) ? (
-        <TouchableOpacity onPress={() => openManageModal(item)} style={styles.manageButton}>
-          <Text style={styles.manageButtonText}>Manage</Text>
-        </TouchableOpacity>
-      ) : null}
-    </View>
-  );
+  
 
-  const renderManagementOptions = () => {
-    if (!selectedMember) return null;
-
-    const isSeasonFinalized = selectedSeason?.isFinalized;
-    if (isSeasonFinalized) {
-        return <Text style={styles.finalizedMessage}>Season is finalized. Management options are disabled.</Text>;
-    }
-
-    const isOwner = currentUserMembership?.isOwner;
-    const canAdminsManage = settings?.nonOwnerAdminsCanManageRoles;
-    const canManageRoles = isOwner || (isAdmin && canAdminsManage);
-
-    const targetIsOwner = selectedMember.isOwner;
-    if (targetIsOwner) {
-        return null; // Safeguard: Owners should not be manageable from this modal
-    }
-
-    return (
-        <View style={styles.modalButtonContainer}>
-            {isOwner && selectedMember.role === 'ADMIN' ? (
-                <TouchableOpacity
-                    style={[styles.button, styles.buttonDestructive]}
-                    onPress={() => handleUpdateRole('PLAYER')}
-                >
-                    <Text style={styles.textStyle}>Demote to Player</Text>
-                </TouchableOpacity>
-            ) : null}
-            {canManageRoles && selectedMember.role === 'PLAYER' && selectedMember.playerAccountId !== null ? (
-                <TouchableOpacity
-                    style={[styles.button, styles.buttonPrimary, { marginTop: 10 }]}
-                    onPress={() => handleUpdateRole('ADMIN')}
-                >
-                    <Text style={styles.textStyle}>Promote to Admin</Text>
-                </TouchableOpacity>
-            ) : null}
-            {isOwner && selectedMember.playerAccountId !== null ? (
-                <TouchableOpacity
-                    style={[styles.button, styles.buttonDestructive, { marginTop: 10 }]}
-                    onPress={handleTransferOwnership}
-                >
-                    <Text style={styles.textStyle}>Transfer Ownership</Text>
-                </TouchableOpacity>
-            ) : null}
-        </View>
-    );
-  };
+  
 
   const renderSettings = () => {
     if (loadingSettings || loadingCurrentUserMembership) {
@@ -545,14 +402,7 @@ const SettingsPage = () => {
             />
         </View>
 
-        <View style={styles.settingItem}>
-            <Text style={styles.settingLabel}>Admins Can Manage Roles</Text>
-            <Switch
-                value={settings.nonOwnerAdminsCanManageRoles}
-                onValueChange={(value) => handleSettingChange('nonOwnerAdminsCanManageRoles', value)}
-                disabled={isSeasonFinalized || !currentUserMembership?.isOwner}
-            />
-        </View>
+        
 
         <View style={styles.settingItem}>
             <View style={{ flexDirection: 'column', width: '100%' }}>
@@ -590,7 +440,7 @@ const SettingsPage = () => {
   return (
     <PageLayout>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>League Settings</Text>
+        <Text style={styles.title}>Season Settings</Text>
 
         {loadingSeasons ? (
           <ActivityIndicator size="large" color="#fb5b5a" />
@@ -659,25 +509,6 @@ const SettingsPage = () => {
           </View>
         )}
 
-        <Text style={styles.subtitle}>League Members</Text>
-        {loadingMembers ? (
-          <ActivityIndicator size="large" color="#fb5b5a" />
-        ) : errorMembers ? (
-          <Text style={styles.errorText}>Error: {errorMembers}</Text>
-        ) : (
-          <FlatList
-            data={members}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={renderMemberItem}
-            style={styles.memberList}
-            scrollEnabled={false}
-          />
-        )}
-
-        {isAdmin ? (
-          <AddUnregisteredPlayerForm leagueId={selectedLeagueId} onPlayerAdded={fetchLeagueMembers} />
-        ) : null}
-
         <Modal
           animationType="slide"
           transparent={true}
@@ -728,31 +559,7 @@ const SettingsPage = () => {
           date={datePickerField === 'startDate' ? (newSeasonStartDate || new Date()) : (newSeasonEndDate || new Date())}
         />
 
-        {selectedMember ? (
-            <Modal
-                animationType="slide"
-                transparent={true}
-                visible={modalVisible}
-                onRequestClose={() => {
-                    setModalVisible(!modalVisible);
-                }}
-            >
-                <View style={styles.centeredView}>
-                    <View style={styles.modalView}>
-                        <Text style={styles.modalText}>Manage {selectedMember.playerName}</Text>
-
-                        {renderManagementOptions()}
-
-                        <TouchableOpacity
-                            style={[styles.button, styles.buttonClose]}
-                            onPress={() => setModalVisible(!modalVisible)}
-                        >
-                            <Text style={styles.textStyle}>Close</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
-        ) : null}
+        
       </ScrollView>
     </PageLayout>
   );
@@ -981,4 +788,4 @@ const styles = StyleSheet.create({
   }
 });
 
-export default SettingsPage;
+export default SeasonSettingsPage;
