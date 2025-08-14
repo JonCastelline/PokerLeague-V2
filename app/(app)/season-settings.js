@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, FlatList, ScrollView, Switch, TextInput, Modal, TouchableOpacity, Alert, Platform, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Switch, TextInput, Modal, TouchableOpacity, Alert, Dimensions } from 'react-native'; // Removed FlatList, Platform
 import { Picker } from '@react-native-picker/picker';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { DateTime } from 'luxon';
 import PageLayout from '../../components/PageLayout';
-import AddUnregisteredPlayerForm from '../../components/AddUnregisteredPlayerForm';
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
 import { API_BASE_URL } from '../../src/config';
@@ -441,7 +440,7 @@ const SeasonSettingsPage = () => {
   return (
     <PageLayout>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>League Settings</Text>
+        <Text style={styles.title}>Season Settings</Text>
 
         {loadingSeasons ? (
           <ActivityIndicator size="large" color="#fb5b5a" />
@@ -509,6 +508,48 @@ const SeasonSettingsPage = () => {
               : null}
           </View>
         )}
+
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={createSeasonModalVisible}
+          onRequestClose={() => setCreateSeasonModalVisible(false)}
+        >
+          <View style={styles.centeredView}>
+            <View style={styles.modalView}>
+              <Text style={styles.modalText}>Create New Season</Text>
+              <TextInput
+                style={[styles.input, styles.modalInput]}
+                placeholder="Season Name (e.g., 2025 Season)"
+                value={newSeasonName}
+                onChangeText={setNewSeasonName}
+              />
+              <TouchableOpacity onPress={() => showDatePicker('startDate')} style={styles.dateInputButton}>
+                <Text style={styles.dateInputText}>
+                  Start Date: {newSeasonStartDate ? DateTime.fromJSDate(newSeasonStartDate).toFormat('MM/dd/yyyy') : 'Select Date'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => showDatePicker('endDate')} style={styles.dateInputButton}>
+                <Text style={styles.dateInputText}>
+                  End Date: {newSeasonEndDate ? DateTime.fromJSDate(newSeasonEndDate).toFormat('MM/dd/yyyy') : 'Select Date'}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.button, styles.buttonPrimaryRed, styles.modalButton]}
+                onPress={handleCreateSeason}
+              >
+                <Text style={styles.textStyle}>Create Season</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, styles.buttonClose, styles.modalButton]}
+                onPress={() => setCreateSeasonModalVisible(false)}
+              >
+                <Text style={styles.textStyle}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
 
         <DateTimePickerModal
           isVisible={isDatePickerVisible}
