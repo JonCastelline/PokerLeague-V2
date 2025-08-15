@@ -129,6 +129,10 @@ export const LeagueProvider = ({ children }) => {
 
   const currentLeague = leagues.find(l => l.id === selectedLeagueId);
 
+  const reloadCurrentUserMembership = useCallback(async () => {
+    await fetchCurrentUserMembership();
+  }, [fetchCurrentUserMembership]);
+
   const value = {
     leagues,
     selectedLeagueId,
@@ -145,6 +149,7 @@ export const LeagueProvider = ({ children }) => {
     inviteCode,
     setInviteCode,
     reloadHomeContent,
+    reloadCurrentUserMembership,
   };
 
   return (
