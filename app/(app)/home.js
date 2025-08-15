@@ -41,7 +41,7 @@ const HomePage = () => {
     return <ActivityIndicator size="large" color="#fb5b5a" />;
   }
 
-  const isAdmin = currentUserMembership?.role === 'Admin' || currentUserMembership?.isOwner;
+  const isAdmin = currentUserMembership?.role === 'ADMIN' || currentUserMembership?.isOwner;
 
   if (leagues && leagues.length > 0) {
     return (

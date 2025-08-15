@@ -8,9 +8,11 @@ import * as Animatable from 'react-native-animatable';
 const AppMenu = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const router = useRouter();
-  const { selectedLeagueId } = useLeague();
+  const { selectedLeagueId, currentUserMembership } = useLeague();
   const { signOut } = useAuth();
   const animatableRef = useRef(null);
+
+  const isAdmin = currentUserMembership?.role === 'ADMIN' || currentUserMembership?.isOwner;
 
   const navigateTo = (path) => {
     closeMenu();
@@ -66,9 +68,11 @@ const AppMenu = () => {
             <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('season-settings')}>
               <Text style={styles.menuItemText}>Season</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('league-settings')}>
-              <Text style={styles.menuItemText}>League</Text>
-            </TouchableOpacity>
+            {isAdmin && (
+              <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('league-settings')}>
+                <Text style={styles.menuItemText}>League</Text>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
               <Text style={styles.menuItemText}>Logout</Text>
             </TouchableOpacity>

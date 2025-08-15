@@ -6,10 +6,12 @@ import AddUnregisteredPlayerForm from '../../components/AddUnregisteredPlayerFor
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
 import { API_BASE_URL } from '../../src/config';
+import { useRouter } from 'expo-router';
 
 const LeagueSettingsPage = () => {
+  const router = useRouter();
   const { token } = useAuth();
-  const { selectedLeagueId, currentUserMembership, loadingCurrentUserMembership, reloadHomeContent } = useLeague();
+  const { selectedLeagueId, currentUserMembership, loadingCurrentUserMembership, reloadHomeContent, reloadCurrentUserMembership } = useLeague();
 
   // Existing state for members
   const [members, setMembers] = useState([]);
@@ -29,6 +31,12 @@ const LeagueSettingsPage = () => {
 
 
   const isAdmin = currentUserMembership?.role === 'ADMIN' || currentUserMembership?.isOwner;
+
+  useEffect(() => {
+    if (!loadingCurrentUserMembership && !isAdmin) {
+      router.replace('/(app)/home');
+    }
+  }, [isAdmin, loadingCurrentUserMembership, router]);
 
   const fetchLeagueSettings = useCallback(async () => {
     if (!selectedLeagueId || !token) return;
@@ -139,11 +147,49 @@ const LeagueSettingsPage = () => {
     }
   };
 
+  const handleUpdateStatus = (member, isActive) => {
+    if (!member) return;
+
+    const action = isActive ? "Activate" : "Deactivate";
+    Alert.alert(
+      `${action} Player`,
+      `Are you sure you want to ${action.toLowerCase()} ${member.playerName}?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: action,
+          onPress: async () => {
+            try {
+              const response = await fetch(`${API_BASE_URL}/api/leagues/${selectedLeagueId}/members/${member.id}/status`, {
+                method: 'PUT',
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ isActive: isActive }),
+              });
+              if (!response.ok) {
+                const errorData = await response.text();
+                throw new Error(`Failed to update status: ${errorData}`);
+              }
+              await fetchLeagueMembers(); // Refresh member list
+              setModalVisible(false);
+            } catch (e) {
+              console.error(e);
+              alert(e.message);
+            }
+          },
+          style: isActive ? "default" : "destructive",
+        },
+      ]
+    );
+  };
+
   const handleTransferOwnership = async () => {
     if (!selectedMember) return;
     Alert.alert(
       "Transfer Ownership",
-      `Are you sure you want to make ${selectedMember.playerName} the new owner?\n\nThis action is irreversible.`, 
+      `Are you sure you want to make ${selectedMember.playerName} the new owner?\n\nThis action is irreversible.`,
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -151,12 +197,12 @@ const LeagueSettingsPage = () => {
           onPress: async () => {
             try {
               const response = await fetch(`${API_BASE_URL}/api/leagues/${selectedLeagueId}/transfer-ownership`, {
-                method: 'POST',
+                method: 'PUT',
                 headers: {
                   'Authorization': `Bearer ${token}`,
                   'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ newOwnerId: selectedMember.id }),
+                body: JSON.stringify({ newOwnerLeagueMembershipId: selectedMember.id }),
               });
               if (!response.ok) {
                 const errorData = await response.text();
@@ -165,6 +211,8 @@ const LeagueSettingsPage = () => {
               await fetchLeagueMembers(); // Refresh member list
               setModalVisible(false);
               alert('Ownership transferred successfully.');
+              reloadCurrentUserMembership(); // Reload current user's membership to update roles/ownership
+              fetchLeagueSettings(); // Reload league settings to update nonOwnerAdminsCanManageRoles
             } catch (e) {
               console.error(e);
               alert(e.message);
@@ -200,10 +248,20 @@ const LeagueSettingsPage = () => {
   }, [selectedLeagueId, token]);
 
   useEffect(() => {
-    fetchLeagueMembers();
-    fetchLeagueSettings();
-    fetchHomeContent();
-  }, [fetchLeagueMembers, fetchLeagueSettings, fetchHomeContent]);
+    if (isAdmin) {
+        fetchLeagueMembers();
+        fetchLeagueSettings();
+        fetchHomeContent();
+    }
+  }, [isAdmin, fetchLeagueMembers, fetchLeagueSettings, fetchHomeContent]);
+
+  if (loadingCurrentUserMembership || !isAdmin) {
+    return (
+      <PageLayout>
+        <ActivityIndicator size="large" color="#fb5b5a" />
+      </PageLayout>
+    );
+  }
 
   const renderMemberItem = ({ item }) => (
     <View style={styles.memberItem}>
@@ -212,6 +270,7 @@ const LeagueSettingsPage = () => {
         <Text style={styles.memberRole}>{item.role} {item.isOwner ? '(Owner)' : ''}</Text>
         {!!item.email && <Text style={styles.memberEmail}>{item.email}</Text>}
         {!item.playerAccountId && <Text style={styles.unregisteredTag}> (Unregistered)</Text>}
+        {!item.isActive && <Text style={styles.inactiveTag}> (Inactive)</Text>}
       </View>
       {((currentUserMembership?.isOwner || (isAdmin && nonOwnerAdminsCanManageRoles)) && item.id !== currentUserMembership.id && (!item.isOwner || currentUserMembership?.isOwner)) ? (
         <TouchableOpacity onPress={() => openManageModal(item)} style={styles.manageButton}>
@@ -258,6 +317,23 @@ const LeagueSettingsPage = () => {
                 >
                     <Text style={styles.textStyle}>Transfer Ownership</Text>
                 </TouchableOpacity>
+            ) : null}
+            {isAdmin && !targetIsOwner ? (
+                selectedMember.isActive ? (
+                    <TouchableOpacity
+                        style={[styles.button, styles.buttonDestructive, { marginTop: 10 }]}
+                        onPress={() => handleUpdateStatus(selectedMember, false)}
+                    >
+                        <Text style={styles.textStyle}>Deactivate Player</Text>
+                    </TouchableOpacity>
+                ) : (
+                    <TouchableOpacity
+                        style={[styles.button, styles.buttonPrimary, { marginTop: 10 }]}
+                        onPress={() => handleUpdateStatus(selectedMember, true)}
+                    >
+                        <Text style={styles.textStyle}>Activate Player</Text>
+                    </TouchableOpacity>
+                )
             ) : null}
         </View>
     );
@@ -467,6 +543,11 @@ const styles = StyleSheet.create({
   unregisteredTag: {
     fontSize: 12,
     color: 'red',
+    fontWeight: 'bold',
+  },
+  inactiveTag: {
+    fontSize: 12,
+    color: 'gray',
     fontWeight: 'bold',
   },
   errorText: {
