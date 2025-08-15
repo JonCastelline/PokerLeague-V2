@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
+import { useLeague } from '../../context/LeagueContext';
 import { API_BASE_URL } from '../../src/config';
 import PageLayout from '../../components/PageLayout';
 
@@ -9,6 +10,7 @@ const CreateLeaguePage = () => {
   const [leagueName, setLeagueName] = useState('');
   const router = useRouter();
   const { token } = useAuth();
+  const { reloadLeagues } = useLeague();
 
   const handleCreateLeague = () => {
     if (!leagueName.trim()) {
@@ -38,7 +40,8 @@ const CreateLeaguePage = () => {
         }
         return response.json();
       })
-      .then(data => {
+      .then(async (data) => {
+        await reloadLeagues();
         Alert.alert('Success', `League "${data.leagueName}" created!`, [
           { text: 'OK', onPress: () => router.replace('/(app)/home') },
         ]);
