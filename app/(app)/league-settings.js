@@ -11,7 +11,7 @@ import { useRouter } from 'expo-router';
 const LeagueSettingsPage = () => {
   const router = useRouter();
   const { token } = useAuth();
-  const { selectedLeagueId, currentUserMembership, loadingCurrentUserMembership, reloadHomeContent, reloadCurrentUserMembership } = useLeague();
+  const { selectedLeagueId, currentUserMembership, loadingCurrentUserMembership, reloadHomeContent, reloadCurrentUserMembership, currentLeague, reloadLeagues } = useLeague();
 
   // Existing state for members
   const [members, setMembers] = useState([]);
@@ -23,14 +23,17 @@ const LeagueSettingsPage = () => {
   const [selectedMember, setSelectedMember] = useState(null);
 
   const [nonOwnerAdminsCanManageRoles, setNonOwnerAdminsCanManageRoles] = useState(false);
-  const [loadingLeagueSettings, setLoadingLeagueSettings] = useState(true);
-  const [errorLeagueSettings, setErrorLeagueSettings] = useState(null);
 
   const [logoImageUrl, setLogoImageUrl] = useState('');
   const [homeContent, setHomeContent] = useState(''); // To store the content text if we decide to add it later
 
-
   const isAdmin = currentUserMembership?.role === 'ADMIN' || currentUserMembership?.isOwner;
+
+  useEffect(() => {
+    if (currentLeague) {
+      setNonOwnerAdminsCanManageRoles(currentLeague.nonOwnerAdminsCanManageRoles);
+    }
+  }, [currentLeague]);
 
   useEffect(() => {
     if (!loadingCurrentUserMembership && !isAdmin) {
@@ -38,44 +41,24 @@ const LeagueSettingsPage = () => {
     }
   }, [isAdmin, loadingCurrentUserMembership, router]);
 
-  const fetchLeagueSettings = useCallback(async () => {
+  const handleSaveLeagueSettings = async () => {
     if (!selectedLeagueId || !token) return;
-    setLoadingLeagueSettings(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/leagues/${selectedLeagueId}/settings`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
-      setNonOwnerAdminsCanManageRoles(data.nonOwnerAdminsCanManageRoles);
-    } catch (e) {
-      console.error("Failed to fetch league settings:", e);
-      setErrorLeagueSettings(e.message);
-    } finally {
-      setLoadingLeagueSettings(false);
-    }
-  }, [selectedLeagueId, token]);
-
-  const saveLeagueSettings = async () => {
-    if (!selectedLeagueId || !token) return;
-    setLoadingLeagueSettings(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/leagues/${selectedLeagueId}/settings`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ nonOwnerAdminsCanManageRoles: nonOwnerAdminsCanManageRoles }),
-      });
+      const response = await fetch(`${API_BASE_URL}/api/leagues/${selectedLeagueId}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ nonOwnerAdminsCanManageRoles: nonOwnerAdminsCanManageRoles }),
+        });
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       alert('League settings saved successfully!');
+      reloadLeagues();
     } catch (e) {
       console.error("Failed to save league settings:", e);
-      setErrorLeagueSettings(e.message);
       alert('Failed to save league settings.');
-    } finally {
-      setLoadingLeagueSettings(false);
     }
   };
 
@@ -212,7 +195,6 @@ const LeagueSettingsPage = () => {
               setModalVisible(false);
               alert('Ownership transferred successfully.');
               reloadCurrentUserMembership(); // Reload current user's membership to update roles/ownership
-              fetchLeagueSettings(); // Reload league settings to update nonOwnerAdminsCanManageRoles
             } catch (e) {
               console.error(e);
               alert(e.message);
@@ -250,10 +232,9 @@ const LeagueSettingsPage = () => {
   useEffect(() => {
     if (isAdmin) {
         fetchLeagueMembers();
-        fetchLeagueSettings();
         fetchHomeContent();
     }
-  }, [isAdmin, fetchLeagueMembers, fetchLeagueSettings, fetchHomeContent]);
+  }, [isAdmin, fetchLeagueMembers, fetchHomeContent]);
 
   if (loadingCurrentUserMembership || !isAdmin) {
     return (
@@ -379,12 +360,7 @@ const LeagueSettingsPage = () => {
         ) : null}
 
         {/* Admins Can Manage Roles */}
-        {loadingLeagueSettings ? (
-          <ActivityIndicator size="large" color="#fb5b5a" />
-        ) : errorLeagueSettings ? (
-          <Text style={styles.errorText}>Error loading league settings: {errorLeagueSettings}</Text>
-        ) : (
-          <View style={styles.settingItem}>
+        <View style={styles.settingItem}>
             <Text style={styles.settingLabel}>Admins Can Manage Roles</Text>
             <Switch
                 value={nonOwnerAdminsCanManageRoles}
@@ -392,11 +368,10 @@ const LeagueSettingsPage = () => {
                 disabled={!currentUserMembership?.isOwner} // Only owner can change this
             />
           </View>
-        )}
-        {currentUserMembership?.isOwner && !loadingLeagueSettings && (
+        {currentUserMembership?.isOwner && (
           <TouchableOpacity
             style={[styles.button, styles.buttonPrimaryRed, styles.actionButton]}
-            onPress={saveLeagueSettings}
+            onPress={handleSaveLeagueSettings}
           >
             <Text style={styles.textStyle}>Save League Settings</Text>
           </TouchableOpacity>
