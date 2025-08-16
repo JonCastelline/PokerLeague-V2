@@ -1,12 +1,15 @@
-import React from 'react';
-import { View, StyleSheet, Image, ActivityIndicator, Text } from 'react-native';
+import React, { useState } from 'react';
+import { View, StyleSheet, Image, ActivityIndicator, Text, TouchableOpacity } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import AppMenu from './AppMenu';
+import UserMenu from './UserMenu';
 import { useLeague } from '../context/LeagueContext';
 
 const PageLayout = ({ children }) => {
   const { currentLeague, loadingLeagues, leagueHomeContent } = useLeague();
   const { user } = useAuth();
+  const [userMenuVisible, setUserMenuVisible] = useState(false);
 
   if (loadingLeagues) {
     return (
@@ -29,10 +32,14 @@ const PageLayout = ({ children }) => {
         </View>
         <View style={styles.userContainer}>
           {user && (
-            <Text style={styles.userName}>{user.firstName}</Text>
+            <TouchableOpacity onPress={() => setUserMenuVisible(true)} style={styles.userNameContainer}>
+              <Text style={styles.userName}>{user.firstName}</Text>
+              <MaterialIcons name="arrow-drop-down" size={24} color="black" />
+            </TouchableOpacity>
           )}
         </View>
       </View>
+      <UserMenu isVisible={userMenuVisible} onClose={() => setUserMenuVisible(false)} />
       <View style={styles.content}>
         {children}
       </View>
@@ -79,6 +86,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
+  },
+  userNameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   content: {
     flex: 1,

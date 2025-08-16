@@ -19,11 +19,7 @@ const AppMenu = () => {
     router.push({ pathname: path, params: { leagueId: selectedLeagueId } });
   };
 
-  const handleLogout = () => {
-    closeMenu();
-    signOut();
-    router.replace('/(auth)');
-  };
+  
 
   const closeMenu = () => {
     if (animatableRef.current) {
@@ -73,9 +69,7 @@ const AppMenu = () => {
                 <Text style={styles.menuItemText}>League</Text>
               </TouchableOpacity>
             )}
-            <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
-              <Text style={styles.menuItemText}>Logout</Text>
-            </TouchableOpacity>
+            
           </Animatable.View>
         </Pressable>
       </Modal>
