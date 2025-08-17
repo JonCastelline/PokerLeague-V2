@@ -32,11 +32,6 @@ const HomePage = () => {
     router.push('/(app)/join-league');
   };
 
-  const handleLogout = () => {
-    signOut();
-    router.replace('/(auth)');
-  };
-
   if (loadingLeagues) {
     return <ActivityIndicator size="large" color="#fb5b5a" />;
   }
@@ -46,20 +41,6 @@ const HomePage = () => {
   if (leagues && leagues.length > 0) {
     return (
       <PageLayout>
-        {leagues.length > 1 ? (
-          <Picker
-            selectedValue={selectedLeagueId}
-            style={styles.picker}
-            onValueChange={(itemValue) => switchLeague(itemValue)}
-          >
-            {leagues.map(league => (
-              <Picker.Item key={league.id} label={league.leagueName} value={league.id} />
-            ))}
-          </Picker>
-        ) : (
-          <Text style={styles.title}>{currentLeague?.leagueName}</Text>
-        )}
-
         {leagueHomeContent && leagueHomeContent.content && (
           <View style={styles.contentContainer}>
             <Markdown style={markdownStyles}>{leagueHomeContent.content}</Markdown>
@@ -111,11 +92,6 @@ const styles = StyleSheet.create({
     color: 'gray',
     marginBottom: 40,
   },
-  picker: {
-    height: 50,
-    width: '80%',
-    marginBottom: 20,
-  },
   button: {
     backgroundColor: '#fb5b5a',
     borderRadius: 25,
@@ -125,15 +101,7 @@ const styles = StyleSheet.create({
     width: '80%',
     marginVertical: 10,
   },
-  logoutButton: {
-    backgroundColor: '#A9A9A9',
-    borderRadius: 25,
-    height: 50,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '80%',
-    marginVertical: 10,
-  },
+  
   buttonText: {
     color: 'white',
     fontSize: 16,
