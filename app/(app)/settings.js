@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
-import { View, Text, StyleSheet, TextInput, Alert, ActivityIndicator, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Alert, ActivityIndicator, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
 import axios from 'axios';
@@ -8,7 +8,7 @@ import { API_BASE_URL } from '../../src/config';
 
 const SettingsScreen = () => {
   const { user, updateAuthUser, isLoading, token, signOut } = useAuth();
-  const { selectedLeagueId, reloadLeagues } = useLeague();
+  const { selectedLeagueId, reloadLeagues, reloadCurrentUserMembership } = useLeague();
   const router = useRouter();
 
   // Account Settings State
@@ -35,7 +35,7 @@ const SettingsScreen = () => {
 
     // Fetch league-specific player settings
     const fetchPlayerSettings = async () => {
-      if (!selectedLeagueId || !user || isLoading) return; // Added isLoading check
+      if (!selectedLeagueId || !user || isLoading) return;
       setLoading(true);
       try {
         const response = await axios.get(
@@ -58,7 +58,7 @@ const SettingsScreen = () => {
   }, [user, selectedLeagueId, isLoading]);
 
   const handleUpdateAccount = async () => {
-    if (!user || !token) return; // Corrected check
+    if (!user || !token) return;
     setLoading(true);
     try {
       const oldEmail = user.email; // Store old email
@@ -90,7 +90,7 @@ const SettingsScreen = () => {
   };
 
   const handleChangePassword = async () => {
-    if (!user || !token) return; // Corrected check
+    if (!user || !token) return;
     if (newPassword !== confirmNewPassword) {
       Alert.alert('Error', 'New password and confirmation do not match.');
       return;
@@ -117,19 +117,17 @@ const SettingsScreen = () => {
   };
 
   const handleUpdatePlayerSettings = async () => {
-    if (!user || !token) return; // Corrected check
+    if (!user || !token) return;
     setLoading(true);
     try {
       const response = await axios.put(
-        `${API_BASE_URL}/api/leagues/${selectedLeagueId}/members/me`, // Changed 'memberships' to 'members'
+        `${API_BASE_URL}/api/leagues/${selectedLeagueId}/members/me`,
         { displayName, iconUrl },
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      // Optionally, refresh league context if needed, though display name might not be in main league DTO
-      // If the display name is shown in the UserMenu, we might need to trigger a re-fetch of leagues
-            reloadLeagues(); // Re-fetch leagues to update any displayed player names
+      reloadCurrentUserMembership(); // Re-fetch current user's membership to update displayed player name/icon
       Alert.alert('Success', 'Player settings updated successfully!');
     } catch (error) {
       console.error('Error updating player settings:', error);
@@ -184,6 +182,11 @@ const SettingsScreen = () => {
 
         <Text style={styles.label}>Icon URL:</Text>
         <TextInput style={styles.input} value={iconUrl} onChangeText={setIconUrl} keyboardType="url" autoCapitalize="none" />
+        {iconUrl ? (
+          <Image source={{ uri: iconUrl }} style={styles.iconPreview} />
+        ) : (
+          <Text style={styles.noPreviewText}>No icon URL provided</Text>
+        )}
 
         <TouchableOpacity style={styles.button} onPress={handleUpdatePlayerSettings} disabled={loading}>
           <Text style={styles.buttonText}>Update Player Settings</Text>
@@ -250,6 +253,20 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     paddingHorizontal: 10,
     fontSize: 16,
+  },
+  iconPreview: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    alignSelf: 'center',
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  noPreviewText: {
+    textAlign: 'center',
+    color: '#888',
+    marginBottom: 15,
   },
   loadingIndicator: {
     position: 'absolute',

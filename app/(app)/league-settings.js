@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
 import { API_BASE_URL } from '../../src/config';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 
 const LeagueSettingsPage = () => {
   const router = useRouter();
@@ -229,12 +230,14 @@ const LeagueSettingsPage = () => {
     }
   }, [selectedLeagueId, token]);
 
-  useEffect(() => {
-    if (isAdmin) {
+  useFocusEffect(
+    useCallback(() => {
+      if (isAdmin) {
         fetchLeagueMembers();
         fetchHomeContent();
-    }
-  }, [isAdmin, fetchLeagueMembers, fetchHomeContent]);
+      }
+    }, [isAdmin, fetchLeagueMembers, fetchHomeContent])
+  );
 
   if (loadingCurrentUserMembership || !isAdmin) {
     return (
@@ -246,12 +249,20 @@ const LeagueSettingsPage = () => {
 
   const renderMemberItem = ({ item }) => (
     <View style={styles.memberItem}>
-      <View>
-        <Text style={styles.memberName}>{item.playerName}</Text>
-        <Text style={styles.memberRole}>{item.role} {item.isOwner ? '(Owner)' : ''}</Text>
-        {!!item.email && <Text style={styles.memberEmail}>{item.email}</Text>}
-        {!item.playerAccountId && <Text style={styles.unregisteredTag}> (Unregistered)</Text>}
-        {!item.isActive && <Text style={styles.inactiveTag}> (Inactive)</Text>}
+      <View style={styles.memberInfoContainer}>
+        {item.iconUrl && (
+          <Image source={{ uri: item.iconUrl }} style={styles.memberIcon} />
+        )}
+        <View>
+          <Text style={styles.memberName}>{item.displayName || item.playerName}</Text>
+          {(item.firstName || item.lastName) && (
+            <Text style={styles.realNameText}>({item.firstName} {item.lastName})</Text>
+          )}
+          <Text style={styles.memberRole}>{item.role} {item.isOwner ? '(Owner)' : ''}</Text>
+          {!!item.email && <Text style={styles.memberEmail}>{item.email}</Text>}
+          {!item.playerAccountId && <Text style={styles.unregisteredTag}> (Unregistered)</Text>}
+          {!item.isActive && <Text style={styles.inactiveTag}> (Inactive)</Text>}
+        </View>
       </View>
       {((currentUserMembership?.isOwner || (isAdmin && nonOwnerAdminsCanManageRoles)) && item.id !== currentUserMembership.id && (!item.isOwner || currentUserMembership?.isOwner)) ? (
         <TouchableOpacity onPress={() => openManageModal(item)} style={styles.manageButton}>
@@ -503,9 +514,24 @@ const styles = StyleSheet.create({
     shadowRadius: 1.41,
     elevation: 2,
   },
+  memberInfoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  memberIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    marginRight: 10,
+  },
   memberName: {
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  realNameText: {
+    fontSize: 12,
+    color: '#666',
+    fontStyle: 'italic',
   },
   memberRole: {
     fontSize: 14,

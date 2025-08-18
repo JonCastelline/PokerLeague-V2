@@ -46,7 +46,7 @@ export function AuthProvider({ children }) {
       isLoading: false,
       user: user,
     });
-    console.log('AuthContext: User signed in with:', user); // Add this line
+    console.log('AuthContext: User signed in with:', user);
   };
 
   const signOut = async () => {
@@ -59,13 +59,6 @@ export function AuthProvider({ children }) {
       user: null,
     });
 
-  // const updateAuthUser = async (newUser) => { // Commented out
-  //   await AsyncStorage.setItem('user', JSON.stringify(newUser));
-  //   setAuthState(prevState => ({
-  //     ...prevState,
-  //     user: newUser,
-  //   }));
-  // };
   };
 
   const value = {
@@ -75,7 +68,7 @@ export function AuthProvider({ children }) {
     isLoading: authState.isLoading,
     signIn,
     signOut,
-    updateAuthUser: async (newUser) => { // Defined directly in value
+    updateAuthUser: async (newUser) => {
       await AsyncStorage.setItem('user', JSON.stringify(newUser));
       setAuthState(prevState => ({
         ...prevState,

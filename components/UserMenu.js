@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, Pressable } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, Pressable, Image } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useLeague } from '../context/LeagueContext';
@@ -8,11 +8,14 @@ import * as Animatable from 'react-native-animatable';
 
 const UserMenu = ({ isVisible, onClose }) => {
   const router = useRouter();
-  const { leagues, switchLeague, selectedLeagueId } = useLeague();
-  const { signOut } = useAuth();
+  const { leagues, switchLeague, selectedLeagueId, currentUserMembership } = useLeague();
+  const { signOut, user } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const selectedLeagueName = leagues.find(league => league.id === selectedLeagueId)?.leagueName || 'Select League';
   const animatableRef = useRef(null);
+
+  const displayUserName = currentUserMembership?.displayName || user?.firstName;
+  const displayIconUrl = currentUserMembership?.iconUrl;
 
   const navigateTo = (path) => {
     closeMenu();
@@ -49,6 +52,14 @@ const UserMenu = ({ isVisible, onClose }) => {
           duration={500}
           style={styles.modalView}
         >
+          <View style={styles.userInfoContainer}>
+            {displayIconUrl && (
+              <Image source={{ uri: displayIconUrl }} style={styles.userIcon} />
+            )}
+            <Text style={styles.userName}>{displayUserName}</Text>
+          </View>
+          <View style={styles.separator} />
+
           {leagues.length > 0 && (
             <>
               <TouchableOpacity
@@ -132,6 +143,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#ddd',
     width: '100%',
     marginVertical: 5,
+  },
+  userInfoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  userIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 10,
+  },
+  userName: {
+    fontSize: 20,
+    fontWeight: 'bold',
   },
     dropdownTrigger: {
     paddingVertical: 10,
