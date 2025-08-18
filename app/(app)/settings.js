@@ -35,7 +35,7 @@ const SettingsScreen = () => {
 
     // Fetch league-specific player settings
     const fetchPlayerSettings = async () => {
-      if (!selectedLeagueId || !user || isLoading) return; // Added isLoading check
+      if (!selectedLeagueId || !user || isLoading) return;
       setLoading(true);
       try {
         const response = await axios.get(
@@ -58,7 +58,7 @@ const SettingsScreen = () => {
   }, [user, selectedLeagueId, isLoading]);
 
   const handleUpdateAccount = async () => {
-    if (!user || !token) return; // Corrected check
+    if (!user || !token) return;
     setLoading(true);
     try {
       const oldEmail = user.email; // Store old email
@@ -90,7 +90,7 @@ const SettingsScreen = () => {
   };
 
   const handleChangePassword = async () => {
-    if (!user || !token) return; // Corrected check
+    if (!user || !token) return;
     if (newPassword !== confirmNewPassword) {
       Alert.alert('Error', 'New password and confirmation do not match.');
       return;
@@ -117,19 +117,17 @@ const SettingsScreen = () => {
   };
 
   const handleUpdatePlayerSettings = async () => {
-    if (!user || !token) return; // Corrected check
+    if (!user || !token) return;
     setLoading(true);
     try {
       const response = await axios.put(
-        `${API_BASE_URL}/api/leagues/${selectedLeagueId}/members/me`, // Changed 'memberships' to 'members'
+        `${API_BASE_URL}/api/leagues/${selectedLeagueId}/members/me`,
         { displayName, iconUrl },
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      // Optionally, refresh league context if needed, though display name might not be in main league DTO
-      // If the display name is shown in the UserMenu, we might need to trigger a re-fetch of leagues
-            reloadLeagues(); // Re-fetch leagues to update any displayed player names
+      reloadLeagues(); // Re-fetch leagues to update any displayed player names
       Alert.alert('Success', 'Player settings updated successfully!');
     } catch (error) {
       console.error('Error updating player settings:', error);
