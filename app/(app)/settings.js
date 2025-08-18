@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
-import { View, Text, StyleSheet, TextInput, Alert, ActivityIndicator, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Alert, ActivityIndicator, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
 import axios from 'axios';
@@ -8,7 +8,7 @@ import { API_BASE_URL } from '../../src/config';
 
 const SettingsScreen = () => {
   const { user, updateAuthUser, isLoading, token, signOut } = useAuth();
-  const { selectedLeagueId, reloadLeagues } = useLeague();
+  const { selectedLeagueId, reloadLeagues, reloadCurrentUserMembership } = useLeague();
   const router = useRouter();
 
   // Account Settings State
@@ -127,7 +127,7 @@ const SettingsScreen = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      reloadLeagues(); // Re-fetch leagues to update any displayed player names
+      reloadCurrentUserMembership(); // Re-fetch current user's membership to update displayed player name/icon
       Alert.alert('Success', 'Player settings updated successfully!');
     } catch (error) {
       console.error('Error updating player settings:', error);
@@ -182,6 +182,11 @@ const SettingsScreen = () => {
 
         <Text style={styles.label}>Icon URL:</Text>
         <TextInput style={styles.input} value={iconUrl} onChangeText={setIconUrl} keyboardType="url" autoCapitalize="none" />
+        {iconUrl ? (
+          <Image source={{ uri: iconUrl }} style={styles.iconPreview} />
+        ) : (
+          <Text style={styles.noPreviewText}>No icon URL provided</Text>
+        )}
 
         <TouchableOpacity style={styles.button} onPress={handleUpdatePlayerSettings} disabled={loading}>
           <Text style={styles.buttonText}>Update Player Settings</Text>
@@ -248,6 +253,20 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     paddingHorizontal: 10,
     fontSize: 16,
+  },
+  iconPreview: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    alignSelf: 'center',
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  noPreviewText: {
+    textAlign: 'center',
+    color: '#888',
+    marginBottom: 15,
   },
   loadingIndicator: {
     position: 'absolute',
