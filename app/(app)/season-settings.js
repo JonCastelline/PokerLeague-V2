@@ -12,8 +12,6 @@ const SeasonSettingsPage = () => {
   const { token } = useAuth();
   const { selectedLeagueId, currentUserMembership, loadingCurrentUserMembership } = useLeague();
 
-  
-
   // State for all seasons
   const [seasons, setSeasons] = useState([]);
   const [loadingSeasons, setLoadingSeasons] = useState(true);
@@ -25,7 +23,17 @@ const SeasonSettingsPage = () => {
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [errorSettings, setErrorSettings] = useState(null);
 
-  
+  // NEW: State for Blind Levels and Place Points
+  const [blindLevels, setBlindLevels] = useState([]);
+  const [placePoints, setPlacePoints] = useState([]);
+
+  // NEW: State for adding new blind level
+  const [addBlindLevelModalVisible, setAddBlindLevelModalVisible] = useState(false);
+  const [newBlindLevel, setNewBlindLevel] = useState({ level: '', smallBlind: '', bigBlind: '' });
+
+  // NEW: State for adding new place point
+  const [addPlacePointModalVisible, setAddPlacePointModalVisible] = useState(false);
+  const [newPlacePoint, setNewPlacePoint] = useState({ place: '', points: '' });
 
   // State for create season modal
   const [createSeasonModalVisible, setCreateSeasonModalVisible] = useState(false);
@@ -56,15 +64,6 @@ const SeasonSettingsPage = () => {
 
   const isAdmin = currentUserMembership?.role === 'ADMIN' || currentUserMembership?.isOwner;
 
-  
-
-  
-
-
-  
-
-  
-
   const fetchSettings = useCallback(async (seasonIdToFetch = null) => {
     if (!selectedLeagueId || !token) return;
     setLoadingSettings(true);
@@ -82,6 +81,9 @@ const SeasonSettingsPage = () => {
             setSettings(null);
             setSelectedSeason(null);
             setLoadingSettings(false);
+            // NEW: Clear blindLevels and placePoints if no settings
+            setBlindLevels([]);
+            setPlacePoints([]);
             return; // Exit early, no settings to fetch
           }
           throw new Error(`HTTP error! status: ${seasonResponse.status}`);
@@ -99,6 +101,9 @@ const SeasonSettingsPage = () => {
         if (!settingsResponse.ok) throw new Error(`HTTP error! status: ${settingsResponse.status}`);
         const settingsData = await settingsResponse.json();
         setSettings(settingsData);
+        // NEW: Populate blindLevels and placePoints state
+        setBlindLevels(settingsData.blindLevels || []);
+        setPlacePoints(settingsData.placePoints || []);
       }
 
     } catch (e) {
@@ -154,6 +159,9 @@ const SeasonSettingsPage = () => {
       // If no seasons and not loading, ensure settings are cleared
       setSettings(null);
       setSelectedSeason(null);
+      // NEW: Clear blindLevels and placePoints if no settings
+      setBlindLevels([]);
+      setPlacePoints([]);
     }
   }, [seasons, selectedSeason, loadingSeasons, fetchSettings]);
 
@@ -272,13 +280,20 @@ const SeasonSettingsPage = () => {
       if (!selectedSeason?.id || !token || !settings) return;
       setLoadingSettings(true);
       try {
+          // NEW: Include blindLevels and placePoints in the settings object
+          const settingsToSave = {
+              ...settings,
+              blindLevels: blindLevels,
+              placePoints: placePoints,
+          };
+
           const response = await fetch(`${API_BASE_URL}/api/seasons/${selectedSeason.id}/settings`, {
               method: 'PUT',
               headers: {
                   'Authorization': `Bearer ${token}`,
                   'Content-Type': 'application/json',
               },
-              body: JSON.stringify(settings),
+              body: JSON.stringify(settingsToSave), // Use settingsToSave
           });
           if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
           alert('Settings saved successfully!');
@@ -290,11 +305,6 @@ const SeasonSettingsPage = () => {
           setLoadingSettings(false);
       }
   };
-
-
-  
-
-  
 
   const renderSettings = () => {
     if (loadingSettings || loadingCurrentUserMembership) {
@@ -402,8 +412,6 @@ const SeasonSettingsPage = () => {
             />
         </View>
 
-        
-
         <View style={styles.settingItem}>
             <View style={{ flexDirection: 'column', width: '100%' }}>
                 <Text style={styles.settingLabel}>Bounty on Leader Absence</Text>
@@ -419,6 +427,41 @@ const SeasonSettingsPage = () => {
             </View>
         </View>
 
+        {/* NEW: Blind Levels Section */}
+        <Text style={styles.subtitle}>Blind Levels</Text>
+        {blindLevels.map((bl, index) => (
+          <View key={index} style={styles.blindLevelItem}>
+            <Text>Level: {bl.level}</Text>
+            <Text>Small Blind: {bl.smallBlind}</Text>
+            <Text>Big Blind: {bl.bigBlind}</Text>
+          </View>
+        ))}
+        {isAdmin && !isSeasonFinalized && (
+          <TouchableOpacity
+            style={[styles.button, styles.buttonPrimaryRed, styles.actionButton]}
+            onPress={() => setAddBlindLevelModalVisible(true)}
+          >
+            <Text style={styles.textStyle}>Add Blind Level</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* NEW: Place Points Section */}
+        <Text style={styles.subtitle}>Place Points</Text>
+        {placePoints.map((pp, index) => (
+          <View key={index} style={styles.placePointItem}>
+            <Text>Place: {pp.place}</Text>
+            <Text>Points: {pp.points}</Text>
+          </View>
+        ))}
+        {isAdmin && !isSeasonFinalized && (
+          <TouchableOpacity
+            style={[styles.button, styles.buttonPrimaryRed, styles.actionButton]}
+            onPress={() => setAddPlacePointModalVisible(true)}
+          >
+            <Text style={styles.textStyle}>Add Place Point</Text>
+          </TouchableOpacity>
+        )}
+
         {isSeasonFinalized
           ? null
           : (isAdmin
@@ -430,8 +473,7 @@ const SeasonSettingsPage = () => {
                   <Text style={styles.textStyle}>Save Settings</Text>
                 </TouchableOpacity>
               )
-              : null)
-        }
+              : null)}
       </View>
     );
   };
@@ -468,8 +510,7 @@ const SeasonSettingsPage = () => {
                 <Picker
                   selectedValue={String(selectedSeason?.id)}
                   style={styles.picker}
-                  onValueChange={(itemValue) => handleSeasonChange(Number(itemValue))}
-                >
+                  onValueChange={(itemValue) => handleSeasonChange(Number(itemValue))}>
                   {seasons.map((s) => {
                     const label = typeof s.seasonName === 'string' ? s.seasonName : String(s.seasonName ?? 'Unnamed');
                     const value = String(s.id);
@@ -551,6 +592,118 @@ const SeasonSettingsPage = () => {
           </View>
         </Modal>
 
+        {/* NEW: Add Blind Level Modal */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={addBlindLevelModalVisible}
+          onRequestClose={() => setAddBlindLevelModalVisible(false)}
+        >
+          <View style={styles.centeredView}>
+            <View style={styles.modalView}>
+              <Text style={styles.modalText}>Add New Blind Level</Text>
+              <TextInput
+                style={[styles.input, styles.modalInput]}
+                placeholder="Level"
+                keyboardType="numeric"
+                value={newBlindLevel.level}
+                onChangeText={(text) => setNewBlindLevel({ ...newBlindLevel, level: text })}
+              />
+              <TextInput
+                style={[styles.input, styles.modalInput]}
+                placeholder="Small Blind"
+                keyboardType="numeric"
+                value={newBlindLevel.smallBlind}
+                onChangeText={(text) => setNewBlindLevel({ ...newBlindLevel, smallBlind: text })}
+              />
+              <TextInput
+                style={[styles.input, styles.modalInput]}
+                placeholder="Big Blind"
+                keyboardType="numeric"
+                value={newBlindLevel.bigBlind}
+                onChangeText={(text) => setNewBlindLevel({ ...newBlindLevel, bigBlind: text })}
+              />
+              <TouchableOpacity
+                style={[styles.button, styles.buttonPrimaryRed, styles.modalButton]}
+                onPress={() => {
+                  // Basic validation
+                  if (newBlindLevel.level && newBlindLevel.smallBlind && newBlindLevel.bigBlind) {
+                    setBlindLevels([...blindLevels, {
+                      level: parseInt(newBlindLevel.level),
+                      smallBlind: parseInt(newBlindLevel.smallBlind),
+                      bigBlind: parseInt(newBlindLevel.bigBlind),
+                    }]);
+                    setNewBlindLevel({ level: '', smallBlind: '', bigBlind: '' }); // Clear form
+                    setAddBlindLevelModalVisible(false);
+                  } else {
+                    Alert.alert('Error', 'Please fill all fields.');
+                  }
+                }}
+              >
+                <Text style={styles.textStyle}>Add Blind Level</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, styles.buttonClose, styles.modalButton]}
+                onPress={() => setAddBlindLevelModalVisible(false)}
+              >
+                <Text style={styles.textStyle}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
+        {/* NEW: Add Place Point Modal */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={addPlacePointModalVisible}
+          onRequestClose={() => setAddPlacePointModalVisible(false)}
+        >
+          <View style={styles.centeredView}>
+            <View style={styles.modalView}>
+              <Text style={styles.modalText}>Add New Place Point</Text>
+              <TextInput
+                style={[styles.input, styles.modalInput]}
+                placeholder="Place"
+                keyboardType="numeric"
+                value={newPlacePoint.place}
+                onChangeText={(text) => setNewPlacePoint({ ...newPlacePoint, place: text })}
+              />
+              <TextInput
+                style={[styles.input, styles.modalInput]}
+                placeholder="Points"
+                keyboardType="decimal-pad"
+                value={newPlacePoint.points}
+                onChangeText={(text) => setNewPlacePoint({ ...newPlacePoint, points: text })}
+              />
+              <TouchableOpacity
+                style={[styles.button, styles.buttonPrimaryRed, styles.modalButton]}
+                onPress={() => {
+                  // Basic validation
+                  if (newPlacePoint.place && newPlacePoint.points) {
+                    setPlacePoints([...placePoints, {
+                      place: parseInt(newPlacePoint.place),
+                      points: parseFloat(newPlacePoint.points),
+                    }]);
+                    setNewPlacePoint({ place: '', points: '' }); // Clear form
+                    setAddPlacePointModalVisible(false);
+                  } else {
+                    Alert.alert('Error', 'Please fill all fields.');
+                  }
+                }}
+              >
+                <Text style={styles.textStyle}>Add Place Point</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, styles.buttonClose, styles.modalButton]}
+                onPress={() => setAddPlacePointModalVisible(false)}
+              >
+                <Text style={styles.textStyle}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
         <DateTimePickerModal
           isVisible={isDatePickerVisible}
           mode="date"
@@ -559,7 +712,7 @@ const SeasonSettingsPage = () => {
           date={datePickerField === 'startDate' ? (newSeasonStartDate || new Date()) : (newSeasonEndDate || new Date())}
         />
 
-        
+
       </ScrollView>
     </PageLayout>
   );
@@ -785,7 +938,22 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 10,
     fontWeight: 'bold',
-  }
+  },
+  // NEW: Styles for Blind Levels and Place Points
+  blindLevelItem: {
+    backgroundColor: '#e0e0e0',
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 5,
+    width: '100%',
+  },
+  placePointItem: {
+    backgroundColor: '#e0e0e0',
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 5,
+    width: '100%',
+  },
 });
 
 export default SeasonSettingsPage;
