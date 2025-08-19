@@ -23,6 +23,10 @@ const SeasonSettingsPage = () => {
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [errorSettings, setErrorSettings] = useState(null);
 
+  // State for Games
+  const [games, setGames] = useState([]);
+  const [loadingGames, setLoadingGames] = useState(false);
+
   // State for Blind Levels and Place Points
   const [blindLevels, setBlindLevels] = useState([]);
   const [placePoints, setPlacePoints] = useState([]);
@@ -51,6 +55,24 @@ const SeasonSettingsPage = () => {
   const [newSeasonStartDate, setNewSeasonStartDate] = useState(null);
   const [newSeasonEndDate, setNewSeasonEndDate] = useState(null);
 
+  // State for create game modal
+  const [createGameModalVisible, setCreateGameModalVisible] = useState(false);
+  const [newGameDate, setNewGameDate] = useState(new Date());
+  const [newGameTime, setNewGameTime] = useState(new Date()); // Added newGameTime
+  const [newGameLocation, setNewGameLocation] = useState('');
+  const [isGameDatePickerVisible, setGameDatePickerVisible] = useState(false);
+  const [isGameTimePickerVisible, setGameTimePickerVisible] = useState(false); // Added isGameTimePickerVisible
+
+  // State for editing game modal
+  const [editGameModalVisible, setEditGameModalVisible] = useState(false);
+  const [currentEditingGame, setCurrentEditingGame] = useState(null);
+  const [editedGameName, setEditedGameName] = useState('');
+  const [editedGameDate, setEditedGameDate] = useState(new Date());
+  const [editedGameTime, setEditedGameTime] = useState(new Date()); // Added editedGameTime
+  const [editedGameLocation, setEditedGameLocation] = useState('');
+  const [isEditGameDatePickerVisible, setEditGameDatePickerVisible] = useState(false);
+  const [isEditGameTimePickerVisible, setEditGameTimePickerVisible] = useState(false); // Added isEditGameTimePickerVisible
+
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
   const [datePickerField, setDatePickerField] = useState(null); // 'startDate' or 'endDate'
 
@@ -74,6 +96,23 @@ const SeasonSettingsPage = () => {
 
   const isAdmin = currentUserMembership?.role === 'ADMIN' || currentUserMembership?.isOwner;
 
+  const fetchGames = useCallback(async (seasonId) => {
+    if (!seasonId || !token) return;
+    setLoadingGames(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/seasons/${seasonId}/games`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const gamesData = await response.json();
+      setGames(gamesData);
+    } catch (e) {
+      console.error("Failed to fetch games:", e);
+    } finally {
+      setLoadingGames(false);
+    }
+  }, [token]);
+
   const fetchSettings = useCallback(async (seasonIdToFetch = null) => {
     if (!selectedLeagueId || !token) return;
     setLoadingSettings(true);
@@ -94,6 +133,7 @@ const SeasonSettingsPage = () => {
             // Clear blindLevels and placePoints if no settings
             setBlindLevels([]);
             setPlacePoints([]);
+            setGames([]);
             return; // Exit early, no settings to fetch
           }
           throw new Error(`HTTP error! status: ${seasonResponse.status}`);
@@ -114,6 +154,7 @@ const SeasonSettingsPage = () => {
         // Populate blindLevels and placePoints state, and sort them
         setBlindLevels((settingsData.blindLevels || []).sort((a, b) => a.level - b.level));
         setPlacePoints(settingsData.placePoints || []);
+        fetchGames(targetSeasonId);
       }
 
     } catch (e) {
@@ -122,7 +163,7 @@ const SeasonSettingsPage = () => {
     } finally {
       setLoadingSettings(false);
     }
-  }, [selectedLeagueId, token]);
+  }, [selectedLeagueId, token, fetchGames]);
 
   const fetchAllSeasons = useCallback(async () => {
     if (!selectedLeagueId || !token) return;
@@ -172,6 +213,7 @@ const SeasonSettingsPage = () => {
       // Clear blindLevels and placePoints if no settings
       setBlindLevels([]);
       setPlacePoints([]);
+      setGames([]);
     }
   }, [seasons, selectedSeason, loadingSeasons, fetchSettings]);
 
@@ -248,13 +290,90 @@ const SeasonSettingsPage = () => {
     }
   };
 
+  const handleAddNewGame = async () => {
+    if (!selectedSeason || !token) return;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/seasons/${selectedSeason.id}/games`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          gameDate: DateTime.fromJSDate(newGameDate).toFormat('yyyy-MM-dd'),
+          gameTime: DateTime.fromJSDate(newGameTime).toFormat('HH:mm:ss'), // Use newGameTime
+          gameLocation: newGameLocation,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`Failed to add game: ${errorData}`);
+      }
+
+      alert('Game added successfully!');
+      setCreateGameModalVisible(false);
+      setNewGameLocation(''); // Clear the location field
+      setNewGameTime(new Date()); // Clear the time field
+      fetchGames(selectedSeason.id); // Refresh games list
+    } catch (e) {
+      console.error("Failed to add game:", e);
+      alert(e.message);
+    }
+  };
+
+  const handleEditGame = (game) => {
+    setCurrentEditingGame(game);
+    setEditedGameName(game.gameName);
+    setEditedGameDate(DateTime.fromISO(game.gameDate).toJSDate());
+    setEditedGameLocation(game.gameLocation || '');
+    setEditGameModalVisible(true);
+  };
+
+  const handleUpdateGame = async () => {
+    if (!currentEditingGame || !token || !selectedSeason) return;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/seasons/${selectedSeason.id}/games/${currentEditingGame.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          gameName: editedGameName,
+          gameDate: DateTime.fromJSDate(editedGameDate).toFormat('yyyy-MM-dd'),
+          gameTime: DateTime.fromJSDate(editedGameTime).toFormat('HH:mm:ss'), // Use editedGameTime
+          gameLocation: editedGameLocation,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`Failed to update game: ${errorData}`);
+      }
+
+      alert('Game updated successfully!');
+      setEditGameModalVisible(false);
+      setCurrentEditingGame(null);
+      setEditedGameName('');
+      setEditedGameDate(new Date());
+      setEditedGameTime(new Date()); // Clear the time field
+      setEditedGameLocation('');
+      fetchGames(selectedSeason.id); // Refresh games list
+    } catch (e) {
+      console.error("Failed to update game:", e);
+      alert(e.message);
+    }
+  };
+
   const handleFinalizeSeason = async () => {
     if (!selectedSeason || !token) return;
 
     Alert.alert(
       "Finalize Season",
-      `Are you sure you want to finalize ${selectedSeason.seasonName}? Once finalized, all games, results, and settings will be permanently locked and cannot be edited. This action cannot be undone.`,
-      [
+      `Are you sure you want to finalize ${selectedSeason.seasonName}? Once finalized, all games, results, and settings will be permanently locked and cannot be edited. This action cannot be undone.`, [
         { text: "Cancel", style: "cancel" },
         {
           text: "Confirm",
@@ -465,6 +584,302 @@ const SeasonSettingsPage = () => {
         {isSeasonFinalized ? (
           <Text style={styles.finalizedMessage}>This season has been finalized and is now read-only.</Text>
         ) : null}
+
+        {/* Games Section */}
+        <Text style={styles.subtitle}>Games</Text>
+        {loadingGames ? (
+          <ActivityIndicator size="small" color="#fb5b5a" />
+        ) : games.length === 0 ? (
+          <Text>No games have been added to this season yet.</Text>
+        ) : (
+          games.map((game, index) => (
+            <View key={index} style={styles.gameItem}>
+              <View>
+                <Text>{game.gameName}</Text>
+                <Text>{DateTime.fromISO(game.gameDate).toFormat('MM/dd/yyyy')}</Text>
+                {game.gameTime && <Text>Time: {DateTime.fromISO(game.gameTime).toFormat('hh:mm a')}</Text>}
+                {game.gameLocation && <Text>Location: {game.gameLocation}</Text>}
+              </View>
+              {isAdmin && !isSeasonFinalized && (
+                <TouchableOpacity
+                  style={[styles.button, styles.buttonPrimary, styles.smallButton]}
+                  onPress={() => handleEditGame(game)}
+                >
+                  <Text style={styles.textStyle}>Edit</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          ))
+        )}
+        {isAdmin && !isSeasonFinalized && (
+          <TouchableOpacity
+            style={[styles.button, styles.buttonPrimaryRed, styles.actionButton]}
+            onPress={() => {
+              // Calculate the correct default date for the modal and picker (local time, no timezone offset)
+              const today = new Date();
+              let defaultDate = today;
+              if (selectedSeason?.startDate && selectedSeason?.endDate) {
+                console.log("DEBUG: selectedSeason.startDate:", selectedSeason.startDate);
+                console.log("DEBUG: selectedSeason.endDate:", selectedSeason.endDate);
+                // Manually parse the date components to avoid timezone issues during initial parsing
+                const [startDatePart] = selectedSeason.startDate.split('T');
+                const [startYear, startMonth, startDay] = startDatePart.split('-').map(Number);
+
+                const [endDatePart] = selectedSeason.endDate.split('T');
+                const [endYear, endMonth, endDay] = endDatePart.split('-').map(Number);
+
+                const seasonStartLuxon = DateTime.local(startYear, startMonth, startDay);
+                const seasonEndLuxon = DateTime.local(endYear, endMonth, endDay);
+
+                console.log("DEBUG: seasonStartLuxon.year:", seasonStartLuxon.year);
+                console.log("DEBUG: seasonStartLuxon.month:", seasonStartLuxon.month); // This is 1-indexed
+                console.log("DEBUG: seasonStartLuxon.day:", seasonStartLuxon.day);
+
+                console.log("DEBUG: seasonEndLuxon.year:", seasonEndLuxon.year);
+                console.log("DEBUG: seasonEndLuxon.month:", seasonEndLuxon.month); // This is 1-indexed
+                console.log("DEBUG: seasonEndLuxon.day:", seasonEndLuxon.day);
+
+                const sy = seasonStartLuxon.year;
+                const sm = seasonStartLuxon.month;
+                const sd = seasonStartLuxon.day;
+
+                const ey = seasonEndLuxon.year;
+                const em = seasonEndLuxon.month;
+                const ed = seasonEndLuxon.day;
+
+                const seasonStart = new Date(sy, sm - 1, sd, 0, 0, 0, 0);
+                const seasonEnd = new Date(ey, em - 1, ed, 0, 0, 0, 0);
+                console.log("DEBUG: seasonStart Date object:", seasonStart);
+                console.log("DEBUG: seasonEnd Date object:", seasonEnd);
+                if (today >= seasonStart && today <= seasonEnd) {
+                  defaultDate = today;
+                } else if (today < seasonStart) {
+                  defaultDate = seasonStart;
+                } else if (today > seasonEnd) {
+                  defaultDate = seasonEnd;
+                }
+              }
+              setNewGameDate(defaultDate);
+              setCreateGameModalVisible(true);
+            }}
+          >
+            <Text style={styles.textStyle}>Add New Game</Text>
+          </TouchableOpacity>
+        )}
+        {/* Create Game Modal */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={createGameModalVisible}
+          onRequestClose={() => setCreateGameModalVisible(false)}>
+          <View style={styles.centeredView}>
+            <View style={styles.modalView}>
+              <Text style={styles.modalText}>Create New Game</Text>
+              <TouchableOpacity
+                onPress={() => setGameDatePickerVisible(true)}
+                style={styles.dateInputButton}
+              >
+                <Text style={styles.dateInputText}>
+                  Game Date: {DateTime.fromJSDate(newGameDate).toFormat('MM/dd/yyyy')}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setGameTimePickerVisible(true)} // New time picker trigger
+                style={styles.dateInputButton}
+              >
+                <Text style={styles.dateInputText}>
+                  Game Time: {DateTime.fromJSDate(newGameTime).toFormat('hh:mm a')}
+                </Text>
+              </TouchableOpacity>
+              <TextInput
+                style={[styles.input, styles.modalInput]}
+                placeholder="Game Location (Optional)"
+                value={newGameLocation}
+                onChangeText={setNewGameLocation}
+              />
+              <TouchableOpacity
+                style={[styles.button, styles.buttonPrimaryRed, styles.modalButton]}
+                onPress={handleAddNewGame}
+              >
+                <Text style={styles.textStyle}>Create Game</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, styles.buttonClose, styles.modalButton]}
+                onPress={() => setCreateGameModalVisible(false)}>
+                <Text style={styles.textStyle}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Game Date Picker Modal */}
+        <DateTimePickerModal
+          isVisible={isGameDatePickerVisible}
+          mode="date"
+          onConfirm={(date) => {
+            setNewGameDate(date);
+            setGameDatePickerVisible(false);
+          }}
+          onCancel={() => setGameDatePickerVisible(false)}
+          date={newGameDate}
+          minimumDate={selectedSeason?.startDate ? new Date(
+            (() => {
+              const [startDatePart] = selectedSeason.startDate.split('T');
+              const [startYear, startMonth, startDay] = startDatePart.split('-').map(Number);
+              return startYear;
+            })(),
+            (() => {
+              const [startDatePart] = selectedSeason.startDate.split('T');
+              const [startYear, startMonth, startDay] = startDatePart.split('-').map(Number);
+              return startMonth - 1; // Month is 0-indexed for Date constructor
+            })(),
+            (() => {
+              const [startDatePart] = selectedSeason.startDate.split('T');
+              const [startYear, startMonth, startDay] = startDatePart.split('-').map(Number);
+              return startDay;
+            })()
+          ) : undefined}
+          maximumDate={selectedSeason?.endDate ? new Date(
+            (() => {
+              const [endDatePart] = selectedSeason.endDate.split('T');
+              const [endYear, endMonth, endDay] = endDatePart.split('-').map(Number);
+              return endYear;
+            })(),
+            (() => {
+              const [endDatePart] = selectedSeason.endDate.split('T');
+              const [endYear, endMonth, endDay] = endDatePart.split('-').map(Number);
+              return endMonth - 1; // Month is 0-indexed for Date constructor
+            })(),
+            (() => {
+              const [endDatePart] = selectedSeason.endDate.split('T');
+              const [endYear, endMonth, endDay] = endDatePart.split('-').map(Number);
+              return endDay;
+            })()
+          ) : undefined}
+        />
+
+        {/* Game Time Picker Modal */}
+        <DateTimePickerModal
+          isVisible={isGameTimePickerVisible}
+          mode="time"
+          onConfirm={(time) => {
+            setNewGameTime(time);
+            setGameTimePickerVisible(false);
+          }}
+          onCancel={() => setGameTimePickerVisible(false)}
+          date={newGameTime}
+        />
+
+        {/* Edit Game Modal */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={editGameModalVisible}
+          onRequestClose={() => setEditGameModalVisible(false)}>
+          <View style={styles.centeredView}>
+            <View style={styles.modalView}>
+              <Text style={styles.modalText}>Edit Game</Text>
+              <TextInput
+                style={[styles.input, styles.modalInput]}
+                placeholder="Game Name"
+                value={editedGameName}
+                onChangeText={setEditedGameName}
+              />
+              <TouchableOpacity
+                onPress={() => setEditGameDatePickerVisible(true)}
+                style={styles.dateInputButton}
+              >
+                <Text style={styles.dateInputText}>
+                  Game Date: {DateTime.fromJSDate(editedGameDate).toFormat('MM/dd/yyyy')}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setEditGameTimePickerVisible(true)} // New time picker trigger
+                style={styles.dateInputButton}
+              >
+                <Text style={styles.dateInputText}>
+                  Game Time: {DateTime.fromJSDate(editedGameTime).toFormat('hh:mm a')}
+                </Text>
+              </TouchableOpacity>
+              <TextInput
+                style={[styles.input, styles.modalInput]}
+                placeholder="Game Location (Optional)"
+                value={editedGameLocation}
+                onChangeText={setEditedGameLocation}
+              />
+              <TouchableOpacity
+                style={[styles.button, styles.buttonPrimaryRed, styles.modalButton]}
+                onPress={handleUpdateGame}
+              >
+                <Text style={styles.textStyle}>Save Changes</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, styles.buttonClose, styles.modalButton]}
+                onPress={() => setEditGameModalVisible(false)}>
+                <Text style={styles.textStyle}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Edit Game Date Picker Modal */}
+        <DateTimePickerModal
+          isVisible={isEditGameDatePickerVisible}
+          mode="date"
+          onConfirm={(date) => {
+            setEditedGameDate(date);
+            setEditGameDatePickerVisible(false);
+          }}
+          onCancel={() => setEditGameDatePickerVisible(false)}
+          date={editedGameDate}
+          minimumDate={selectedSeason?.startDate ? new Date(
+            (() => {
+              const [startDatePart] = selectedSeason.startDate.split('T');
+              const [startYear, startMonth, startDay] = startDatePart.split('-').map(Number);
+              return startYear;
+            })(),
+            (() => {
+              const [startDatePart] = selectedSeason.startDate.split('T');
+              const [startYear, startMonth, startDay] = startDatePart.split('-').map(Number);
+              return startMonth - 1; // Month is 0-indexed for Date constructor
+            })(),
+            (() => {
+              const [startDatePart] = selectedSeason.startDate.split('T');
+              const [startYear, startMonth, startDay] = startDatePart.split('-').map(Number);
+              return startDay;
+            })()
+          ) : undefined}
+          maximumDate={selectedSeason?.endDate ? new Date(
+            (() => {
+              const [endDatePart] = selectedSeason.endDate.split('T');
+              const [endYear, endMonth, endDay] = endDatePart.split('-').map(Number);
+              return endYear;
+            })(),
+            (() => {
+              const [endDatePart] = selectedSeason.endDate.split('T');
+              const [endYear, endMonth, endDay] = endDatePart.split('-').map(Number);
+              return endMonth - 1; // Month is 0-indexed for Date constructor
+            })(),
+            (() => {
+              const [endDatePart] = selectedSeason.endDate.split('T');
+              const [endYear, endMonth, endDay] = endDatePart.split('-').map(Number);
+              return endDay;
+            })()
+          ) : undefined}
+        />
+
+        {/* Edit Game Time Picker Modal */}
+        <DateTimePickerModal
+          isVisible={isEditGameTimePickerVisible}
+          mode="time"
+          onConfirm={(time) => {
+            setEditedGameTime(time);
+            setEditGameTimePickerVisible(false);
+          }}
+          onCancel={() => setEditGameTimePickerVisible(false)}
+          date={editedGameTime}
+        />
+
         <View style={styles.settingItem}>
             <Text style={styles.settingLabel}>Track Kills</Text>
             <Switch
@@ -573,7 +988,7 @@ const SeasonSettingsPage = () => {
         {blindLevels.map((bl, index) => (
           <TouchableOpacity
             key={index}
-            style={[
+            style={[ 
               styles.blindLevelItem,
               blindLevelErrors[index] && { borderColor: 'red', borderWidth: 2 }
             ]}
@@ -616,7 +1031,7 @@ const SeasonSettingsPage = () => {
         {placePoints.map((pp, index) => (
           <TouchableOpacity
             key={index}
-            style={[
+            style={[ 
               styles.placePointItem,
               placePointErrors && placePointErrors[index] && { borderColor: 'red', borderWidth: 2 }
             ]}
@@ -759,8 +1174,7 @@ const SeasonSettingsPage = () => {
           animationType="slide"
           transparent={true}
           visible={createSeasonModalVisible}
-          onRequestClose={() => setCreateSeasonModalVisible(false)}
-        >
+          onRequestClose={() => setCreateSeasonModalVisible(false)}>
           <View style={styles.centeredView}>
             <View style={styles.modalView}>
               <Text style={styles.modalText}>Create New Season</Text>
@@ -789,8 +1203,7 @@ const SeasonSettingsPage = () => {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.button, styles.buttonClose, styles.modalButton]}
-                onPress={() => setCreateSeasonModalVisible(false)}
-              >
+                onPress={() => setCreateSeasonModalVisible(false)}>
                 <Text style={styles.textStyle}>Cancel</Text>
               </TouchableOpacity>
             </View>
@@ -802,8 +1215,7 @@ const SeasonSettingsPage = () => {
           animationType="slide"
           transparent={true}
           visible={addBlindLevelModalVisible}
-          onRequestClose={() => setAddBlindLevelModalVisible(false)}
-        >
+          onRequestClose={() => setAddBlindLevelModalVisible(false)}>
           <View style={styles.centeredView}>
             <View style={styles.modalView}>
               <Text style={styles.modalText}>Add New Blind Level</Text>
@@ -832,8 +1244,7 @@ const SeasonSettingsPage = () => {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.button, styles.buttonClose, styles.modalButton]}
-                onPress={() => setAddBlindLevelModalVisible(false)}
-              >
+                onPress={() => setAddBlindLevelModalVisible(false)}>
                 <Text style={styles.textStyle}>Cancel</Text>
               </TouchableOpacity>
             </View>
@@ -845,8 +1256,7 @@ const SeasonSettingsPage = () => {
           animationType="slide"
           transparent={true}
           visible={editBlindLevelModalVisible}
-          onRequestClose={() => setEditBlindLevelModalVisible(false)}
-        >
+          onRequestClose={() => setEditBlindLevelModalVisible(false)}>
           <View style={styles.centeredView}>
             <View style={styles.modalView}>
               <Text style={styles.modalText}>Edit Blind Level</Text>
@@ -867,7 +1277,7 @@ const SeasonSettingsPage = () => {
                       <Text>Level: {currentEditingBlindLevel.level}</Text>
                     </View>
                     <TextInput
-                      style={[
+                      style={[ 
                         styles.input,
                         styles.modalInput,
                         editBlindLevelErrors[currentEditingBlindLevelIndex] && { borderColor: 'red' }
@@ -878,7 +1288,7 @@ const SeasonSettingsPage = () => {
                       onChangeText={(text) => setCurrentEditingBlindLevel({ ...currentEditingBlindLevel, smallBlind: text })}
                     />
                     <TextInput
-                      style={[
+                      style={[ 
                         styles.input,
                         styles.modalInput,
                         editBlindLevelErrors[currentEditingBlindLevelIndex] && { borderColor: 'red' }
@@ -901,11 +1311,11 @@ const SeasonSettingsPage = () => {
                     )}
                   </>
                 );
-              })()}
+              })()
+              }
               <TouchableOpacity
                 style={[styles.button, styles.buttonClose, styles.modalButton]}
-                onPress={() => setEditBlindLevelModalVisible(false)}
-              >
+                onPress={() => setEditBlindLevelModalVisible(false)}>
                 <Text style={styles.textStyle}>Cancel</Text>
               </TouchableOpacity>
             </View>
@@ -917,8 +1327,7 @@ const SeasonSettingsPage = () => {
           animationType="slide"
           transparent={true}
           visible={addPlacePointModalVisible}
-          onRequestClose={() => setAddPlacePointModalVisible(false)}
-        >
+          onRequestClose={() => setAddPlacePointModalVisible(false)}>
           <View style={styles.centeredView}>
             <View style={styles.modalView}>
               <Text style={styles.modalText}>Add New Place Point</Text>
@@ -940,8 +1349,7 @@ const SeasonSettingsPage = () => {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.button, styles.buttonClose, styles.modalButton]}
-                onPress={() => setAddPlacePointModalVisible(false)}
-              >
+                onPress={() => setAddPlacePointModalVisible(false)}>
                 <Text style={styles.textStyle}>Cancel</Text>
               </TouchableOpacity>
             </View>
@@ -953,8 +1361,7 @@ const SeasonSettingsPage = () => {
           animationType="slide"
           transparent={true}
           visible={editPlacePointModalVisible}
-          onRequestClose={() => setEditPlacePointModalVisible(false)}
-        >
+          onRequestClose={() => setEditPlacePointModalVisible(false)}>
           <View style={styles.centeredView}>
             <View style={styles.modalView}>
               <Text style={styles.modalText}>Edit Place Point</Text>
@@ -975,7 +1382,7 @@ const SeasonSettingsPage = () => {
                       <Text>Place: {currentEditingPlacePoint.place}</Text>
                     </View>
                     <TextInput
-                      style={[
+                      style={[ 
                         styles.input,
                         styles.modalInput,
                         editPlacePointErrors[currentEditingPlacePointIndex] && { borderColor: 'red' }
@@ -998,11 +1405,11 @@ const SeasonSettingsPage = () => {
                     )}
                   </>
                 );
-              })()}
+              })()
+              }
               <TouchableOpacity
                 style={[styles.button, styles.buttonClose, styles.modalButton]}
-                onPress={() => setEditPlacePointModalVisible(false)}
-              >
+                onPress={() => setEditPlacePointModalVisible(false)}>
                 <Text style={styles.textStyle}>Cancel</Text>
               </TouchableOpacity>
             </View>
@@ -1102,9 +1509,8 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     borderRadius: 5,
     padding: 10,
-    width: '80%',
+    width: 250,
     marginBottom: 10,
-    alignItems: 'center',
   },
   dateInputText: {
     color: '#000',
@@ -1279,9 +1685,25 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 12,
   },
+  gameItem: {
+    backgroundColor: '#e0e0e0',
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 5,
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  smallButton: {
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 5,
+    alignSelf: 'flex-end',
+  },
 });
 
-// --- Blind Level Validation Helper ---
+// --- Blind Level Validation Helper */
 function getBlindLevelValidationErrors(levels) {
   const errors = [];
   for (let i = 0; i < levels.length; i++) {
@@ -1305,7 +1727,7 @@ function getBlindLevelValidationErrors(levels) {
   return errors;
 }
 
-// --- Place Point Validation Helper ---
+// --- Place Point Validation Helper */
 function getPlacePointValidationErrors(pointsArr) {
   const errors = [];
   for (let i = 0; i < pointsArr.length; i++) {
