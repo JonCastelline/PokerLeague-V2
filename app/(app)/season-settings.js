@@ -58,20 +58,20 @@ const SeasonSettingsPage = () => {
   // State for create game modal
   const [createGameModalVisible, setCreateGameModalVisible] = useState(false);
   const [newGameDate, setNewGameDate] = useState(new Date());
-  const [newGameTime, setNewGameTime] = useState(new Date()); // Added newGameTime
+  const [newGameTime, setNewGameTime] = useState(new Date());
   const [newGameLocation, setNewGameLocation] = useState('');
   const [isGameDatePickerVisible, setGameDatePickerVisible] = useState(false);
-  const [isGameTimePickerVisible, setGameTimePickerVisible] = useState(false); // Added isGameTimePickerVisible
+  const [isGameTimePickerVisible, setGameTimePickerVisible] = useState(false);
 
   // State for editing game modal
   const [editGameModalVisible, setEditGameModalVisible] = useState(false);
   const [currentEditingGame, setCurrentEditingGame] = useState(null);
   const [editedGameName, setEditedGameName] = useState('');
   const [editedGameDate, setEditedGameDate] = useState(new Date());
-  const [editedGameTime, setEditedGameTime] = useState(new Date()); // Added editedGameTime
+  const [editedGameTime, setEditedGameTime] = useState(new Date());
   const [editedGameLocation, setEditedGameLocation] = useState('');
   const [isEditGameDatePickerVisible, setEditGameDatePickerVisible] = useState(false);
-  const [isEditGameTimePickerVisible, setEditGameTimePickerVisible] = useState(false); // Added isEditGameTimePickerVisible
+  const [isEditGameTimePickerVisible, setEditGameTimePickerVisible] = useState(false);
 
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
   const [datePickerField, setDatePickerField] = useState(null); // 'startDate' or 'endDate'
@@ -302,7 +302,7 @@ const SeasonSettingsPage = () => {
         },
         body: JSON.stringify({
           gameDate: DateTime.fromJSDate(newGameDate).toFormat('yyyy-MM-dd'),
-          gameTime: DateTime.fromJSDate(newGameTime).toFormat('HH:mm:ss'), // Use newGameTime
+          gameTime: DateTime.fromJSDate(newGameTime).toFormat('HH:mm:ss'),
           gameLocation: newGameLocation,
         }),
       });
@@ -344,7 +344,7 @@ const SeasonSettingsPage = () => {
         body: JSON.stringify({
           gameName: editedGameName,
           gameDate: DateTime.fromJSDate(editedGameDate).toFormat('yyyy-MM-dd'),
-          gameTime: DateTime.fromJSDate(editedGameTime).toFormat('HH:mm:ss'), // Use editedGameTime
+          gameTime: DateTime.fromJSDate(editedGameTime).toFormat('HH:mm:ss'),
           gameLocation: editedGameLocation,
         }),
       });
@@ -619,8 +619,6 @@ const SeasonSettingsPage = () => {
               const today = new Date();
               let defaultDate = today;
               if (selectedSeason?.startDate && selectedSeason?.endDate) {
-                console.log("DEBUG: selectedSeason.startDate:", selectedSeason.startDate);
-                console.log("DEBUG: selectedSeason.endDate:", selectedSeason.endDate);
                 // Manually parse the date components to avoid timezone issues during initial parsing
                 const [startDatePart] = selectedSeason.startDate.split('T');
                 const [startYear, startMonth, startDay] = startDatePart.split('-').map(Number);
@@ -631,26 +629,17 @@ const SeasonSettingsPage = () => {
                 const seasonStartLuxon = DateTime.local(startYear, startMonth, startDay);
                 const seasonEndLuxon = DateTime.local(endYear, endMonth, endDay);
 
-                console.log("DEBUG: seasonStartLuxon.year:", seasonStartLuxon.year);
-                console.log("DEBUG: seasonStartLuxon.month:", seasonStartLuxon.month); // This is 1-indexed
-                console.log("DEBUG: seasonStartLuxon.day:", seasonStartLuxon.day);
+                const seasonStartLuxonYear = seasonStartLuxon.year;
+                const seasonStartLuxonMonth = seasonStartLuxon.month;
+                const seasonStartLuxonDay = seasonStartLuxon.day;
 
-                console.log("DEBUG: seasonEndLuxon.year:", seasonEndLuxon.year);
-                console.log("DEBUG: seasonEndLuxon.month:", seasonEndLuxon.month); // This is 1-indexed
-                console.log("DEBUG: seasonEndLuxon.day:", seasonEndLuxon.day);
+                const seasonEndLuxonYear = seasonEndLuxon.year;
+                const seasonEndLuxonMonth = seasonEndLuxon.month;
+                const seasonEndLuxonDay = seasonEndLuxon.day;
 
-                const sy = seasonStartLuxon.year;
-                const sm = seasonStartLuxon.month;
-                const sd = seasonStartLuxon.day;
+                const seasonStart = new Date(seasonStartLuxonYear, seasonStartLuxonMonth - 1, seasonStartLuxonDay, 0, 0, 0, 0);
+                const seasonEnd = new Date(seasonEndLuxonYear, seasonEndLuxonMonth - 1, seasonEndLuxonDay, 0, 0, 0, 0);
 
-                const ey = seasonEndLuxon.year;
-                const em = seasonEndLuxon.month;
-                const ed = seasonEndLuxon.day;
-
-                const seasonStart = new Date(sy, sm - 1, sd, 0, 0, 0, 0);
-                const seasonEnd = new Date(ey, em - 1, ed, 0, 0, 0, 0);
-                console.log("DEBUG: seasonStart Date object:", seasonStart);
-                console.log("DEBUG: seasonEnd Date object:", seasonEnd);
                 if (today >= seasonStart && today <= seasonEnd) {
                   defaultDate = today;
                 } else if (today < seasonStart) {
@@ -684,7 +673,7 @@ const SeasonSettingsPage = () => {
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => setGameTimePickerVisible(true)} // New time picker trigger
+                onPress={() => setGameTimePickerVisible(true)}
                 style={styles.dateInputButton}
               >
                 <Text style={styles.dateInputText}>
@@ -794,7 +783,7 @@ const SeasonSettingsPage = () => {
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => setEditGameTimePickerVisible(true)} // New time picker trigger
+                onPress={() => setEditGameTimePickerVisible(true)}
                 style={styles.dateInputButton}
               >
                 <Text style={styles.dateInputText}>
