@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Dimensions, Modal, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import PageLayout from '../../components/PageLayout';
-import { useAuth } from '../../context/AuthContext'; // Corrected import path
+import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
 import { API_BASE_URL } from '../../src/config';
 
@@ -23,24 +23,24 @@ const SeasonSettingsPage = () => {
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [errorSettings, setErrorSettings] = useState(null);
 
-  // NEW: State for Blind Levels and Place Points
+  // State for Blind Levels and Place Points
   const [blindLevels, setBlindLevels] = useState([]);
   const [placePoints, setPlacePoints] = useState([]);
 
-  // NEW: State for adding new blind level
+  // State for adding new blind level
   const [addBlindLevelModalVisible, setAddBlindLevelModalVisible] = useState(false);
   const [newBlindLevel, setNewBlindLevel] = useState({ level: '', smallBlind: '', bigBlind: '' });
 
-  // NEW: State for adding new place point
+  // State for adding new place point
   const [addPlacePointModalVisible, setAddPlacePointModalVisible] = useState(false);
   const [newPlacePoint, setNewPlacePoint] = useState({ place: '', points: '' });
 
-  // NEW: State for editing blind level
+  // State for editing blind level
   const [editBlindLevelModalVisible, setEditBlindLevelModalVisible] = useState(false);
   const [currentEditingBlindLevel, setCurrentEditingBlindLevel] = useState(null);
   const [currentEditingBlindLevelIndex, setCurrentEditingBlindLevelIndex] = useState(null);
 
-  // NEW: State for editing place point
+  // State for editing place point
   const [editPlacePointModalVisible, setEditPlacePointModalVisible] = useState(false);
   const [currentEditingPlacePoint, setCurrentEditingPlacePoint] = useState(null);
   const [currentEditingPlacePointIndex, setCurrentEditingPlacePointIndex] = useState(null);
@@ -91,7 +91,7 @@ const SeasonSettingsPage = () => {
             setSettings(null);
             setSelectedSeason(null);
             setLoadingSettings(false);
-            // NEW: Clear blindLevels and placePoints if no settings
+            // Clear blindLevels and placePoints if no settings
             setBlindLevels([]);
             setPlacePoints([]);
             return; // Exit early, no settings to fetch
@@ -111,7 +111,7 @@ const SeasonSettingsPage = () => {
         if (!settingsResponse.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const settingsData = await settingsResponse.json();
         setSettings(settingsData);
-        // NEW: Populate blindLevels and placePoints state, and sort them
+        // Populate blindLevels and placePoints state, and sort them
         setBlindLevels((settingsData.blindLevels || []).sort((a, b) => a.level - b.level));
         setPlacePoints(settingsData.placePoints || []);
       }
@@ -169,7 +169,7 @@ const SeasonSettingsPage = () => {
       // If no seasons and not loading, ensure settings are cleared
       setSettings(null);
       setSelectedSeason(null);
-      // NEW: Clear blindLevels and placePoints if no settings
+      // Clear blindLevels and placePoints if no settings
       setBlindLevels([]);
       setPlacePoints([]);
     }
@@ -290,7 +290,7 @@ const SeasonSettingsPage = () => {
       if (!selectedSeason?.id || !token || !settings) return;
       setLoadingSettings(true);
       try {
-          // NEW: Include blindLevels and placePoints in the settings object
+          // Include blindLevels and placePoints in the settings object
           const settingsToSave = {
               ...settings,
               blindLevels: blindLevels,
@@ -455,6 +455,11 @@ const SeasonSettingsPage = () => {
     const placePointErrors = getPlacePointValidationErrors(placePoints);
     const hasPlacePointErrors = placePointErrors.some(e => !!e);
 
+    // Require at least 1 blind level and 1 place point to save
+    const hasMinimumBlindLevels = blindLevels.length > 0;
+    const hasMinimumPlacePoints = placePoints.length > 0;
+    const canSaveSettings = hasMinimumBlindLevels && hasMinimumPlacePoints && !hasBlindLevelErrors && !hasPlacePointErrors;
+
     return (
       <View style={styles.settingsContainer}>
         {isSeasonFinalized ? (
@@ -563,7 +568,7 @@ const SeasonSettingsPage = () => {
             </View>
         </View>
 
-        {/* NEW: Blind Levels Section */}
+        {/* Blind Levels Section */}
         <Text style={styles.subtitle}>Blind Levels</Text>
         {blindLevels.map((bl, index) => (
           <TouchableOpacity
@@ -606,7 +611,7 @@ const SeasonSettingsPage = () => {
           </TouchableOpacity>
         )}
 
-        {/* NEW: Place Points Section */}
+        {/* Place Points Section */}
         <Text style={styles.subtitle}>Place Points</Text>
         {placePoints.map((pp, index) => (
           <TouchableOpacity
@@ -656,16 +661,18 @@ const SeasonSettingsPage = () => {
               ? (
                 <>
                   <TouchableOpacity
-                    style={[styles.button, styles.buttonPrimaryRed, styles.actionButton, (hasBlindLevelErrors || hasPlacePointErrors) && { opacity: 0.5 }]}
+                    style={[styles.button, styles.buttonPrimaryRed, styles.actionButton, !canSaveSettings && { opacity: 0.5 }]}
                     onPress={saveSettings}
-                    disabled={hasBlindLevelErrors || hasPlacePointErrors}
+                    disabled={!canSaveSettings}
                   >
                     <Text style={styles.textStyle}>Save Settings</Text>
                   </TouchableOpacity>
-                  {(hasBlindLevelErrors || hasPlacePointErrors) && (
+                  {(!hasMinimumBlindLevels || !hasMinimumPlacePoints || hasBlindLevelErrors || hasPlacePointErrors) && (
                     <Text style={{ color: 'red', textAlign: 'center', marginTop: 5 }}>
+                      {!hasMinimumBlindLevels && 'At least one blind level is required. '}
+                      {!hasMinimumPlacePoints && 'At least one place point is required. '}
                       {hasBlindLevelErrors && 'Please fix all blind level errors before saving settings.'}
-                      {hasBlindLevelErrors && hasPlacePointErrors ? '\n' : ''}
+                      {(hasBlindLevelErrors && (hasPlacePointErrors || !hasMinimumBlindLevels || !hasMinimumPlacePoints)) ? '\n' : ''}
                       {hasPlacePointErrors && 'Please fix all place point errors before saving settings.'}
                     </Text>
                   )}
@@ -790,7 +797,7 @@ const SeasonSettingsPage = () => {
           </View>
         </Modal>
 
-        {/* NEW: Add Blind Level Modal */}
+        {/* Add Blind Level Modal */}
         <Modal
           animationType="slide"
           transparent={true}
@@ -819,7 +826,7 @@ const SeasonSettingsPage = () => {
               />
               <TouchableOpacity
                 style={[styles.button, styles.buttonPrimaryRed, styles.modalButton]}
-                onPress={handleAddBlindLevel} // Changed to call handleAddBlindLevel
+                onPress={handleAddBlindLevel}
               >
                 <Text style={styles.textStyle}>Add Blind Level</Text>
               </TouchableOpacity>
@@ -833,7 +840,7 @@ const SeasonSettingsPage = () => {
           </View>
         </Modal>
 
-        {/* NEW: Edit Blind Level Modal */}
+        {/* Edit Blind Level Modal */}
         <Modal
           animationType="slide"
           transparent={true}
@@ -905,7 +912,7 @@ const SeasonSettingsPage = () => {
           </View>
         </Modal>
 
-        {/* NEW: Add Place Point Modal */}
+        {/* Add Place Point Modal */}
         <Modal
           animationType="slide"
           transparent={true}
@@ -941,7 +948,7 @@ const SeasonSettingsPage = () => {
           </View>
         </Modal>
 
-        {/* NEW: Edit Place Point Modal */}
+        {/* Edit Place Point Modal */}
         <Modal
           animationType="slide"
           transparent={true}
@@ -1103,11 +1110,11 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   picker: {
-    backgroundColor: 'white', // Make background white for visibility
+    backgroundColor: 'white',
   },
   pickerBounty: {
     width: 210,
-    backgroundColor: 'white', // Make background white for visibility
+    backgroundColor: 'white',
   },
   pickerWrapper: {
     justifyContent: 'center',
@@ -1154,9 +1161,9 @@ const styles = StyleSheet.create({
     color: 'red',
     fontWeight: 'bold',
   },
-  settingLabel: { // New style for setting labels
-    marginRight: 10, // Space between label and input/switch
-    flexShrink: 1, // Allow text to shrink
+  settingLabel: {
+    marginRight: 10,
+    flexShrink: 1,
   },
   errorText: {
     color: 'red',
@@ -1220,10 +1227,10 @@ const styles = StyleSheet.create({
   buttonDestructive: {
     backgroundColor: '#dc3545',
   },
-  actionButton: { // New style for action buttons
-    width: 'auto', // Allow button to size to content
-    alignSelf: 'center', // Center the button
-    marginTop: 10, // Add some top margin for spacing
+  actionButton: {
+    width: 'auto',
+    alignSelf: 'center',
+    marginTop: 10,
   },
   textStyle: {
     color: "white",
@@ -1237,18 +1244,17 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     fontWeight: 'bold',
   },
-  // NEW: Styles for Blind Levels and Place Points
   blindLevelItem: {
     backgroundColor: '#e0e0e0',
     padding: 10,
     borderRadius: 5,
     marginBottom: 5,
     width: '100%',
-    flexDirection: 'row', // Added for layout of content and delete button
-    justifyContent: 'space-between', // Added for layout of content and delete button
-    alignItems: 'center', // Added for layout of content and delete button
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  blindLevelItemContent: { // NEW: Style for content within blindLevelItem
+  blindLevelItemContent: {
     flexDirection: 'column',
   },
   placePointItem: {
@@ -1257,19 +1263,19 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginBottom: 5,
     width: '100%',
-    flexDirection: 'row', // Added for layout of content and delete button
-    justifyContent: 'space-between', // Added for layout of content and delete button
-    alignItems: 'center', // Added for layout of content and delete button
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  placePointItemContent: { // NEW: Style for content within placePointItem
+  placePointItemContent: {
     flexDirection: 'column',
   },
-  deleteButton: { // NEW: Style for delete button
+  deleteButton: {
     backgroundColor: '#dc3545',
     padding: 5,
     borderRadius: 5,
   },
-  deleteButtonText: { // NEW: Style for delete button text
+  deleteButtonText: {
     color: 'white',
     fontSize: 12,
   },
