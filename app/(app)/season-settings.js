@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Switch, TextInput, Modal, TouchableOpacity, Alert, Dimensions } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { DateTime } from 'luxon';
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Dimensions, Modal, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import PageLayout from '../../components/PageLayout';
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
@@ -11,8 +11,6 @@ import { API_BASE_URL } from '../../src/config';
 const SeasonSettingsPage = () => {
   const { token } = useAuth();
   const { selectedLeagueId, currentUserMembership, loadingCurrentUserMembership } = useLeague();
-
-  
 
   // State for all seasons
   const [seasons, setSeasons] = useState([]);
@@ -25,7 +23,27 @@ const SeasonSettingsPage = () => {
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [errorSettings, setErrorSettings] = useState(null);
 
-  
+  // State for Blind Levels and Place Points
+  const [blindLevels, setBlindLevels] = useState([]);
+  const [placePoints, setPlacePoints] = useState([]);
+
+  // State for adding new blind level
+  const [addBlindLevelModalVisible, setAddBlindLevelModalVisible] = useState(false);
+  const [newBlindLevel, setNewBlindLevel] = useState({ level: '', smallBlind: '', bigBlind: '' });
+
+  // State for adding new place point
+  const [addPlacePointModalVisible, setAddPlacePointModalVisible] = useState(false);
+  const [newPlacePoint, setNewPlacePoint] = useState({ place: '', points: '' });
+
+  // State for editing blind level
+  const [editBlindLevelModalVisible, setEditBlindLevelModalVisible] = useState(false);
+  const [currentEditingBlindLevel, setCurrentEditingBlindLevel] = useState(null);
+  const [currentEditingBlindLevelIndex, setCurrentEditingBlindLevelIndex] = useState(null);
+
+  // State for editing place point
+  const [editPlacePointModalVisible, setEditPlacePointModalVisible] = useState(false);
+  const [currentEditingPlacePoint, setCurrentEditingPlacePoint] = useState(null);
+  const [currentEditingPlacePointIndex, setCurrentEditingPlacePointIndex] = useState(null);
 
   // State for create season modal
   const [createSeasonModalVisible, setCreateSeasonModalVisible] = useState(false);
@@ -56,15 +74,6 @@ const SeasonSettingsPage = () => {
 
   const isAdmin = currentUserMembership?.role === 'ADMIN' || currentUserMembership?.isOwner;
 
-  
-
-  
-
-
-  
-
-  
-
   const fetchSettings = useCallback(async (seasonIdToFetch = null) => {
     if (!selectedLeagueId || !token) return;
     setLoadingSettings(true);
@@ -82,6 +91,9 @@ const SeasonSettingsPage = () => {
             setSettings(null);
             setSelectedSeason(null);
             setLoadingSettings(false);
+            // Clear blindLevels and placePoints if no settings
+            setBlindLevels([]);
+            setPlacePoints([]);
             return; // Exit early, no settings to fetch
           }
           throw new Error(`HTTP error! status: ${seasonResponse.status}`);
@@ -96,9 +108,12 @@ const SeasonSettingsPage = () => {
         const settingsResponse = await fetch(`${API_BASE_URL}/api/seasons/${targetSeasonId}/settings`, {
             headers: { 'Authorization': `Bearer ${token}` },
         });
-        if (!settingsResponse.ok) throw new Error(`HTTP error! status: ${settingsResponse.status}`);
+        if (!settingsResponse.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const settingsData = await settingsResponse.json();
         setSettings(settingsData);
+        // Populate blindLevels and placePoints state, and sort them
+        setBlindLevels((settingsData.blindLevels || []).sort((a, b) => a.level - b.level));
+        setPlacePoints(settingsData.placePoints || []);
       }
 
     } catch (e) {
@@ -154,6 +169,9 @@ const SeasonSettingsPage = () => {
       // If no seasons and not loading, ensure settings are cleared
       setSettings(null);
       setSelectedSeason(null);
+      // Clear blindLevels and placePoints if no settings
+      setBlindLevels([]);
+      setPlacePoints([]);
     }
   }, [seasons, selectedSeason, loadingSeasons, fetchSettings]);
 
@@ -272,13 +290,20 @@ const SeasonSettingsPage = () => {
       if (!selectedSeason?.id || !token || !settings) return;
       setLoadingSettings(true);
       try {
+          // Include blindLevels and placePoints in the settings object
+          const settingsToSave = {
+              ...settings,
+              blindLevels: blindLevels,
+              placePoints: placePoints,
+          };
+
           const response = await fetch(`${API_BASE_URL}/api/seasons/${selectedSeason.id}/settings`, {
               method: 'PUT',
               headers: {
                   'Authorization': `Bearer ${token}`,
                   'Content-Type': 'application/json',
               },
-              body: JSON.stringify(settings),
+              body: JSON.stringify(settingsToSave), // Use settingsToSave
           });
           if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
           alert('Settings saved successfully!');
@@ -291,10 +316,123 @@ const SeasonSettingsPage = () => {
       }
   };
 
+  const handleEditBlindLevel = (blindLevel, index) => {
+    setCurrentEditingBlindLevel({ ...blindLevel });
+    setCurrentEditingBlindLevelIndex(index);
+    setEditBlindLevelModalVisible(true);
+  };
 
-  
+  const handleUpdateBlindLevel = () => {
+    if (currentEditingBlindLevel && currentEditingBlindLevelIndex !== null) {
+      const updatedBlindLevels = [...blindLevels];
+      updatedBlindLevels[currentEditingBlindLevelIndex] = {
+        ...updatedBlindLevels[currentEditingBlindLevelIndex],
+        smallBlind: currentEditingBlindLevel.smallBlind,
+        bigBlind: currentEditingBlindLevel.bigBlind,
+      };
+      setBlindLevels(updatedBlindLevels);
+      setEditBlindLevelModalVisible(false);
+      setCurrentEditingBlindLevel(null);
+      setCurrentEditingBlindLevelIndex(null);
+    }
+  };
 
-  
+  const handleDeleteBlindLevel = (indexToDelete) => {
+    Alert.alert(
+      "Delete Blind Level",
+      "Are you sure you want to delete this blind level?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          onPress: () => {
+            const updatedBlindLevels = blindLevels.filter((_, index) => index !== indexToDelete);
+            setBlindLevels(updatedBlindLevels.sort((a, b) => a.level - b.level)); // Sort after delete
+            setEditBlindLevelModalVisible(false); // Close modal if open
+            setCurrentEditingBlindLevel(null);
+            setCurrentEditingBlindLevelIndex(null);
+          },
+          style: "destructive",
+        },
+      ]
+    );
+  };
+
+  const handleAddBlindLevel = () => {
+    if (!newBlindLevel.smallBlind || !newBlindLevel.bigBlind) {
+      Alert.alert('Error', 'Please fill all fields for the new blind level.');
+      return;
+    }
+    const newLevel = blindLevels.length > 0 ? Math.max(...blindLevels.map(b => b.level)) + 1 : 1;
+    const newSmallBlind = parseInt(newBlindLevel.smallBlind);
+    const newBigBlind = parseInt(newBlindLevel.bigBlind);
+    if (blindLevels.length > 0) {
+      const last = blindLevels[blindLevels.length - 1];
+      if (newSmallBlind <= last.smallBlind || newBigBlind <= last.bigBlind) {
+        Alert.alert('Validation Error', 'New blind level\'s small blind and big blind must be greater than the previous level\'s blinds.');
+        return;
+      }
+    }
+    setBlindLevels([...blindLevels, { level: newLevel, smallBlind: newSmallBlind, bigBlind: newBigBlind }]);
+    setNewBlindLevel({ smallBlind: '', bigBlind: '' });
+    setAddBlindLevelModalVisible(false);
+  };
+
+  const handleEditPlacePoint = (placePoint, index) => {
+    setCurrentEditingPlacePoint({ ...placePoint });
+    setCurrentEditingPlacePointIndex(index);
+    setEditPlacePointModalVisible(true);
+  };
+
+  const handleUpdatePlacePoint = () => {
+    if (currentEditingPlacePoint && currentEditingPlacePointIndex !== null) {
+      const updatedPlacePoints = [...placePoints];
+      updatedPlacePoints[currentEditingPlacePointIndex] = {
+        place: parseInt(currentEditingPlacePoint.place),
+        points: parseFloat(currentEditingPlacePoint.points),
+      };
+      setPlacePoints(updatedPlacePoints.sort((a, b) => a.place - b.place)); // Sort after update
+      setEditPlacePointModalVisible(false);
+      setCurrentEditingPlacePoint(null);
+      setCurrentEditingPlacePointIndex(null);
+    }
+  };
+
+  const handleDeletePlacePoint = (indexToDelete) => {
+    Alert.alert(
+      "Delete Place Point",
+      "Are you sure you want to delete this place point?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          onPress: () => {
+            const updatedPlacePoints = placePoints.filter((_, index) => index !== indexToDelete);
+            setPlacePoints(updatedPlacePoints.sort((a, b) => a.place - b.place)); // Sort after delete
+            setEditPlacePointModalVisible(false); // Close modal if open
+            setCurrentEditingPlacePoint(null);
+            setCurrentEditingPlacePointIndex(null);
+          },
+          style: "destructive",
+        },
+      ]
+    );
+  };
+
+  const handleAddPlacePoint = () => {
+    // Basic validation for new place point
+    if (!newPlacePoint.points) {
+      Alert.alert('Error', 'Please fill all fields for the new place point.');
+      return;
+    }
+    const newPlace = placePoints.length > 0 ? Math.max(...placePoints.map(p => p.place)) + 1 : 1;
+    setPlacePoints([...placePoints, {
+      place: newPlace,
+      points: parseFloat(newPlacePoint.points),
+    }].sort((a, b) => a.place - b.place)); // Sort after add
+    setNewPlacePoint({ place: '', points: '' }); // Clear form
+    setAddPlacePointModalVisible(false);
+  };
 
   const renderSettings = () => {
     if (loadingSettings || loadingCurrentUserMembership) {
@@ -308,6 +446,19 @@ const SeasonSettingsPage = () => {
     }
 
     const isSeasonFinalized = selectedSeason?.isFinalized;
+
+    // Compute blind level validation errors for display and save button disabling
+    const blindLevelErrors = getBlindLevelValidationErrors(blindLevels);
+    const hasBlindLevelErrors = blindLevelErrors.some(e => !!e);
+
+    // Compute place point validation errors for display and save button disabling
+    const placePointErrors = getPlacePointValidationErrors(placePoints);
+    const hasPlacePointErrors = placePointErrors.some(e => !!e);
+
+    // Require at least 1 blind level and 1 place point to save
+    const hasMinimumBlindLevels = blindLevels.length > 0;
+    const hasMinimumPlacePoints = placePoints.length > 0;
+    const canSaveSettings = hasMinimumBlindLevels && hasMinimumPlacePoints && !hasBlindLevelErrors && !hasPlacePointErrors;
 
     return (
       <View style={styles.settingsContainer}>
@@ -402,8 +553,6 @@ const SeasonSettingsPage = () => {
             />
         </View>
 
-        
-
         <View style={styles.settingItem}>
             <View style={{ flexDirection: 'column', width: '100%' }}>
                 <Text style={styles.settingLabel}>Bounty on Leader Absence</Text>
@@ -419,19 +568,117 @@ const SeasonSettingsPage = () => {
             </View>
         </View>
 
+        {/* Blind Levels Section */}
+        <Text style={styles.subtitle}>Blind Levels</Text>
+        {blindLevels.map((bl, index) => (
+          <TouchableOpacity
+            key={index}
+            style={[
+              styles.blindLevelItem,
+              blindLevelErrors[index] && { borderColor: 'red', borderWidth: 2 }
+            ]}
+            onPress={() => isAdmin && !isSeasonFinalized && handleEditBlindLevel(bl, index)}
+            disabled={isSeasonFinalized || !isAdmin}
+            activeOpacity={0.7}
+          >
+            <View style={styles.blindLevelItemContent}>
+              <Text>Level: {bl.level}</Text>
+              <Text>Small Blind: {bl.smallBlind}</Text>
+              <Text>Big Blind: {bl.bigBlind}</Text>
+              {blindLevelErrors[index] && (
+                <Text style={{ color: 'red', fontSize: 12 }}>{blindLevelErrors[index]}</Text>
+              )}
+            </View>
+            {isAdmin && !isSeasonFinalized && index === blindLevels.length - 1 && (
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  handleDeleteBlindLevel(index);
+                }}
+              >
+                <Text style={styles.deleteButtonText}>Delete</Text>
+              </TouchableOpacity>
+            )}
+          </TouchableOpacity>
+        ))}
+        {isAdmin && !isSeasonFinalized && (
+          <TouchableOpacity
+            style={[styles.button, styles.buttonPrimaryRed, styles.actionButton]}
+            onPress={() => setAddBlindLevelModalVisible(true)}
+          >
+            <Text style={styles.textStyle}>Add Blind Level</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Place Points Section */}
+        <Text style={styles.subtitle}>Place Points</Text>
+        {placePoints.map((pp, index) => (
+          <TouchableOpacity
+            key={index}
+            style={[
+              styles.placePointItem,
+              placePointErrors && placePointErrors[index] && { borderColor: 'red', borderWidth: 2 }
+            ]}
+            onPress={() => isAdmin && !isSeasonFinalized && handleEditPlacePoint(pp, index)}
+            disabled={isSeasonFinalized || !isAdmin}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.placePointItemContent, { flex: 1 }]}>
+              <Text>Place: {pp.place}</Text>
+              <Text>Points: {pp.points}</Text>
+              {placePointErrors && placePointErrors[index] && (
+                <Text style={{ color: 'red', fontSize: 12 }}>{placePointErrors[index]}</Text>
+              )}
+            </View>
+            {isAdmin && !isSeasonFinalized && index === placePoints.length - 1 && (
+              <View style={{ marginLeft: 10 }}>
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    handleDeletePlacePoint(index);
+                  }}
+                >
+                  <Text style={styles.deleteButtonText}>Delete</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </TouchableOpacity>
+        ))}
+        {isAdmin && !isSeasonFinalized && (
+          <TouchableOpacity
+            style={[styles.button, styles.buttonPrimaryRed, styles.actionButton]}
+            onPress={() => setAddPlacePointModalVisible(true)}
+          >
+            <Text style={styles.textStyle}>Add Place Point</Text>
+          </TouchableOpacity>
+        )}
+
         {isSeasonFinalized
           ? null
           : (isAdmin
               ? (
-                <TouchableOpacity
-                  style={[styles.button, styles.buttonPrimaryRed, styles.actionButton]}
-                  onPress={saveSettings}
-                >
-                  <Text style={styles.textStyle}>Save Settings</Text>
-                </TouchableOpacity>
+                <>
+                  <TouchableOpacity
+                    style={[styles.button, styles.buttonPrimaryRed, styles.actionButton, !canSaveSettings && { opacity: 0.5 }]}
+                    onPress={saveSettings}
+                    disabled={!canSaveSettings}
+                  >
+                    <Text style={styles.textStyle}>Save Settings</Text>
+                  </TouchableOpacity>
+                  {(!hasMinimumBlindLevels || !hasMinimumPlacePoints || hasBlindLevelErrors || hasPlacePointErrors) && (
+                    <Text style={{ color: 'red', textAlign: 'center', marginTop: 5 }}>
+                      {!hasMinimumBlindLevels && 'At least one blind level is required. '}
+                      {!hasMinimumPlacePoints && 'At least one place point is required. '}
+                      {hasBlindLevelErrors && 'Please fix all blind level errors before saving settings.'}
+                      {(hasBlindLevelErrors && (hasPlacePointErrors || !hasMinimumBlindLevels || !hasMinimumPlacePoints)) ? '\n' : ''}
+                      {hasPlacePointErrors && 'Please fix all place point errors before saving settings.'}
+                    </Text>
+                  )}
+                </>
               )
-              : null)
-        }
+              : null)}
       </View>
     );
   };
@@ -468,8 +715,7 @@ const SeasonSettingsPage = () => {
                 <Picker
                   selectedValue={String(selectedSeason?.id)}
                   style={styles.picker}
-                  onValueChange={(itemValue) => handleSeasonChange(Number(itemValue))}
-                >
+                  onValueChange={(itemValue) => handleSeasonChange(Number(itemValue))}>
                   {seasons.map((s) => {
                     const label = typeof s.seasonName === 'string' ? s.seasonName : String(s.seasonName ?? 'Unnamed');
                     const value = String(s.id);
@@ -551,6 +797,218 @@ const SeasonSettingsPage = () => {
           </View>
         </Modal>
 
+        {/* Add Blind Level Modal */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={addBlindLevelModalVisible}
+          onRequestClose={() => setAddBlindLevelModalVisible(false)}
+        >
+          <View style={styles.centeredView}>
+            <View style={styles.modalView}>
+              <Text style={styles.modalText}>Add New Blind Level</Text>
+              <View style={{ marginBottom: 10 }}>
+                <Text>Level: {blindLevels.length > 0 ? Math.max(...blindLevels.map(b => b.level)) + 1 : 1}</Text>
+              </View>
+              <TextInput
+                style={[styles.input, styles.modalInput]}
+                placeholder="Small Blind"
+                keyboardType="numeric"
+                value={newBlindLevel.smallBlind}
+                onChangeText={(text) => setNewBlindLevel({ ...newBlindLevel, smallBlind: text })}
+              />
+              <TextInput
+                style={[styles.input, styles.modalInput]}
+                placeholder="Big Blind"
+                keyboardType="numeric"
+                value={newBlindLevel.bigBlind}
+                onChangeText={(text) => setNewBlindLevel({ ...newBlindLevel, bigBlind: text })}
+              />
+              <TouchableOpacity
+                style={[styles.button, styles.buttonPrimaryRed, styles.modalButton]}
+                onPress={handleAddBlindLevel}
+              >
+                <Text style={styles.textStyle}>Add Blind Level</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, styles.buttonClose, styles.modalButton]}
+                onPress={() => setAddBlindLevelModalVisible(false)}
+              >
+                <Text style={styles.textStyle}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Edit Blind Level Modal */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={editBlindLevelModalVisible}
+          onRequestClose={() => setEditBlindLevelModalVisible(false)}
+        >
+          <View style={styles.centeredView}>
+            <View style={styles.modalView}>
+              <Text style={styles.modalText}>Edit Blind Level</Text>
+              {(() => {
+                let editBlindLevelErrors = [];
+                if (currentEditingBlindLevel && currentEditingBlindLevelIndex !== null) {
+                  const tempBlindLevels = [...blindLevels];
+                  tempBlindLevels[currentEditingBlindLevelIndex] = {
+                    ...tempBlindLevels[currentEditingBlindLevelIndex],
+                    smallBlind: currentEditingBlindLevel.smallBlind,
+                    bigBlind: currentEditingBlindLevel.bigBlind,
+                  };
+                  editBlindLevelErrors = getBlindLevelValidationErrors(tempBlindLevels);
+                }
+                return currentEditingBlindLevel && (
+                  <>
+                    <View style={{ marginBottom: 10 }}>
+                      <Text>Level: {currentEditingBlindLevel.level}</Text>
+                    </View>
+                    <TextInput
+                      style={[
+                        styles.input,
+                        styles.modalInput,
+                        editBlindLevelErrors[currentEditingBlindLevelIndex] && { borderColor: 'red' }
+                      ]}
+                      placeholder="Small Blind"
+                      keyboardType="numeric"
+                      value={String(currentEditingBlindLevel.smallBlind)}
+                      onChangeText={(text) => setCurrentEditingBlindLevel({ ...currentEditingBlindLevel, smallBlind: text })}
+                    />
+                    <TextInput
+                      style={[
+                        styles.input,
+                        styles.modalInput,
+                        editBlindLevelErrors[currentEditingBlindLevelIndex] && { borderColor: 'red' }
+                      ]}
+                      placeholder="Big Blind"
+                      keyboardType="numeric"
+                      value={String(currentEditingBlindLevel.bigBlind)}
+                      onChangeText={(text) => setCurrentEditingBlindLevel({ ...currentEditingBlindLevel, bigBlind: text })}
+                    />
+                    <TouchableOpacity
+                      style={[styles.button, styles.buttonPrimaryRed, styles.modalButton]}
+                      onPress={handleUpdateBlindLevel}
+                    >
+                      <Text style={styles.textStyle}>Save Changes</Text>
+                    </TouchableOpacity>
+                    {editBlindLevelErrors[currentEditingBlindLevelIndex] && (
+                      <Text style={{ color: 'red', marginTop: 5 }}>
+                        {editBlindLevelErrors[currentEditingBlindLevelIndex]}
+                      </Text>
+                    )}
+                  </>
+                );
+              })()}
+              <TouchableOpacity
+                style={[styles.button, styles.buttonClose, styles.modalButton]}
+                onPress={() => setEditBlindLevelModalVisible(false)}
+              >
+                <Text style={styles.textStyle}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Add Place Point Modal */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={addPlacePointModalVisible}
+          onRequestClose={() => setAddPlacePointModalVisible(false)}
+        >
+          <View style={styles.centeredView}>
+            <View style={styles.modalView}>
+              <Text style={styles.modalText}>Add New Place Point</Text>
+              <View style={{ marginBottom: 10 }}>
+                <Text>Place: {placePoints.length > 0 ? Math.max(...placePoints.map(p => p.place)) + 1 : 1}</Text>
+              </View>
+              <TextInput
+                style={[styles.input, styles.modalInput]}
+                placeholder="Points"
+                keyboardType="decimal-pad"
+                value={newPlacePoint.points}
+                onChangeText={(text) => setNewPlacePoint({ ...newPlacePoint, points: text })}
+              />
+              <TouchableOpacity
+                style={[styles.button, styles.buttonPrimaryRed, styles.modalButton]}
+                onPress={handleAddPlacePoint}
+              >
+                <Text style={styles.textStyle}>Add Place Point</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, styles.buttonClose, styles.modalButton]}
+                onPress={() => setAddPlacePointModalVisible(false)}
+              >
+                <Text style={styles.textStyle}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Edit Place Point Modal */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={editPlacePointModalVisible}
+          onRequestClose={() => setEditPlacePointModalVisible(false)}
+        >
+          <View style={styles.centeredView}>
+            <View style={styles.modalView}>
+              <Text style={styles.modalText}>Edit Place Point</Text>
+              {(() => {
+                let editPlacePointErrors = [];
+                if (currentEditingPlacePoint && currentEditingPlacePointIndex !== null) {
+                  const tempPlacePoints = [...placePoints];
+                  tempPlacePoints[currentEditingPlacePointIndex] = {
+                    ...tempPlacePoints[currentEditingPlacePointIndex],
+                    // Only allow editing points, not place
+                    points: currentEditingPlacePoint.points,
+                  };
+                  editPlacePointErrors = getPlacePointValidationErrors(tempPlacePoints);
+                }
+                return currentEditingPlacePoint && (
+                  <>
+                    <View style={{ marginBottom: 10 }}>
+                      <Text>Place: {currentEditingPlacePoint.place}</Text>
+                    </View>
+                    <TextInput
+                      style={[
+                        styles.input,
+                        styles.modalInput,
+                        editPlacePointErrors[currentEditingPlacePointIndex] && { borderColor: 'red' }
+                      ]}
+                      placeholder="Points"
+                      keyboardType="decimal-pad"
+                      value={String(currentEditingPlacePoint.points)}
+                      onChangeText={(text) => setCurrentEditingPlacePoint({ ...currentEditingPlacePoint, points: text })}
+                    />
+                    <TouchableOpacity
+                      style={[styles.button, styles.buttonPrimaryRed, styles.modalButton]}
+                      onPress={handleUpdatePlacePoint}
+                    >
+                      <Text style={styles.textStyle}>Save Changes</Text>
+                    </TouchableOpacity>
+                    {editPlacePointErrors[currentEditingPlacePointIndex] && (
+                      <Text style={{ color: 'red', marginTop: 5 }}>
+                        {editPlacePointErrors[currentEditingPlacePointIndex]}
+                      </Text>
+                    )}
+                  </>
+                );
+              })()}
+              <TouchableOpacity
+                style={[styles.button, styles.buttonClose, styles.modalButton]}
+                onPress={() => setEditPlacePointModalVisible(false)}
+              >
+                <Text style={styles.textStyle}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
         <DateTimePickerModal
           isVisible={isDatePickerVisible}
           mode="date"
@@ -559,7 +1017,7 @@ const SeasonSettingsPage = () => {
           date={datePickerField === 'startDate' ? (newSeasonStartDate || new Date()) : (newSeasonEndDate || new Date())}
         />
 
-        
+
       </ScrollView>
     </PageLayout>
   );
@@ -652,11 +1110,11 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   picker: {
-    backgroundColor: 'white', // Make background white for visibility
+    backgroundColor: 'white',
   },
   pickerBounty: {
     width: 210,
-    backgroundColor: 'white', // Make background white for visibility
+    backgroundColor: 'white',
   },
   pickerWrapper: {
     justifyContent: 'center',
@@ -703,9 +1161,9 @@ const styles = StyleSheet.create({
     color: 'red',
     fontWeight: 'bold',
   },
-  settingLabel: { // New style for setting labels
-    marginRight: 10, // Space between label and input/switch
-    flexShrink: 1, // Allow text to shrink
+  settingLabel: {
+    marginRight: 10,
+    flexShrink: 1,
   },
   errorText: {
     color: 'red',
@@ -769,10 +1227,10 @@ const styles = StyleSheet.create({
   buttonDestructive: {
     backgroundColor: '#dc3545',
   },
-  actionButton: { // New style for action buttons
-    width: 'auto', // Allow button to size to content
-    alignSelf: 'center', // Center the button
-    marginTop: 10, // Add some top margin for spacing
+  actionButton: {
+    width: 'auto',
+    alignSelf: 'center',
+    marginTop: 10,
   },
   textStyle: {
     color: "white",
@@ -785,7 +1243,87 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 10,
     fontWeight: 'bold',
-  }
+  },
+  blindLevelItem: {
+    backgroundColor: '#e0e0e0',
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 5,
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  blindLevelItemContent: {
+    flexDirection: 'column',
+  },
+  placePointItem: {
+    backgroundColor: '#e0e0e0',
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 5,
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  placePointItemContent: {
+    flexDirection: 'column',
+  },
+  deleteButton: {
+    backgroundColor: '#dc3545',
+    padding: 5,
+    borderRadius: 5,
+  },
+  deleteButtonText: {
+    color: 'white',
+    fontSize: 12,
+  },
 });
+
+// --- Blind Level Validation Helper ---
+function getBlindLevelValidationErrors(levels) {
+  const errors = [];
+  for (let i = 0; i < levels.length; i++) {
+    const prev = levels[i - 1];
+    const curr = levels[i];
+    const next = levels[i + 1];
+    const small = parseInt(curr.smallBlind);
+    const big = parseInt(curr.bigBlind);
+    let error = '';
+    if (isNaN(small) || isNaN(big)) {
+      error = 'Both blinds must be numbers.';
+    } else if (big <= small) {
+      error = 'Big blind must be greater than small blind.';
+    } else if (prev && (small <= parseInt(prev.smallBlind) || big <= parseInt(prev.bigBlind))) {
+      error = 'Blinds must be greater than previous level.';
+    } else if (next && (small >= parseInt(next.smallBlind) || big >= parseInt(next.bigBlind))) {
+      error = 'Blinds must be less than next level.';
+    }
+    errors.push(error);
+  }
+  return errors;
+}
+
+// --- Place Point Validation Helper ---
+function getPlacePointValidationErrors(pointsArr) {
+  const errors = [];
+  for (let i = 0; i < pointsArr.length; i++) {
+    const prev = pointsArr[i - 1];
+    const curr = pointsArr[i];
+    const next = pointsArr[i + 1];
+    const currPoints = parseFloat(curr.points);
+    let error = '';
+    if (isNaN(currPoints)) {
+      error = 'Points must be a number.';
+    } else if (prev && currPoints > parseFloat(prev.points)) {
+      error = 'Lower rank place must have less than or equal to higher rank.';
+    } else if (next && currPoints < parseFloat(next.points)) {
+      error = 'Higher rank place must have more than or equal to lower rank.';
+    }
+    errors.push(error);
+  }
+  return errors;
+}
 
 export default SeasonSettingsPage;
