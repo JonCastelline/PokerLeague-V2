@@ -20,7 +20,7 @@ const AddUnregisteredPlayerForm = ({ leagueId, onPlayerAdded }) => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ playerName }),
+        body: JSON.stringify({ displayName: playerName }),
       });
 
       if (!response.ok) {
@@ -29,7 +29,7 @@ const AddUnregisteredPlayerForm = ({ leagueId, onPlayerAdded }) => {
       }
 
       const newMember = await response.json();
-      Alert.alert('Success', `Player ${newMember.playerName} added successfully!`);
+      Alert.alert('Success', `Player ${newMember.displayName} added successfully!`);
       setPlayerName('');
       onPlayerAdded(); // Notify parent component to refresh list
     } catch (error) {
@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   input: {
-    width: '90%',
+    width: 225,
     height: 40,
     borderColor: '#ccc',
     borderWidth: 1,
