@@ -368,6 +368,52 @@ const SeasonSettingsPage = () => {
     }
   };
 
+  const handleDeleteGame = (gameId) => {
+    Alert.alert(
+      "Delete Game",
+      "Are you sure you want to delete this game? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          onPress: async () => {
+            if (!selectedSeason || !token) return;
+            try {
+              const response = await fetch(`${API_BASE_URL}/api/seasons/${selectedSeason.id}/games/${gameId}`, {
+                method: 'DELETE',
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                },
+              });
+
+              if (!response.ok) {
+                const errorText = await response.text();
+                let errorMessage = `Failed to delete game: ${errorText}`;
+                try {
+                  const errorJson = JSON.parse(errorText);
+                  if (errorJson.message) {
+                    errorMessage = errorJson.message;
+                  }
+                } catch (jsonError) {
+                  // If parsing fails, use the original errorText
+                  console.error("Failed to parse error response as JSON:", jsonError);
+                }
+                throw new Error(errorMessage);
+              }
+
+              alert('Game deleted successfully!');
+              fetchGames(selectedSeason.id); // Refresh games list
+            } catch (e) {
+              console.error("Failed to delete game:", e);
+              alert(e.message);
+            }
+          },
+          style: "destructive",
+        },
+      ]
+    );
+  };
+
   const handleFinalizeSeason = async () => {
     if (!selectedSeason || !token) return;
 
@@ -601,12 +647,20 @@ const SeasonSettingsPage = () => {
                 {game.gameLocation && <Text>Location: {game.gameLocation}</Text>}
               </View>
               {isAdmin && !isSeasonFinalized && (
-                <TouchableOpacity
-                  style={[styles.button, styles.buttonPrimary, styles.smallButton]}
-                  onPress={() => handleEditGame(game)}
-                >
-                  <Text style={styles.textStyle}>Edit</Text>
-                </TouchableOpacity>
+                <View style={styles.gameActions}>
+                  <TouchableOpacity
+                    style={[styles.button, styles.buttonPrimary, styles.smallButton]}
+                    onPress={() => handleEditGame(game)}
+                  >
+                    <Text style={styles.textStyle}>Edit</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.button, styles.buttonDestructive, styles.smallButton, { marginLeft: 10 }]} 
+                    onPress={() => handleDeleteGame(game.id)}
+                  >
+                    <Text style={styles.textStyle}>Delete</Text>
+                  </TouchableOpacity>
+                </View>
               )}
             </View>
           ))
@@ -1682,6 +1736,10 @@ const styles = StyleSheet.create({
     width: '100%',
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  gameActions: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
   smallButton: {
