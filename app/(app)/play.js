@@ -1,247 +1,456 @@
-import React, { useState, useContext } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, TextInput, ScrollView } from 'react-native';
-import Timer from '../../components/Timer';
-import PlayersContext from '../../context/PlayersContext';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView, Alert, Switch } from 'react-native';
+import { useAuth } from '../../context/AuthContext';
+import { useLeague } from '../../context/LeagueContext';
+import * as apiActions from '../../src/api';
 import PageLayout from '../../components/PageLayout';
+import Timer from '../../components/Timer';
+import { Picker } from '@react-native-picker/picker';
 
 const PlayPage = () => {
-  const { players, updatePlayers } = useContext(PlayersContext);
-  const defaultDuration = 15; // Test duration in seconds
-  const levels = [ // Test levels
-    { smallBlind: 15, bigBlind: 30 },
-    { smallBlind: 20, bigBlind: 40 },
-    { smallBlind: 25, bigBlind: 50 },
-  ];
+  const { api } = useAuth();
+  const { selectedLeagueId } = useLeague();
+  const [gameState, setGameState] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [mode, setMode] = useState('setup'); // 'setup', 'play', 'eliminate_select_player', 'eliminate_select_killer'
+  const [allPlayers, setAllPlayers] = useState([]);
+  const [selectedPlayerIds, setSelectedPlayerIds] = useState(new Set());
+  const [selectedPlayerToEliminate, setSelectedPlayerToEliminate] = useState(null);
+  const [selectedGameId, setSelectedGameId] = useState(null);
+  const [activeSeasonId, setActiveSeasonId] = useState(null);
+  const [allGames, setAllGames] = useState([]);
+  const [isActionLoading, setIsActionLoading] = useState(false);
+  const [isTimerFinished, setIsTimerFinished] = useState(false);
+  const pollingIntervalRef = useRef(null);
 
-  const [playerListBorderColor, setPlayerListBorderColor] = useState('black');
-  const [selectedPlayerIndex, setSelectedPlayerIndex] = useState(null);
-  const [eliminationOrder, setEliminationOrder] = useState([]);
-  const [bountyClaimedBy, setBountyClaimedBy] = useState(null);
-  const [playerKilledBy, setPlayerKilledBy] = useState(null);
-  const [mode, setMode] = useState('setup');
-  const switchToPlayMode = () => setMode('play');
-  const totalPlayed = players.filter(player => player.playing).length;
-  const playerListTouchable = useState(false);
-
-  const handlePlayerClick = (index) => {
-       if (bountyClaimedBy == null && playerKilledBy == null) {
-         setSelectedPlayerIndex(index);
-         return;
-       }
-
-       if (bountyClaimedBy != null) {
-         players[index].bounties += 1;
-         setBountyClaimedBy(null);
-       }
-
-       players[index].kills += 1;
-       setPlayerKilledBy(null);
+  const getOrdinal = (n) => {
+    if (n === null || n === undefined) return '';
+    const s = ["th", "st", "nd", "rd"];
+    const v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
   };
 
+  const handleApiError = (e) => {
+    if (e.message !== '401') {
+      setError(e.message);
+    }
+  };
 
-    const handleEliminateButtonClick = () => {
-      if (selectedPlayerIndex !== null) {
-        const updatedPlayers = [...players]; // Spread operator should be used inside the square brackets
-        const eliminatedPlayer = updatedPlayers.splice(
-          selectedPlayerIndex,
-          1
-        )[0];
+  const fetchInitialData = useCallback(async () => {
+    if (!selectedLeagueId) return;
+    try {
+      const members = await api(apiActions.getLeagueMembers, selectedLeagueId);
+      setAllPlayers(members);
+      const activePlayerIds = new Set(members.filter(m => m.isActive).map(m => m.id));
+      setSelectedPlayerIds(activePlayerIds);
 
-        const eliminatedPlayerCount = updatedPlayers.filter(player => player.eliminated).length;
-        eliminatedPlayer.eliminated = true;
-        eliminatedPlayer.place = totalPlayed - eliminatedPlayerCount; // Assign place for eliminated player
-        updatedPlayers.push(eliminatedPlayer); // Use updatedPlayers here instead of players
-        updatedPlayers.sort((a, b) => a.place - b.place);
+      const season = await api(apiActions.getActiveSeason, selectedLeagueId);
+      setActiveSeasonId(season.id);
 
-        // Check if there's only one active player left
-        const activePlayers = updatedPlayers.filter(player => !player.eliminated && player.playing);
+      const games = await api(apiActions.getGameHistory, season.id);
+      setAllGames(games);
 
-        //console.log('active players name: ' + activePlayers.firstName + ' ' + activePlayers.lastName);
-        if (activePlayers.length === 1) {
-          activePlayers[0].place = 1;
-          activePlayers[0].eliminated = true;
-          activePlayers[0].kills += 1;
-          if (eliminatedPlayer.hasBounty) {
-            activePlayers[0].bounties += 1;
-          }
-          updatePlayers(updatedPlayers); // Update state with the modified array
-          return updatedPlayers; // Return the modified array
-        }
-
-        if (eliminatedPlayer.hasBounty) {
-          setBountyClaimedBy(selectedPlayerIndex);
-        }
-
-        setPlayerKilledBy(selectedPlayerIndex);
-
-        updatePlayers(updatedPlayers); // Update state with the modified array
-        return updatedPlayers; // Return the modified array
-      }
-    };
-
-
-    const getOrdinal = (number) => {
-      const suffixes = ['th', 'st', 'nd', 'rd'];
-      const specialCases = [11, 12, 13]; // Numbers that end with 'th'
-
-      const remainder = number % 100;
-      const suffix = suffixes[(remainder - 20) % 10] || suffixes[remainder] || suffixes[0];
-
-      if (specialCases.includes(remainder)) {
-        suffix = 'th';
+      if (games.length > 0) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const defaultGame = games.find(game => game.gameStatus !== 'COMPLETED' && new Date(game.gameDate).getTime() === today.getTime()) ||
+                              games.find(game => game.gameStatus !== 'COMPLETED' && new Date(game.gameDate).getTime() >= today.getTime()) ||
+                              games.find(game => game.gameStatus !== 'COMPLETED') ||
+                              games[0];
+        setSelectedGameId(defaultGame?.id || null);
       }
 
-      return `${number}${suffix}`;
-    };
+    } catch (e) {
+      handleApiError(e);
+    }
+  }, [selectedLeagueId, api]);
 
-    const handleTogglePlaying = (index) => {
-      const updatedPlayers = [...players];
-      updatedPlayers[index].playing = !updatedPlayers[index].playing;
-      updatePlayers(updatedPlayers);
-    };
+  useEffect(() => {
+    if (mode === 'setup') {
+      fetchInitialData();
+    }
+  }, [mode, fetchInitialData]);
 
-    return (
-      <PageLayout>
-          <ScrollView contentContainerStyle={styles.scrollContainer}>
-            {mode === 'setup' ? (
-              <>
-                {players.map((player, index) => (
-                  <TouchableOpacity
-                    key={player.id}
-                    style={[
-                      styles.playerContainer,
-                      !player.playing && styles.eliminatedPlayerContainer,
-                    ]}
-                    onPress={() => handleTogglePlaying(index)}
-                  >
-                    <Text style={styles.playerName}>
-                      {player.firstName} {player.lastName}
-                      {player.hasBounty ? ' ⭐️' : null}
-                    </Text>
-                    <Text style={styles.playerStats}>
-                      {!player.playing ? 'Not Playing' : 'Playing'}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-                <TouchableOpacity
-                  style={styles.eliminateButton}
-                  onPress={switchToPlayMode}
-                >
-                  <Text style={styles.eliminateButtonText}>Done</Text>
-                </TouchableOpacity>
-              </>
-            ) : mode === 'play' ? (
-              <>
-                <View style={styles.timerContainer}>
-                  <Timer
-                    defaultDuration={defaultDuration}
-                    levels={levels}
-                  />
-                </View>
-                <View><Text style={styles.playerListHeader}>Players</Text></View>
-                  {playerKilledBy !== null ? (
-                    <Text style={styles.claimKillText}>Which player claimed the kill?</Text>)
-                    : null}
-                  {players.sort((a, b) => (a.playing && !b.playing ? -1 : 1)).map((player, index) => (
-                    <TouchableOpacity
-                      key={player.id}
-                      style={[
-                        styles.playerContainer,
-                        selectedPlayerIndex === index && styles.selectedPlayerContainer,
-                        (!player.playing || player.eliminated) && styles.eliminatedPlayerContainer,
-                      ]}
-                      onPress={player.eliminated ? null : () => handlePlayerClick(index)}
+  const fetchGameState = useCallback(async () => {
+    if (!selectedGameId) return;
+    try {
+      const data = await api(apiActions.getGameState, selectedGameId);
+      setGameState(data);
+    } catch (e) {
+      handleApiError(e);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedGameId, api]);
+
+  useEffect(() => {
+    if (mode === 'play') {
+      setLoading(true);
+      fetchGameState();
+      pollingIntervalRef.current = setInterval(fetchGameState, 5000);
+      return () => {
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+        }
+      };
+    }
+  }, [mode, fetchGameState]);
+
+  useEffect(() => {
+    if (gameState?.gameStatus === 'COMPLETED') {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+    }
+  }, [gameState]);
+
+
+  const handleAction = async (action, ...args) => {
+    if (isActionLoading) return;
+    setIsActionLoading(true);
+    try {
+      if (action === apiActions.nextLevel || action === apiActions.previousLevel) {
+        setIsTimerFinished(false);
+      }
+      const newGameState = await api(action, ...args);
+      if (action !== apiActions.finalizeGame) {
+        setGameState(newGameState);
+      }
+    } catch (e) {
+      if (e.message !== '401') {
+        Alert.alert('Error', e.message);
+      }
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const handleStartGame = () => {
+    if (!selectedGameId) {
+      Alert.alert('Error', 'Please select a game to start.');
+      return;
+    }
+    handleAction(apiActions.startGame, selectedGameId, Array.from(selectedPlayerIds)).then(() => {
+        setMode('play');
+    });
+  }
+
+  const togglePlayerSelection = (playerId) => {
+    const newSelection = new Set(selectedPlayerIds);
+    if (newSelection.has(playerId)) {
+      newSelection.delete(playerId);
+    } else {
+      newSelection.add(playerId);
+    }
+    setSelectedPlayerIds(newSelection);
+  };
+
+  const handlePlayerPress = (player) => {
+    if (mode === 'eliminate_select_player') {
+        setSelectedPlayerToEliminate(player);
+        setMode('eliminate_select_killer');
+    } else if (mode === 'eliminate_select_killer') {
+        handleAction(apiActions.eliminatePlayer, selectedGameId, selectedPlayerToEliminate.id, player.id);
+        setMode('play');
+        setSelectedPlayerToEliminate(null);
+    }
+  }
+
+  if (loading && !gameState && mode !== 'setup') {
+    return <PageLayout><ActivityIndicator size="large" color="#fb5b5a" /></PageLayout>;
+  }
+
+  if (error) {
+    return <PageLayout><Text style={styles.errorText}>Error: {error}</Text></PageLayout>;
+  }
+
+  if (mode === 'setup') {
+      return (
+          <PageLayout>
+              <ScrollView contentContainerStyle={styles.container}>
+                  <Text style={styles.title}>Select Game</Text>
+                  {allGames.filter(game => game.gameStatus !== 'COMPLETED').length > 0 ? (
+                    <Picker
+                      selectedValue={selectedGameId}
+                      onValueChange={(itemValue) => setSelectedGameId(itemValue)}
+                      style={styles.picker}
                     >
-                    <Text style={styles.playerName}>
-                      {player.firstName} {player.lastName}
-                      {player.hasBounty ? ' ⭐️' : null}
-                    </Text>
-                    <Text style={styles.playerStats}>
-                      {player.playing ? `Kills: ${player.kills} | Bounties: ${player.bounties}` : 'DNP'}
-                      {player.eliminated ? ` | Place: ${getOrdinal(player.place)}` : player.place === 1 ? '1' : null}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-                <View style={styles.buttonContainer}>
-                  <TouchableOpacity
-                    style={[styles.eliminateButton, { marginRight: 10 }]}
-                    onPress={handleEliminateButtonClick}
-                  >
-                    <Text style={styles.eliminateButtonText}>Eliminate</Text>
-                  </TouchableOpacity>
+                      {allGames
+                        .filter(game => game.gameStatus !== 'COMPLETED')
+                        .map(game => (
+                          <Picker.Item
+                            key={game.id}
+                            label={`${game.gameName} (${new Date(game.gameDate).toLocaleDateString()}) - ${game.gameStatus || 'SCHEDULED'}`}
+                            value={game.id}
+                          />
+                        ))}
+                    </Picker>
+                  ) : (
+                    <Text>No upcoming or active games found for this season.</Text>
+                  )}
+
+                  {selectedGameId && (
+                    <>
+                      <Text style={styles.title}>Select Players</Text>
+                      {allPlayers.map(player => (
+                          <View key={player.id} style={styles.playerSetupItem}>
+                              <Text>{player.displayName}</Text>
+                              <Switch
+                                  value={selectedPlayerIds.has(player.id)}
+                                  onValueChange={() => togglePlayerSelection(player.id)}
+                              />
+                          </View>
+                      ))}
+                      <TouchableOpacity style={styles.button} onPress={handleStartGame} disabled={isActionLoading}>
+                          <Text style={styles.buttonText}>Start Game</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
+              </ScrollView>
+          </PageLayout>
+      );
+   }
+
+
+  if (!gameState) {
+    return <PageLayout><Text>No game state available.</Text></PageLayout>;
+  }
+
+  const remainingPlayers = gameState.players.filter(p => !p.isEliminated).length;
+  const eliminatedPlayersCount = gameState.players.filter(p => p.isEliminated).length;
+
+  const sortedPlayers = [...gameState.players].sort((a, b) => {
+    if (a.isEliminated && !b.isEliminated) return 1;
+    if (!a.isEliminated && b.isEliminated) return -1;
+
+    if (a.isEliminated && b.isEliminated) {
+      return (a.place || 0) - (b.place || 0);
+    }
+
+    if (a.rank && b.rank) {
+        if (a.rank !== b.rank) {
+            return a.rank - b.rank;
+        }
+    }
+    return a.displayName.localeCompare(b.displayName);
+  });
+
+  let mainButton = null;
+  if (mode !== 'play') {
+      mainButton = (
+          <TouchableOpacity style={styles.button} onPress={() => setMode('play')} disabled={isActionLoading}>
+              <Text style={styles.buttonText}>Cancel</Text>
+          </TouchableOpacity>
+      );
+  } else if (remainingPlayers <= 1 && gameState.gameStatus !== 'COMPLETED') {
+      mainButton = (
+          <TouchableOpacity style={styles.button} onPress={() => handleAction(apiActions.finalizeGame, selectedGameId)} disabled={isActionLoading}>
+              <Text style={styles.buttonText}>Finalize Game</Text>
+          </TouchableOpacity>
+      );
+  } else if (gameState.gameStatus === 'IN_PROGRESS') {
+      mainButton = (
+          <TouchableOpacity style={styles.button} onPress={() => setMode('eliminate_select_player')} disabled={isActionLoading}>
+              <Text style={styles.buttonText}>Eliminate Player</Text>
+          </TouchableOpacity>
+      );
+  }
+
+  let undoButton = null;
+  if (eliminatedPlayersCount > 0 && gameState.gameStatus === 'IN_PROGRESS') {
+      undoButton = (
+          <TouchableOpacity style={styles.button} onPress={() => handleAction(apiActions.undoElimination, selectedGameId)} disabled={isActionLoading}>
+              <Text style={styles.buttonText}>Undo Elimination</Text>
+          </TouchableOpacity>
+      );
+  }
+
+
+  return (
+    <PageLayout>
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.title}>Game Play</Text>
+
+        {gameState.gameStatus === 'COMPLETED' ? (
+          <Text style={styles.gameOverText}>Game Over</Text>
+        ) : (
+          gameState.timer && gameState.timer.blindLevels && (
+              <Timer
+                  timerState={gameState.timer}
+                  blindLevels={gameState.timer.blindLevels}
+                  isPlaying={gameState.gameStatus === 'IN_PROGRESS'}
+                  onTimerEnd={() => setIsTimerFinished(true)}
+              />
+          )
+        )}
+
+        {gameState.gameStatus !== 'COMPLETED' && (
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={[styles.button, (isActionLoading || gameState.timer.currentLevelIndex <= 0) && styles.disabledButton]}
+                onPress={() => handleAction(apiActions.previousLevel, selectedGameId)}
+                disabled={isActionLoading || gameState.timer.currentLevelIndex <= 0}
+              >
+                <Text style={styles.buttonText}>Prev Level</Text>
+              </TouchableOpacity>
+
+              {gameState.gameStatus === 'IN_PROGRESS' && (
+                <TouchableOpacity
+                    style={[styles.button, (isActionLoading || isTimerFinished) && styles.disabledButton]}
+                    onPress={() => handleAction(apiActions.pauseGame, selectedGameId)}
+                    disabled={isActionLoading || isTimerFinished}
+                >
+                  <Text style={styles.buttonText}>Pause</Text>
+                </TouchableOpacity>
+              )}
+              {gameState.gameStatus === 'PAUSED' && (
+                <TouchableOpacity
+                    style={[styles.button, isActionLoading && styles.disabledButton]}
+                    onPress={() => handleAction(apiActions.resumeGame, selectedGameId)}
+                    disabled={isActionLoading}>
+                  <Text style={styles.buttonText}>Resume</Text>
+                </TouchableOpacity>
+              )}
+
+              <TouchableOpacity
+                style={[styles.button, (isActionLoading || gameState.timer.currentLevelIndex >= gameState.timer.blindLevels.length - 1) && styles.disabledButton]}
+                onPress={() => handleAction(apiActions.nextLevel, selectedGameId)}
+                disabled={isActionLoading || gameState.timer.currentLevelIndex >= gameState.timer.blindLevels.length - 1}
+              >
+                <Text style={styles.buttonText}>Next Level</Text>
+              </TouchableOpacity>
+            </View>
+        )}
+
+        {mode === 'eliminate_select_player' && (
+            <Text style={styles.promptText}>Select the player to ELIMINATE.</Text>
+        )}
+        {mode === 'eliminate_select_killer' && (
+            <Text style={styles.promptText}>Select the player who got the KILL.</Text>
+        )}
+
+        <View style={styles.playersContainer}>
+          <Text style={styles.subtitle}>Players</Text>
+          {sortedPlayers.map((player) => (
+            <TouchableOpacity key={player.id} onPress={() => handlePlayerPress(player)} disabled={isActionLoading || mode !== 'eliminate_select_player' && mode !== 'eliminate_select_killer' || player.isEliminated}>
+                <View style={[styles.playerItem, selectedPlayerToEliminate?.id === player.id && styles.selectedPlayerItem]}>
+                <Text>{player.displayName} {player.hasBounty && <Text style={styles.bountyIndicator}>⭐️</Text>}</Text>
+                <Text>
+                    {player.isEliminated && `Eliminated: ${getOrdinal(player.place)} | `}
+                    Kills: {player.kills} | Bounties: {player.bounties}
+                </Text>
                 </View>
-              </>
-          ) : (
-            <>
-                      {/* Render Edit Mode Content */}
-            </>
-          )}
-        </ScrollView>
-      </PageLayout>
-    );
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <View style={styles.buttonContainer}>
+            {mainButton}
+        </View>
+        {undoButton && (
+            <View style={styles.buttonContainer}>
+                {undoButton}
+            </View>
+        )}
+
+      </ScrollView>
+    </PageLayout>
+  );
 };
 
 const styles = StyleSheet.create({
-  scrollContainer: {
-      flexGrow: 1,
-      justifyContent: 'center',
+  container: {
+    padding: 20,
   },
-  playerListHeader: {
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  promptText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginVertical: 10,
+    color: '#fb5b5a',
+  },
+  gameStatus: {
+    fontSize: 18,
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  timerContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  playersContainer: {
+    marginBottom: 20,
+  },
+  subtitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    textAlign: 'center',
-    marginTop: 10,
+    marginBottom: 10,
   },
-  playerContainer: {
+  playerItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginVertical: 5,
-    width: 300,
-    alignSelf: 'center',
-    padding: 5,
-    borderWidth: 1,
-    borderRadius: 5,
-    borderColor: 'black',
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
   },
-  playerName: {
-    fontSize: 12,
-    fontWeight: 'bold',
+  selectedPlayerItem: {
+    backgroundColor: '#e0e0e0',
   },
-  playerStats: {
-    fontSize: 12,
-  },
-  eliminateButton: {
-    backgroundColor: 'blue',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 5,
-    maxWidth: 100,
-  },
-  eliminateButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  selectedPlayerContainer: {
-    borderColor: 'blue',
-    borderWidth: 2,
-  },
-  eliminatedPlayerContainer: {
-    borderColor: 'light-gray',
-    borderWidth: 1,
-    backgroundColor: '#f5f5f5',
-    opacity: 0.6,
+  playerSetupItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
   },
   buttonContainer: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-around',
+    marginBottom: 20,
   },
-  claimKillText: {
-    fontSize: 18,
+  button: {
+    backgroundColor: '#fb5b5a',
+    padding: 15,
+    borderRadius: 5,
+  },
+  buttonText: {
+    color: 'white',
     fontWeight: 'bold',
-    color: '#004777',
-    padding: 10,
+  },
+  disabledButton: {
+    backgroundColor: '#ccc',
+  },
+  errorText: {
+    color: 'red',
+    textAlign: 'center',
+  },
+  bountyIndicator: {
+    fontSize: 16,
+    marginLeft: 5,
+  },
+  picker: {
+    width: 225,
+    height: 50,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+  },
+  gameOverText: {
+    fontSize: 30,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginVertical: 20,
+    color: '#A30000',
   },
 });
 
