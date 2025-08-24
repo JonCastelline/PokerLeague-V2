@@ -1,11 +1,11 @@
 import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import { useAuth } from './AuthContext';
-import { API_BASE_URL } from '../src/config';
+import * as apiActions from '../src/api';
 
 const LeagueContext = createContext();
 
 export const LeagueProvider = ({ children }) => {
-  const { token, user } = useAuth();
+  const { user, api } = useAuth();
   const [leagues, setLeagues] = useState([]);
   const [selectedLeagueId, setSelectedLeagueId] = useState(null);
   const [leagueHomeContent, setLeagueHomeContent] = useState(null);
@@ -16,14 +16,11 @@ export const LeagueProvider = ({ children }) => {
   const [loadingCurrentUserMembership, setLoadingCurrentUserMembership] = useState(true);
 
   const reloadLeagues = useCallback(async () => {
-    if (token) {
+    if (user) {
       setLoadingLeagues(true);
       try {
-        const response = await fetch(`${API_BASE_URL}/api/leagues`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        const data = await response.json();
-        setLeagues(data);
+        const data = await api(apiActions.getLeagues);
+        setLeagues(data || []);
         if (data && data.length > 0) {
           if (!selectedLeagueId || !data.some(league => league.id === selectedLeagueId)) {
             setSelectedLeagueId(data[0].id);
@@ -33,74 +30,63 @@ export const LeagueProvider = ({ children }) => {
         }
       } catch (error) {
         console.error('Failed to fetch leagues:', error);
-        setLeagues([]);
-        setSelectedLeagueId(null);
+        if (error.message !== '401') {
+          setLeagues([]);
+          setSelectedLeagueId(null);
+        }
       } finally {
         setLoadingLeagues(false);
       }
     }
-  }, [token, selectedLeagueId]);
+  }, [user, selectedLeagueId, api]);
 
   useEffect(() => {
     reloadLeagues();
   }, [reloadLeagues]);
 
   const fetchCurrentUserMembership = useCallback(async () => {
-    setLoadingCurrentUserMembership(true);
-    if (!token || !selectedLeagueId || !user?.id) {
+    if (!selectedLeagueId || !user?.id) {
       setCurrentUserMembership(null);
-      setLoadingCurrentUserMembership(false); // Stop loading if no dependencies
+      setLoadingCurrentUserMembership(false);
       return;
     }
+    setLoadingCurrentUserMembership(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/leagues/${selectedLeagueId}/members/me`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (!response.ok) {
-        if (response.status === 404) {
-          setCurrentUserMembership(null);
-          return;
-        }
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
+      const data = await api(apiActions.getCurrentUserMembership, selectedLeagueId);
       setCurrentUserMembership(data);
     } catch (error) {
       console.error('Failed to fetch current user membership:', error);
-      setCurrentUserMembership(null);
+      if (error.message !== '401') {
+        setCurrentUserMembership(null);
+      }
     } finally {
       setLoadingCurrentUserMembership(false);
     }
-  }, [token, selectedLeagueId, user?.id]);
+  }, [selectedLeagueId, user?.id, api]);
 
   useEffect(() => {
     fetchCurrentUserMembership();
-  }, [fetchCurrentUserMembership]); // Trigger fetch when dependencies change
+  }, [fetchCurrentUserMembership]);
 
   const reloadHomeContent = useCallback(async () => {
-    if (!selectedLeagueId || !token) {
+    if (!selectedLeagueId) {
       setLeagueHomeContent(null);
       setLoadingContent(false);
       return;
     }
     setLoadingContent(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/leagues/${selectedLeagueId}/home-content`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setLeagueHomeContent(data);
-      } else {
-        setLeagueHomeContent(null);
-      }
+      const data = await api(apiActions.getLeagueHomeContent, selectedLeagueId);
+      setLeagueHomeContent(data);
     } catch (error) {
       console.error('Failed to fetch league home content:', error);
-      setLeagueHomeContent(null);
+      if (error.message !== '401') {
+        setLeagueHomeContent(null);
+      }
     } finally {
       setLoadingContent(false);
     }
-  }, [selectedLeagueId, token]);
+  }, [selectedLeagueId, api]);
 
   useEffect(() => {
     reloadHomeContent();
@@ -111,23 +97,18 @@ export const LeagueProvider = ({ children }) => {
   };
 
   const refreshInviteCode = async (leagueId) => {
-    if (!token) return;
     try {
-      const response = await fetch(`${API_BASE_URL}/api/leagues/${leagueId}/refresh-invite`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
+      const data = await api(apiActions.refreshInviteCode, leagueId);
+      if (data) {
         setInviteCode(data.inviteCode);
-        await reloadLeagues(); // Refetch leagues to get the new code
+        await reloadLeagues();
       }
     } catch (error) {
       console.error('Failed to refresh invite code:', error);
     }
   };
 
-  const currentLeague = leagues.find(l => l.id === selectedLeagueId);
+  const currentLeague = Array.isArray(leagues) ? leagues.find(l => l.id === selectedLeagueId) : undefined;
 
   const reloadCurrentUserMembership = useCallback(async () => {
     await fetchCurrentUserMembership();

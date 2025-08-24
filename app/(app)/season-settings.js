@@ -646,7 +646,7 @@ const SeasonSettingsPage = () => {
                 {game.gameTime && <Text>Time: {DateTime.fromISO(game.gameTime).toFormat('hh:mm a')}</Text>}
                 {game.gameLocation && <Text>Location: {game.gameLocation}</Text>}
               </View>
-              {isAdmin && !isSeasonFinalized && (
+              {isAdmin && !isSeasonFinalized && game.gameStatus === 'SCHEDULED' && (
                 <View style={styles.gameActions}>
                   <TouchableOpacity
                     style={[styles.button, styles.buttonPrimary, styles.smallButton]}

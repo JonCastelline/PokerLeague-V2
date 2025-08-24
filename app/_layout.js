@@ -2,11 +2,26 @@ import { Slot, useRouter, useSegments } from "expo-router";
 import { useEffect } from "react";
 import { AuthProvider, useAuth } from "../context/AuthContext";
 import { ActivityIndicator, View } from 'react-native';
+import * as Audio from 'expo-audio';
 
 const InitialLayout = () => {
   const { authenticated, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+
+  useEffect(() => {
+    const configureAudio = async () => {
+      try {
+        await Audio.setAudioModeAsync({
+          playsInSilentModeIOS: true,
+        });
+      } catch (e) {
+        console.error('Failed to set audio mode', e);
+      }
+    };
+
+    configureAudio();
+  }, []);
 
   useEffect(() => {
     if (isLoading) return;
