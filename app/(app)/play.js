@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView, Alert, Switch } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView, Alert, Switch, TextInput } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
 import * as apiActions from '../../src/api';
@@ -11,10 +11,12 @@ const PlayPage = () => {
   const { api } = useAuth();
   const { selectedLeagueId } = useLeague();
   const [gameState, setGameState] = useState(null);
+  const [editableGameState, setEditableGameState] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [mode, setMode] = useState('setup'); // 'setup', 'play', 'review', 'eliminate_select_player', 'eliminate_select_killer'
+  const [mode, setMode] = useState('setup'); // 'setup', 'play', 'review', 'eliminate_select_player', 'eliminate_select_killer', 'edit'
   const [allPlayers, setAllPlayers] = useState([]);
+  const [playersInEditOrder, setPlayersInEditOrder] = useState([]);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState(new Set());
   const [selectedPlayerToEliminate, setSelectedPlayerToEliminate] = useState(null);
   const [selectedGameId, setSelectedGameId] = useState(null);
@@ -22,6 +24,7 @@ const PlayPage = () => {
   const [allGames, setAllGames] = useState([]);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [isTimerFinished, setIsTimerFinished] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
   const pollingIntervalRef = useRef(null);
 
   const getOrdinal = (n) => {
@@ -172,6 +175,110 @@ const PlayPage = () => {
     }
   }
 
+  const handleUpdateResults = async () => {
+    setValidationErrors({});
+    if (!editableGameState) return;
+
+    const players = editableGameState.players;
+    const numPlayers = players.length;
+    const errors = {};
+
+    // Validation 1: Total Kills
+    const totalKills = players.reduce((sum, p) => sum + (parseInt(p.kills, 10) || 0), 0);
+    if (totalKills > numPlayers - 1) {
+      errors.general = `Total kills (${totalKills}) cannot exceed the number of players minus one (${numPlayers - 1}).`;
+    }
+
+    // Validation 2: Total Bounties
+    const availableBounties = gameState.players.filter(p => p.hasBounty).length;
+    const totalBounties = players.reduce((sum, p) => sum + (parseInt(p.bounties, 10) || 0), 0);
+    if (totalBounties > availableBounties) {
+      errors.general = (errors.general || '') + `\nTotal bounties (${totalBounties}) cannot exceed the number of available bounties (${availableBounties}).`;
+    }
+
+    // Validation 3: Unique Places
+    const places = players.map(p => parseInt(p.place, 10) || 0).filter(p => p > 0);
+    const uniquePlaces = new Set(places);
+    if (places.length !== uniquePlaces.size) {
+        errors.general = (errors.general || '') + '\nEach player must have a unique place. No ties are allowed.';
+    }
+
+    // Validation 4: Valid Places
+    for (const player of players) {
+        const place = parseInt(player.place, 10);
+        if (isNaN(place) || place < 1 || place > numPlayers) {
+            errors[player.id] = { ...errors[player.id], place: `Place must be between 1 and ${numPlayers}.` };
+        }
+    }
+
+    // Validation 5: First place kills
+    const firstPlacePlayer = players.find(p => (parseInt(p.place, 10) || 0) === 1);
+    if (firstPlacePlayer && (parseInt(firstPlacePlayer.kills, 10) || 0) === 0) {
+        errors[firstPlacePlayer.id] = { ...errors[firstPlacePlayer.id], kills: '1st place must have > 0 kills.' };
+    }
+
+    // Validation 6: Kills >= Bounties
+    for (const player of players) {
+        const kills = parseInt(player.kills, 10) || 0;
+        const bounties = parseInt(player.bounties, 10) || 0;
+        if (kills < bounties) {
+            errors[player.id] = { ...errors[player.id], bounties: 'Bounties cannot exceed kills.' };
+        }
+    }
+
+    if (Object.keys(errors).length > 0) {
+        setValidationErrors(errors);
+        return;
+    }
+
+    const payload = {
+        results: players.map(p => ({
+            playerId: p.id,
+            place: parseInt(p.place, 10) || 0,
+            kills: parseInt(p.kills, 10) || 0,
+            bounties: parseInt(p.bounties, 10) || 0,
+        }))
+    };
+
+    await handleAction(apiActions.updateGameResults, selectedGameId, payload);
+    setMode('review');
+  };
+
+  const handleEditPlayerState = (playerId, field, value) => {
+    setValidationErrors(prevErrors => {
+        const newErrors = { ...prevErrors };
+        if (newErrors[playerId]) {
+            delete newErrors[playerId][field];
+            if (Object.keys(newErrors[playerId]).length === 0) {
+                delete newErrors[playerId];
+            }
+        }
+        return newErrors;
+    });
+
+    setEditableGameState(prevState => {
+        let newPlayers = [...prevState.players];
+
+        if (field === 'place' && value === '1') {
+            newPlayers = newPlayers.map(p => {
+                if (p.place === 1) {
+                    return { ...p, place: '' };
+                }
+                return p;
+            });
+        }
+
+        newPlayers = newPlayers.map(p => {
+            if (p.id === playerId) {
+                return { ...p, [field]: value };
+            }
+            return p;
+        });
+
+        return { ...prevState, players: newPlayers };
+    });
+  };
+
   if (loading && !gameState && mode !== 'setup') {
     return <PageLayout><ActivityIndicator size="large" color="#fb5b5a" /></PageLayout>;
   }
@@ -276,6 +383,62 @@ const PlayPage = () => {
       );
   }
 
+  if (mode === 'edit') {
+    return (
+        <PageLayout>
+            <ScrollView contentContainerStyle={styles.container}>
+                <Text style={styles.title}>Edit Results</Text>
+                <View style={styles.playersContainer}>
+                    {editableGameState.players.map((player) => (
+                        <View key={player.id} style={styles.editPlayerItem}>
+                            <Text style={styles.editPlayerName}>{player.displayName}</Text>
+                            <View style={styles.editPlayerStatsContainer}>
+                                <Text>Place:</Text>
+                                <TextInput
+                                    style={[styles.input, validationErrors[player.id]?.place && styles.inputError]}
+                                    value={String(player.place || '')}
+                                    onChangeText={(text) => handleEditPlayerState(player.id, 'place', text)}
+                                    keyboardType="numeric"
+                                />
+                                <Text>Kills:</Text>
+                                <TextInput
+                                    style={[styles.input, validationErrors[player.id]?.kills && styles.inputError]}
+                                    value={String(player.kills)}
+                                    onChangeText={(text) => handleEditPlayerState(player.id, 'kills', text)}
+                                    keyboardType="numeric"
+                                />
+                                <Text>Bounties:</Text>
+                                <TextInput
+                                    style={[styles.input, validationErrors[player.id]?.bounties && styles.inputError]}
+                                    value={String(player.bounties)}
+                                    onChangeText={(text) => handleEditPlayerState(player.id, 'bounties', text)}
+                                    keyboardType="numeric"
+                                />
+                            </View>
+                        </View>
+                    ))}
+                </View>
+                {validationErrors.general && <Text style={styles.errorText}>{validationErrors.general}</Text>}
+                {Object.entries(validationErrors).map(([playerId, playerErrors]) => {
+                    if (playerId === 'general') return null;
+                    const player = editableGameState.players.find(p => p.id == playerId);
+                    return Object.entries(playerErrors).map(([field, message]) => (
+                        <Text key={`${playerId}-${field}`} style={styles.errorText}>{player?.displayName}: {message}</Text>
+                    ))
+                })}
+                <View style={styles.buttonContainer}>
+                    <TouchableOpacity style={styles.button} onPress={handleUpdateResults} disabled={isActionLoading}>
+                        <Text style={styles.buttonText}>Save</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={() => { setMode('review'); setValidationErrors({}); }} disabled={isActionLoading}>
+                        <Text style={styles.buttonText}>Cancel</Text>
+                    </TouchableOpacity>
+                </View>
+            </ScrollView>
+        </PageLayout>
+    );
+  }
+
   if (mode === 'review') {
     return (
       <PageLayout>
@@ -302,6 +465,20 @@ const PlayPage = () => {
               <View style={styles.buttonContainer}>
                 <TouchableOpacity style={styles.button} onPress={() => handleAction(apiActions.finalizeGame, selectedGameId)}>
                     <Text style={styles.buttonText}>Finalize & Save</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity style={styles.button} onPress={() => {
+                    const newEditableState = JSON.parse(JSON.stringify(gameState));
+                    const winner = newEditableState.players.find(p => !p.isEliminated);
+                    if (winner) {
+                        winner.place = 1;
+                    }
+                    newEditableState.players.sort((a, b) => (a.place || 0) - (b.place || 0));
+                    setEditableGameState(newEditableState);
+                    setMode('edit');
+                }}>
+                    <Text style={styles.buttonText}>Edit</Text>
                 </TouchableOpacity>
               </View>
               {undoButton && (
@@ -485,6 +662,8 @@ const styles = StyleSheet.create({
   errorText: {
     color: 'red',
     textAlign: 'center',
+    marginTop: 5,
+    marginBottom: 5,
   },
   bountyIndicator: {
     fontSize: 16,
@@ -528,6 +707,38 @@ const styles = StyleSheet.create({
   setupStartButton: {
     marginTop: 20,
     marginBottom: 20,
+  },
+  editPlayerItem: {
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+  },
+  editPlayerName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  editPlayerStatsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    padding: 8,
+    borderRadius: 5,
+    width: 60,
+    textAlign: 'center',
+  },
+  inputError: {
+    borderColor: 'red',
+  },
+  inputContainer: {
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#6c757d',
   },
 });
 

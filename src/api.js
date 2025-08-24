@@ -81,6 +81,14 @@ export const finalizeGame = (gameId, token) => {
   });
 };
 
+export const updateGameResults = (gameId, payload, token) => {
+  return apiFetch(`/api/games/${gameId}/live/results`, {
+    method: 'PUT',
+    token,
+    body: JSON.stringify(payload),
+  });
+};
+
 export const getLeagueMembers = (leagueId, token) => {
     return apiFetch(`/api/leagues/${leagueId}/members`, { token });
 };
