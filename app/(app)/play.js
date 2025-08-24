@@ -13,7 +13,7 @@ const PlayPage = () => {
   const [gameState, setGameState] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [mode, setMode] = useState('setup'); // 'setup', 'play', 'eliminate_select_player', 'eliminate_select_killer'
+  const [mode, setMode] = useState('setup'); // 'setup', 'play', 'review', 'eliminate_select_player', 'eliminate_select_killer'
   const [allPlayers, setAllPlayers] = useState([]);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState(new Set());
   const [selectedPlayerToEliminate, setSelectedPlayerToEliminate] = useState(null);
@@ -85,7 +85,7 @@ const PlayPage = () => {
   }, [selectedGameId, api]);
 
   useEffect(() => {
-    if (mode === 'play') {
+    if (mode === 'play' || mode === 'review') {
       setLoading(true);
       fetchGameState();
       pollingIntervalRef.current = setInterval(fetchGameState, 5000);
@@ -106,6 +106,17 @@ const PlayPage = () => {
     }
   }, [gameState]);
 
+  useEffect(() => {
+    if (!gameState || gameState.gameStatus === 'COMPLETED') return;
+
+    const remaining = gameState.players.filter(p => !p.isEliminated).length;
+    if (remaining <= 1 && mode === 'play') {
+      setMode('review');
+    } else if (remaining > 1 && mode === 'review') {
+      setMode('play');
+    }
+  }, [gameState, mode]);
+
 
   const handleAction = async (action, ...args) => {
     if (isActionLoading) return;
@@ -115,7 +126,10 @@ const PlayPage = () => {
         setIsTimerFinished(false);
       }
       const newGameState = await api(action, ...args);
-      if (action !== apiActions.finalizeGame) {
+      if (action === apiActions.finalizeGame) {
+        setGameState(prevState => ({ ...prevState, gameStatus: 'COMPLETED' }));
+        setMode('play');
+      } else {
         setGameState(newGameState);
       }
     } catch (e) {
@@ -169,7 +183,7 @@ const PlayPage = () => {
   if (mode === 'setup') {
       return (
           <PageLayout>
-              <ScrollView contentContainerStyle={styles.container}>
+              <ScrollView contentContainerStyle={styles.setupContainer}>
                   <Text style={styles.title}>Select Game</Text>
                   {allGames.filter(game => game.gameStatus !== 'COMPLETED').length > 0 ? (
                     <Picker
@@ -194,16 +208,18 @@ const PlayPage = () => {
                   {selectedGameId && (
                     <>
                       <Text style={styles.title}>Select Players</Text>
-                      {allPlayers.map(player => (
-                          <View key={player.id} style={styles.playerSetupItem}>
-                              <Text>{player.displayName}</Text>
-                              <Switch
-                                  value={selectedPlayerIds.has(player.id)}
-                                  onValueChange={() => togglePlayerSelection(player.id)}
-                              />
-                          </View>
-                      ))}
-                      <TouchableOpacity style={styles.button} onPress={handleStartGame} disabled={isActionLoading}>
+                      <View style={{width: '100%'}}>
+                        {allPlayers.map(player => (
+                            <View key={player.id} style={styles.playerSetupItem}>
+                                <Text>{player.displayName}</Text>
+                                <Switch
+                                    value={selectedPlayerIds.has(player.id)}
+                                    onValueChange={() => togglePlayerSelection(player.id)}
+                                />
+                            </View>
+                        ))}
+                      </View>
+                      <TouchableOpacity style={[styles.button, styles.setupStartButton]} onPress={handleStartGame} disabled={isActionLoading}>
                           <Text style={styles.buttonText}>Start Game</Text>
                       </TouchableOpacity>
                     </>
@@ -218,7 +234,6 @@ const PlayPage = () => {
     return <PageLayout><Text>No game state available.</Text></PageLayout>;
   }
 
-  const remainingPlayers = gameState.players.filter(p => !p.isEliminated).length;
   const eliminatedPlayersCount = gameState.players.filter(p => p.isEliminated).length;
 
   const sortedPlayers = [...gameState.players].sort((a, b) => {
@@ -238,19 +253,13 @@ const PlayPage = () => {
   });
 
   let mainButton = null;
-  if (mode !== 'play') {
+  if (mode === 'eliminate_select_player' || mode === 'eliminate_select_killer') {
       mainButton = (
           <TouchableOpacity style={styles.button} onPress={() => setMode('play')} disabled={isActionLoading}>
               <Text style={styles.buttonText}>Cancel</Text>
           </TouchableOpacity>
       );
-  } else if (remainingPlayers <= 1 && gameState.gameStatus !== 'COMPLETED') {
-      mainButton = (
-          <TouchableOpacity style={styles.button} onPress={() => handleAction(apiActions.finalizeGame, selectedGameId)} disabled={isActionLoading}>
-              <Text style={styles.buttonText}>Finalize Game</Text>
-          </TouchableOpacity>
-      );
-  } else if (gameState.gameStatus === 'IN_PROGRESS') {
+  } else if (gameState.gameStatus === 'IN_PROGRESS' && mode === 'play') {
       mainButton = (
           <TouchableOpacity style={styles.button} onPress={() => setMode('eliminate_select_player')} disabled={isActionLoading}>
               <Text style={styles.buttonText}>Eliminate Player</Text>
@@ -267,6 +276,47 @@ const PlayPage = () => {
       );
   }
 
+  if (mode === 'review') {
+    return (
+      <PageLayout>
+        <ScrollView contentContainerStyle={styles.container}>
+          <Text style={styles.title}>Final Results</Text>
+          <View style={styles.playersContainer}>
+            {sortedPlayers.map((player) => {
+              const place = player.isEliminated ? getOrdinal(player.place) : '1st';
+              return (
+                <View key={player.id} style={styles.reviewPlayerItem}>
+                  <Text style={styles.reviewPlayerName}>{player.displayName} {player.hasBounty && <Text style={styles.bountyIndicator}>⭐️</Text>}</Text>
+                  <View style={styles.reviewPlayerStatsContainer}>
+                    <Text style={styles.reviewPlayerStat}>Place: {place}</Text>
+                    <Text style={styles.reviewPlayerStat}>Kills: {player.kills}</Text>
+                    <Text style={styles.reviewPlayerStat}>Bounties: {player.bounties}</Text>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+
+          {!isActionLoading ? (
+            <>
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity style={styles.button} onPress={() => handleAction(apiActions.finalizeGame, selectedGameId)}>
+                    <Text style={styles.buttonText}>Finalize & Save</Text>
+                </TouchableOpacity>
+              </View>
+              {undoButton && (
+                  <View style={styles.buttonContainer}>
+                      {undoButton}
+                  </View>
+              )}
+            </>
+          ) : (
+            <ActivityIndicator size="large" color="#fb5b5a" style={{ marginTop: 20 }} />
+          )}
+        </ScrollView>
+      </PageLayout>
+    );
+  }
 
   return (
     <PageLayout>
@@ -334,11 +384,11 @@ const PlayPage = () => {
         <View style={styles.playersContainer}>
           <Text style={styles.subtitle}>Players</Text>
           {sortedPlayers.map((player) => (
-            <TouchableOpacity key={player.id} onPress={() => handlePlayerPress(player)} disabled={isActionLoading || mode !== 'eliminate_select_player' && mode !== 'eliminate_select_killer' || player.isEliminated}>
+            <TouchableOpacity key={player.id} onPress={() => handlePlayerPress(player)} disabled={isActionLoading || (mode !== 'eliminate_select_player' && mode !== 'eliminate_select_killer') || player.isEliminated}>
                 <View style={[styles.playerItem, selectedPlayerToEliminate?.id === player.id && styles.selectedPlayerItem]}>
-                <Text>{player.displayName} {player.hasBounty && <Text style={styles.bountyIndicator}>⭐️</Text>}</Text>
-                <Text>
-                    {player.isEliminated && `Eliminated: ${getOrdinal(player.place)} | `}
+                <Text style={styles.playerDisplayName}>{player.displayName} {player.hasBounty && <Text style={styles.bountyIndicator}>⭐️</Text>}</Text>
+                <Text style={styles.playerStatsText}>
+                    {player.isEliminated && `Place: ${getOrdinal(player.place)} | `}
                     Kills: {player.kills} | Bounties: {player.bounties}
                 </Text>
                 </View>
@@ -364,6 +414,10 @@ const styles = StyleSheet.create({
   container: {
     padding: 20,
   },
+  setupContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -377,15 +431,6 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     color: '#fb5b5a',
   },
-  gameStatus: {
-    fontSize: 18,
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  timerContainer: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
   playersContainer: {
     marginBottom: 20,
   },
@@ -397,9 +442,17 @@ const styles = StyleSheet.create({
   playerItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     padding: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
+  },
+  playerDisplayName: {
+    flex: 2,
+  },
+  playerStatsText: {
+    flex: 1,
+    textAlign: 'right',
   },
   selectedPlayerItem: {
     backgroundColor: '#e0e0e0',
@@ -451,6 +504,30 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginVertical: 20,
     color: '#A30000',
+  },
+  reviewPlayerItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+  },
+  reviewPlayerName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    flex: 1,
+  },
+  reviewPlayerStatsContainer: {
+    flex: 1,
+    alignItems: 'flex-start',
+  },
+  reviewPlayerStat: {
+    fontSize: 16,
+  },
+  setupStartButton: {
+    marginTop: 20,
+    marginBottom: 20,
   },
 });
 
