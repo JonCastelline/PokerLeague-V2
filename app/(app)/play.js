@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView, Alert, Switch, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView, Alert, Switch, TextInput, Image } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
 import * as apiActions from '../../src/api';
@@ -318,7 +318,10 @@ const PlayPage = () => {
                       <View style={{width: '100%'}}>
                         {allPlayers.map(player => (
                             <View key={player.id} style={styles.playerSetupItem}>
-                                <Text>{player.displayName}</Text>
+                                <View style={{flexDirection: 'row', alignItems: 'center', flex: 1}}>
+                                    {player.iconUrl ? <Image source={{ uri: player.iconUrl }} style={styles.playerIcon} /> : <View style={styles.playerIcon} />}
+                                    <Text>{player.displayName}</Text>
+                                </View>
                                 <Switch
                                     value={selectedPlayerIds.has(player.id)}
                                     onValueChange={() => togglePlayerSelection(player.id)}
@@ -391,7 +394,10 @@ const PlayPage = () => {
                 <View style={styles.playersContainer}>
                     {editableGameState.players.map((player) => (
                         <View key={player.id} style={styles.editPlayerItem}>
-                            <Text style={styles.editPlayerName}>{player.displayName}</Text>
+                            <View style={{flexDirection: 'row', alignItems: 'center', flex: 1}}>
+                                {player.iconUrl ? <Image source={{ uri: player.iconUrl }} style={styles.playerIcon} /> : <View style={styles.playerIcon} />}
+                                <Text style={styles.editPlayerName}>{player.displayName}</Text>
+                            </View>
                             <View style={styles.editPlayerStatsContainer}>
                                 <Text>Place:</Text>
                                 <TextInput
@@ -449,7 +455,10 @@ const PlayPage = () => {
               const place = player.isEliminated ? getOrdinal(player.place) : '1st';
               return (
                 <View key={player.id} style={styles.reviewPlayerItem}>
-                  <Text style={styles.reviewPlayerName}>{player.displayName} {player.hasBounty && <Text style={styles.bountyIndicator}>⭐️</Text>}</Text>
+                    <View style={{flexDirection: 'row', alignItems: 'center', flex: 1}}>
+                        {player.iconUrl ? <Image source={{ uri: player.iconUrl }} style={styles.playerIcon} /> : <View style={styles.playerIcon} />}
+                        <Text style={styles.reviewPlayerName}>{player.displayName} {player.hasBounty && <Text style={styles.bountyIndicator}>⭐️</Text>}</Text>
+                    </View>
                   <View style={styles.reviewPlayerStatsContainer}>
                     <Text style={styles.reviewPlayerStat}>Place: {place}</Text>
                     <Text style={styles.reviewPlayerStat}>Kills: {player.kills}</Text>
@@ -563,11 +572,14 @@ const PlayPage = () => {
           {sortedPlayers.map((player) => (
             <TouchableOpacity key={player.id} onPress={() => handlePlayerPress(player)} disabled={isActionLoading || (mode !== 'eliminate_select_player' && mode !== 'eliminate_select_killer') || player.isEliminated}>
                 <View style={[styles.playerItem, selectedPlayerToEliminate?.id === player.id && styles.selectedPlayerItem]}>
-                <Text style={styles.playerDisplayName}>{player.displayName} {player.hasBounty && <Text style={styles.bountyIndicator}>⭐️</Text>}</Text>
-                <Text style={styles.playerStatsText}>
-                    {player.isEliminated && `Place: ${getOrdinal(player.place)} | `}
-                    Kills: {player.kills} | Bounties: {player.bounties}
-                </Text>
+                    <View style={{flexDirection: 'row', alignItems: 'center', flex: 1}}>
+                        {player.iconUrl ? <Image source={{ uri: player.iconUrl }} style={styles.playerIcon} /> : <View style={styles.playerIcon}></View>}
+                        <Text style={styles.playerDisplayName}>{String(player.displayName)} {player.hasBounty ? <Text style={styles.bountyIndicator}>⭐️</Text> : null}</Text>
+                    </View>
+                    <Text style={styles.playerStatsText}>
+                        {player.isEliminated && <Text>Place: {getOrdinal(player.place)} | </Text>}
+                        <Text>Kills: {player.kills} | Bounties: {player.bounties}</Text>
+                    </Text>
                 </View>
             </TouchableOpacity>
           ))}
@@ -739,6 +751,12 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     backgroundColor: '#6c757d',
+  },
+  playerIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    marginRight: 10,
   },
 });
 
