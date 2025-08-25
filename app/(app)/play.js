@@ -518,6 +518,8 @@ const PlayPage = () => {
                   blindLevels={gameState.timer.blindLevels}
                   isPlaying={gameState.gameStatus === 'IN_PROGRESS'}
                   onTimerEnd={() => setIsTimerFinished(true)}
+                  warningSoundEnabled={gameState.settings.warningSoundEnabled}
+                  warningSoundTimeSeconds={gameState.settings.warningSoundTimeSeconds}
               />
           )
         )}

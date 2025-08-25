@@ -61,16 +61,18 @@ const HomePage = () => {
 
   return (
     <PageLayout>
-      <Text style={styles.title}>Welcome!</Text>
-      <Text style={styles.subtitle}>You're not in any leagues yet.</Text>
+      <View style={styles.centeredContent}>
+        <Text style={styles.title}>Welcome!</Text>
+        <Text style={styles.subtitle}>You're not in any leagues yet.</Text>
 
-      <TouchableOpacity style={styles.button} onPress={handleCreateLeague}>
-        <Text style={styles.buttonText}>Create a League</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.button} onPress={handleCreateLeague}>
+          <Text style={styles.buttonText}>Create a League</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity style={styles.button} onPress={handleJoinLeague}>
-        <Text style={styles.buttonText}>Join a League</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.button} onPress={handleJoinLeague}>
+          <Text style={styles.buttonText}>Join a League</Text>
+        </TouchableOpacity>
+      </View>
     </PageLayout>
   );
 };
@@ -80,6 +82,12 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     padding: 20,
+  },
+  centeredContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
   },
   title: {
     fontSize: 28,
