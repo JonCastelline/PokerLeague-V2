@@ -1,22 +1,55 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { CountdownCircleTimer } from 'react-native-countdown-circle-timer';
 import { useAudioPlayer } from 'expo-audio';
+import { useAuth } from '../context/AuthContext';
+import * as apiActions from '../src/api';
 
-const Timer = ({ timerState, blindLevels, isPlaying, onTimerEnd, warningSoundEnabled, warningSoundTimeSeconds }) => {
+const Timer = ({ timerState, blindLevels, isPlaying, onTimerEnd, warningSoundEnabled, warningSoundTimeSeconds, gameId }) => {
+  const { api } = useAuth();
   const prevRemainingTimeRef = useRef(0);
+  const isMounted = useRef(false);
 
   const warningSoundPlayer = useAudioPlayer(require('../assets/ding.wav'));
   const alarmPlayer = useAudioPlayer(require('../assets/alarm.mp3'));
 
+  useEffect(() => {
+      isMounted.current = true;
+      return () => {
+        isMounted.current = false;
+
+        // Stop the players first
+        if (alarmPlayer) { // Check if player exists before calling methods
+          alarmPlayer.stop();
+          alarmPlayer.remove();
+        }
+        if (warningSoundPlayer) { // Check if player exists
+          warningSoundPlayer.stop();
+          warningSoundPlayer.remove();
+        }
+      };
+    }, [alarmPlayer, warningSoundPlayer]); // Add players to dependency array
+
   const handleComplete = () => {
-    alarmPlayer.seekTo(0);
-    alarmPlayer.play();
+    if (isMounted.current) {
+        alarmPlayer.seekTo(0);
+        alarmPlayer.play();
+    }
     if (onTimerEnd) {
         onTimerEnd();
     }
     return { shouldRepeat: false };
   };
+
+  const handleUpdate = (remainingTime) => {
+    if (isPlaying && remainingTime % 1 === 0) {
+        try {
+            api(apiActions.updateTimer, gameId, remainingTime * 1000);
+        } catch (error) {
+            console.error('Failed to update timer on backend:', error);
+        }
+    }
+  }
 
   const renderTime = ({ remainingTime }) => {
     const displayTime = Math.max(0, remainingTime);
