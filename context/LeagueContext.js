@@ -79,9 +79,14 @@ export const LeagueProvider = ({ children }) => {
       const data = await api(apiActions.getLeagueHomeContent, selectedLeagueId);
       setLeagueHomeContent(data);
     } catch (error) {
-      console.error('Failed to fetch league home content:', error);
-      if (error.message !== '401') {
+      if (error.message.startsWith('API Error: 404')) {
+        // Gracefully handle 404 when no home content exists yet
         setLeagueHomeContent(null);
+      } else {
+        console.error('Failed to fetch league home content:', error);
+        if (error.message !== '401') {
+          setLeagueHomeContent(null);
+        }
       }
     } finally {
       setLoadingContent(false);

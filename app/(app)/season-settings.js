@@ -1,7 +1,7 @@
 import { Picker } from '@react-native-picker/picker';
 import { DateTime } from 'luxon';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Dimensions, Modal, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import PageLayout from '../../components/PageLayout';
 import { useAuth } from '../../context/AuthContext';
@@ -1001,6 +1001,28 @@ const SeasonSettingsPage = () => {
         </View>
 
         <View style={styles.settingItem}>
+            <Text style={styles.settingLabel}>Warning Sound Enabled</Text>
+            <Switch
+                value={settings.warningSoundEnabled}
+                onValueChange={(value) => handleSettingChange('warningSoundEnabled', value)}
+                disabled={isSeasonFinalized || !isAdmin}
+            />
+        </View>
+
+        {settings.warningSoundEnabled ? (
+            <View style={styles.settingItem}>
+                <Text style={styles.settingLabel}>Warning Sound Time (seconds)</Text>
+                <TextInput
+                    style={styles.numericInput}
+                    value={String(settings.warningSoundTimeSeconds)}
+                    onChangeText={(value) => handleSettingChange('warningSoundTimeSeconds', parseInt(value, 10) || 0)}
+                    keyboardType="numeric"
+                    editable={isSeasonFinalized ? false : (isAdmin ? true : false)}
+                />
+            </View>
+        ) : null}
+
+        <View style={styles.settingItem}>
             <Text style={styles.settingLabel}>Starting Stack</Text>
             <TextInput
                 style={styles.numericInput}
@@ -1082,7 +1104,7 @@ const SeasonSettingsPage = () => {
             disabled={isSeasonFinalized || !isAdmin}
             activeOpacity={0.7}
           >
-            <View style={[styles.placePointItemContent, { flex: 1 }]}>
+            <View style={styles.placePointItemContent}> 
               <Text>Place: {pp.place}</Text>
               <Text>Points: {pp.points}</Text>
               {placePointErrors && placePointErrors[index] && (
@@ -1476,9 +1498,7 @@ const SeasonSettingsPage = () => {
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    padding: 20,
-    width: '100%', // Ensure the container takes full width
-    maxWidth: Dimensions.get('window').width - 40, // 20px padding on each side
+    width: '100%',
   },
   title: {
     fontSize: 24,
@@ -1497,6 +1517,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f0f0',
     borderRadius: 10,
     marginBottom: 20,
+    width: '100%',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
   },
   noSeasonsText: {
     fontSize: 18,
@@ -1568,7 +1591,6 @@ const styles = StyleSheet.create({
   pickerWrapper: {
     justifyContent: 'center',
     paddingLeft: 10,
-    flex: 1, // allows it to fill remaining space and align nicely
     borderRadius: 10, // Rounded corners
   },
   modalButton: {

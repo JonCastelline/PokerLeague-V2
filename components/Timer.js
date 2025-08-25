@@ -3,10 +3,10 @@ import { View, Text, StyleSheet } from 'react-native';
 import { CountdownCircleTimer } from 'react-native-countdown-circle-timer';
 import { useAudioPlayer } from 'expo-audio';
 
-const Timer = ({ timerState, blindLevels, isPlaying, onTimerEnd }) => {
+const Timer = ({ timerState, blindLevels, isPlaying, onTimerEnd, warningSoundEnabled, warningSoundTimeSeconds }) => {
   const prevRemainingTimeRef = useRef(0);
 
-  const dingPlayer = useAudioPlayer(require('../assets/ding.wav'));
+  const warningSoundPlayer = useAudioPlayer(require('../assets/ding.wav'));
   const alarmPlayer = useAudioPlayer(require('../assets/alarm.mp3'));
 
   const handleComplete = () => {
@@ -21,9 +21,9 @@ const Timer = ({ timerState, blindLevels, isPlaying, onTimerEnd }) => {
   const renderTime = ({ remainingTime }) => {
     const displayTime = Math.max(0, remainingTime);
 
-    if (displayTime === 3 && displayTime !== prevRemainingTimeRef.current) {
-        dingPlayer.seekTo(0);
-        dingPlayer.play();
+    if (warningSoundEnabled && displayTime === warningSoundTimeSeconds && displayTime !== prevRemainingTimeRef.current) {
+        warningSoundPlayer.seekTo(0);
+        warningSoundPlayer.play();
     }
     prevRemainingTimeRef.current = displayTime;
 
