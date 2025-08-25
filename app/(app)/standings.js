@@ -247,11 +247,10 @@ const styles = StyleSheet.create({
   },
   tableCell: { // Default for general cells, will be overridden
     flex: 1,
-    // Removed justifyContent and alignItems from here
     flexDirection: 'row', // Keep this for the playerCell's internal layout
   },
   rankCell: {
-    flex: 0.6, // Increased from 0.5
+    flex: 0.6,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -262,25 +261,25 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start', // Left justify content within the playerCell
   },
   placePointsCell: {
-    flex: 1.2, // Increased from 1
+    flex: 1.2,
     justifyContent: 'center',
     alignItems: 'center',
   },
   statCell: { // For Kills, Bounty, Attendance
-    flex: 0.8, // Increased from 0.7
+    flex: 0.8,
     justifyContent: 'center',
     alignItems: 'center',
   },
   totalCell: {
-    flex: 0.9, // Increased from 0.8
+    flex: 0.9,
     justifyContent: 'center',
     alignItems: 'center',
   },
   playerIcon: {
-    width: 20, // Reduced size
-    height: 20, // Reduced size
-    borderRadius: 10, // Adjust borderRadius for new size
-    marginRight: 4, // Reduced space between icon and name
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    marginRight: 4,
   },
   playerName: {
     fontSize: 16,
