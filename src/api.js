@@ -75,10 +75,11 @@ export const undoElimination = (gameId, token) => {
 };
 
 export const finalizeGame = (gameId, token) => {
-  return apiFetch(`/api/games/${gameId}/live/finalize`, {
-    method: 'POST',
-    token,
-  });
+    return { url: `/games/${gameId}/live/finalize`, method: 'POST', token };
+};
+
+export const updateTimer = (gameId, timeRemainingInMillis, token) => {
+    return { url: `/games/${gameId}/live/timer`, method: 'PUT', data: { timeRemainingInMillis }, token };
 };
 
 export const updateGameResults = (gameId, payload, token) => {

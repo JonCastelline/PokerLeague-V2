@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView, Alert, Switch, TextInput, Image } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
@@ -87,17 +88,35 @@ const PlayPage = () => {
     }
   }, [selectedGameId, api]);
 
+  const [isPlayScreenActive, setIsPlayScreenActive] = useState(true);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      setIsPlayScreenActive(true);
+      console.log('Play screen focused');
+
+      return () => {
+        setIsPlayScreenActive(false);
+        console.log('Play screen blurred - attempting to stop timer sounds');
+      };
+    }, [])
+  );
+
   useEffect(() => {
     if (mode === 'play' || mode === 'review') {
       setLoading(true);
       fetchGameState();
       pollingIntervalRef.current = setInterval(fetchGameState, 5000);
-      return () => {
-        if (pollingIntervalRef.current) {
-          clearInterval(pollingIntervalRef.current);
-        }
-      };
+    } else {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
     }
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
   }, [mode, fetchGameState]);
 
   useEffect(() => {
@@ -514,9 +533,10 @@ const PlayPage = () => {
         ) : (
           gameState.timer && gameState.timer.blindLevels && (
               <Timer
+                  gameId={gameState.gameId}
                   timerState={gameState.timer}
                   blindLevels={gameState.timer.blindLevels}
-                  isPlaying={gameState.gameStatus === 'IN_PROGRESS'}
+                  isPlaying={gameState.gameStatus === 'IN_PROGRESS' && isPlayScreenActive}
                   onTimerEnd={() => setIsTimerFinished(true)}
                   warningSoundEnabled={gameState.settings.warningSoundEnabled}
                   warningSoundTimeSeconds={gameState.settings.warningSoundTimeSeconds}
