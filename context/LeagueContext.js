@@ -14,6 +14,8 @@ export const LeagueProvider = ({ children }) => {
   const [inviteCode, setInviteCode] = useState(null);
   const [currentUserMembership, setCurrentUserMembership] = useState(null);
   const [loadingCurrentUserMembership, setLoadingCurrentUserMembership] = useState(true);
+  const [activeSeason, setActiveSeason] = useState(null);
+  const [loadingSeason, setLoadingSeason] = useState(true);
 
   const reloadLeagues = useCallback(async () => {
     if (user) {
@@ -67,6 +69,28 @@ export const LeagueProvider = ({ children }) => {
   useEffect(() => {
     fetchCurrentUserMembership();
   }, [fetchCurrentUserMembership]);
+
+  useEffect(() => {
+    const fetchActiveSeason = async () => {
+      if (selectedLeagueId) {
+        setLoadingSeason(true);
+        try {
+          const season = await api(apiActions.getActiveSeason, selectedLeagueId);
+          setActiveSeason(season);
+        } catch (error) {
+          if (error.message.includes('404')) {
+            setActiveSeason(null); // It's okay if there's no active season
+          } else if (error.message !== '401') {
+            console.error('Failed to fetch active season:', error);
+            setActiveSeason(null);
+          }
+        } finally {
+          setLoadingSeason(false);
+        }
+      }
+    };
+    fetchActiveSeason();
+  }, [selectedLeagueId, api]);
 
   const reloadHomeContent = useCallback(async () => {
     if (!selectedLeagueId) {
@@ -136,6 +160,8 @@ export const LeagueProvider = ({ children }) => {
     setInviteCode,
     reloadHomeContent,
     reloadCurrentUserMembership,
+    activeSeason,
+    loadingSeason,
   };
 
   return (

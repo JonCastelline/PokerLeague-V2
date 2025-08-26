@@ -75,7 +75,7 @@ export const undoElimination = (gameId, token) => {
 };
 
 export const finalizeGame = (gameId, token) => {
-    return { url: `/games/${gameId}/live/finalize`, method: 'POST', token };
+    return apiFetch(`/api/games/${gameId}/live/finalize`, { method: 'POST', token });
 };
 
 export const updateTimer = (gameId, timeRemainingInMillis, token) => {
@@ -100,8 +100,16 @@ export const getGameHistory = (seasonId, token) => {
   return apiFetch(`/api/seasons/${seasonId}/games`, { token });
 };
 
+export const getGameResults = (gameId, token) => {
+  return apiFetch(`/api/games/${gameId}/results`, { token });
+};
+
 export const getActiveSeason = (leagueId, token) => {
   return apiFetch(`/api/leagues/${leagueId}/seasons/active`, { token });
+};
+
+export const getSeasons = (leagueId, token) => {
+  return apiFetch(`/api/leagues/${leagueId}/seasons`, { token });
 };
 
 export const nextLevel = (gameId, token) => {
