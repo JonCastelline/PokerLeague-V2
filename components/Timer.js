@@ -18,17 +18,20 @@ const Timer = ({ timerState, blindLevels, isPlaying, onTimerEnd, warningSoundEna
       return () => {
         isMounted.current = false;
 
-        // Stop the players first
-        if (alarmPlayer) { // Check if player exists before calling methods
-          alarmPlayer.stop();
-          alarmPlayer.remove();
-        }
-        if (warningSoundPlayer) { // Check if player exists
-          warningSoundPlayer.stop();
-          warningSoundPlayer.remove();
+        try {
+          if (alarmPlayer) { // Check if player exists before calling methods
+            alarmPlayer.pause();
+            alarmPlayer.remove();
+          }
+          if (warningSoundPlayer) { // Check if player exists
+            warningSoundPlayer.pause();
+            warningSoundPlayer.remove();
+          }
+        } catch (e) {
+            console.warn("Error cleaning up audio players, but continuing.", e);
         }
       };
-    }, [alarmPlayer, warningSoundPlayer]); // Add players to dependency array
+    }, []);
 
   const handleComplete = () => {
     if (isMounted.current) {

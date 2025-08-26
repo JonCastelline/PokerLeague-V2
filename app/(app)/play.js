@@ -388,7 +388,7 @@ const PlayPage = () => {
               <Text style={styles.buttonText}>Cancel</Text>
           </TouchableOpacity>
       );
-  } else if (gameState.gameStatus === 'IN_PROGRESS' && mode === 'play') {
+  } else if ((gameState.gameStatus === 'IN_PROGRESS' || gameState.gameStatus === 'PAUSED') && mode === 'play') {
       mainButton = (
           <TouchableOpacity style={styles.button} onPress={() => setMode('eliminate_select_player')} disabled={isActionLoading}>
               <Text style={styles.buttonText}>Eliminate Player</Text>
