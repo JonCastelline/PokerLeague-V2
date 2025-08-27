@@ -48,36 +48,40 @@ const GameDetailsPage = () => {
     </View>
   );
 
-  return (
-    <PageLayout>
-      <View style={styles.container}>
+  const ListHeader = () => (
+    <>
         <Text style={styles.title}>Game Results</Text>
-        {loading ? (
-          <ActivityIndicator size="large" color="#0000ff" />
-        ) : error ? (
-          <Text style={styles.errorText}>{error}</Text>
-        ) : (
-          <FlatList
-            data={results}
-            renderItem={renderResult}
-            keyExtractor={item => item.id.toString()}
-            ListHeaderComponent={() => (
-              <View style={styles.header}>
-                <Text style={[styles.headerText, styles.placeHeader]}>Place</Text>
-                <Text style={[styles.headerText, styles.playerHeader]}>Player</Text>
-                <Text style={[styles.headerText, styles.statsHeader]}>Stats</Text>
-              </View>
-            )}
-          />
-        )}
-      </View>
+        <View style={styles.header}>
+            <Text style={[styles.headerText, styles.placeHeader]}>Place</Text>
+            <Text style={[styles.headerText, styles.playerHeader]}>Player</Text>
+            <Text style={[styles.headerText, styles.statsHeader]}>Stats</Text>
+        </View>
+    </>
+  );
+
+  if (loading) {
+    return <PageLayout><ActivityIndicator size="large" color="#0000ff" /></PageLayout>;
+  }
+
+  if (error) {
+      return <PageLayout><Text style={styles.errorText}>{error}</Text></PageLayout>;
+  }
+
+  return (
+    <PageLayout noScroll>
+      <FlatList
+        data={results}
+        renderItem={renderResult}
+        keyExtractor={item => item.id.toString()}
+        ListHeaderComponent={ListHeader}
+        contentContainerStyle={styles.container}
+      />
     </PageLayout>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     width: '100%',
     padding: 10,
   },

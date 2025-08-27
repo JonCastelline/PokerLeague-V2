@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Picker } from '@react-native-picker/picker';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, Image } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
@@ -135,6 +135,32 @@ const StandingsPage = () => {
     </View>
   );
 
+  const renderHeader = useCallback(() => (
+    <>
+      <Text style={styles.title}>Standings</Text>
+      {allSeasons.length > 0 && selectedSeasonId !== null && (
+        <Picker
+          selectedValue={selectedSeasonId}
+          style={styles.picker}
+          onValueChange={(itemValue) => setSelectedSeasonId(itemValue)}
+        >
+          {allSeasons.map(season => (
+            <Picker.Item key={season.id} label={season.seasonName} value={season.id} />
+          ))}
+        </Picker>
+      )}
+      <View style={styles.tableHeader}>
+        <Text style={[styles.headerCell, styles.rankCell]}>Rk</Text>
+        <Text style={[styles.headerCell, styles.playerCell]}>Player</Text>
+        {(seasonSettings?.trackKills || seasonSettings?.trackBounties || seasonSettings?.enableAttendancePoints) && <Text style={[styles.headerCell, styles.placePointsCell]}>Place Pts</Text>}
+        {seasonSettings?.trackKills && <Text style={[styles.headerCell, styles.statCell]}>Kills</Text>}
+        {seasonSettings?.trackBounties && <Text style={[styles.headerCell, styles.statCell]}>Bty</Text>}
+        {seasonSettings?.enableAttendancePoints && <Text style={[styles.headerCell, styles.statCell]}>Att</Text>}
+        <Text style={[styles.headerCell, styles.totalCell]}>Total</Text>
+      </View>
+    </>
+  ), [allSeasons, selectedSeasonId, seasonSettings]);
+
   if (loading) {
     return (
       <PageLayout>
@@ -167,47 +193,23 @@ const StandingsPage = () => {
   }
 
   return (
-    <PageLayout>
-      <View style={styles.contentContainer}>
-        <Text style={styles.title}>Standings</Text>
-
-        {allSeasons.length > 0 && selectedSeasonId !== null && (
-          <Picker
-            selectedValue={selectedSeasonId}
-            style={styles.picker}
-            onValueChange={(itemValue) => setSelectedSeasonId(itemValue)}
-          >
-            {allSeasons.map(season => (
-              <Picker.Item key={season.id} label={season.seasonName} value={season.id} />
-            ))}
-          </Picker>
-        )}
-
-        <View style={styles.tableHeader}>
-          <Text style={[styles.headerCell, styles.rankCell]}>Rk</Text>
-          <Text style={[styles.headerCell, styles.playerCell]}>Player</Text>
-          {(seasonSettings?.trackKills || seasonSettings?.trackBounties || seasonSettings?.enableAttendancePoints) && <Text style={[styles.headerCell, styles.placePointsCell]}>Place Pts</Text>}
-          {seasonSettings?.trackKills && <Text style={[styles.headerCell, styles.statCell]}>Kills</Text>}
-          {seasonSettings?.trackBounties && <Text style={[styles.headerCell, styles.statCell]}>Bty</Text>}
-          {seasonSettings?.enableAttendancePoints && <Text style={[styles.headerCell, styles.statCell]}>Att</Text>}
-          <Text style={[styles.headerCell, styles.totalCell]}>Total</Text>
-        </View>
-        <FlatList
-          data={standings}
-          keyExtractor={item => item.playerId.toString()}
-          renderItem={renderItem}
-          style={styles.table}
-        />
-      </View>
+    <PageLayout noScroll>
+      <FlatList
+        data={standings}
+        keyExtractor={item => item.playerId.toString()}
+        renderItem={renderItem}
+        ListHeaderComponent={renderHeader}
+        contentContainerStyle={styles.container}
+      />
     </PageLayout>
   );
 };
 
 const styles = StyleSheet.create({
-  contentContainer: {
+  container: {
     flex: 1,
     width: '100%',
-    padding: 20, // Add padding here
+    padding: 20,
   },
   centered: {
     flex: 1,
@@ -225,7 +227,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: '#fb5b5a',
     paddingVertical: 12,
-    paddingHorizontal: 8, // Increased padding slightly for overall table
+    paddingHorizontal: 8,
     borderTopLeftRadius: 8,
     borderTopRightRadius: 8,
   },
@@ -234,46 +236,37 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     color: 'white',
-    fontSize: 14, // Reduced font size
+    fontSize: 14,
   },
   tableRow: {
     flexDirection: 'row',
-    width: '100%', // Ensure row takes full width
+    width: '100%',
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
     paddingVertical: 12,
-    paddingHorizontal: 8, // Increased padding slightly for overall table
-  },
-  tableCell: { // Default for general cells, will be overridden
-    flex: 1,
-    flexDirection: 'row', // Keep this for the playerCell's internal layout
+    paddingHorizontal: 8,
   },
   rankCell: {
     flex: 0.6,
-    justifyContent: 'center',
-    alignItems: 'center',
+    textAlign: 'center',
   },
   playerCell: {
     flex: 2.5,
     flexDirection: 'row',
-    alignItems: 'center', // Keep this for vertical alignment of icon and name within the cell
-    justifyContent: 'flex-start', // Left justify content within the playerCell
+    alignItems: 'center',
   },
   placePointsCell: {
     flex: 1.2,
-    justifyContent: 'center',
-    alignItems: 'center',
+    textAlign: 'center',
   },
-  statCell: { // For Kills, Bounty, Attendance
+  statCell: {
     flex: 0.8,
-    justifyContent: 'center',
-    alignItems: 'center',
+    textAlign: 'center',
   },
   totalCell: {
     flex: 0.9,
-    justifyContent: 'center',
-    alignItems: 'center',
+    textAlign: 'center',
   },
   playerIcon: {
     width: 20,
@@ -286,28 +279,20 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   centeredCellContent: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    textAlign: 'center', // For text content
+    textAlign: 'center',
   },
   leftAlignedCellContent: {
-    justifyContent: 'flex-start',
-    alignItems: 'center', // For vertical alignment of icon and text
+    // This is now handled by the cell's flex properties
   },
   evenRow: {
-    backgroundColor: '#f9f9f9', // Light gray for even rows
+    backgroundColor: '#f9f9f9',
   },
   oddRow: {
-    backgroundColor: '#ffffff', // White for odd rows
+    backgroundColor: '#ffffff',
   },
   errorText: {
     color: 'red',
     fontSize: 16,
-  },
-  noStandingsText: {
-    textAlign: 'center',
-    fontSize: 16,
-    color: '#666',
   },
   picker: {
     height: 50,
@@ -315,11 +300,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     backgroundColor: '#f0f0f0',
     borderRadius: 8,
-  },
-  table: {
-    flex: 1, // Ensure FlatList takes up available vertical space
-    borderRadius: 8,
-    overflow: 'hidden',
   },
 });
 
