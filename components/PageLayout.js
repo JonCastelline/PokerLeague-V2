@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, StyleSheet, Image, ActivityIndicator, Text, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Image, ActivityIndicator, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
@@ -53,9 +53,9 @@ const PageLayout = ({ children }) => {
         </View>
       </View>
       <UserMenu isVisible={userMenuVisible} onClose={() => setUserMenuVisible(false)} />
-      <View style={styles.content}>
+      <ScrollView contentContainerStyle={styles.content}>
         {children}
-      </View>
+      </ScrollView>
     </View>
   );
 };
@@ -111,9 +111,10 @@ const styles = StyleSheet.create({
     marginRight: 5,
   },
   content: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'flex-start',
     alignItems: 'center',
+    paddingBottom: 30,
   },
   centered: {
     flex: 1,

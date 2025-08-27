@@ -34,10 +34,7 @@ import * as Clipboard from 'expo-clipboard';
            // Define markdownStyles INSIDE the component using useMemo
            // so it can access 'width' and is memoized.
            const markdownStyles = useMemo(() => StyleSheet.create({
-             text: {
-               textAlign: 'center',
-               // Add any other base text styles for Markdown if needed
-             },
+             text: {},
              heading1: {
                textAlign: 'center',
                fontSize: 24, // Example style
@@ -101,6 +98,36 @@ import * as Clipboard from 'expo-clipboard';
 
            const markdownRules = {
              image: customImageRenderer,
+             heading1: (node, children, parent, styles) => (
+                <Text key={node.key} style={styles.heading1}>
+                    {children}
+                </Text>
+             ),
+             heading2: (node, children, parent, styles) => (
+                <Text key={node.key} style={styles.heading2}>
+                    {children}
+                </Text>
+             ),
+             heading3: (node, children, parent, styles) => (
+                <Text key={node.key} style={styles.heading3}>
+                    {children}
+                </Text>
+             ),
+             heading4: (node, children, parent, styles) => (
+                <Text key={node.key} style={styles.heading4}>
+                    {children}
+                </Text>
+             ),
+             heading5: (node, children, parent, styles) => (
+                <Text key={node.key} style={styles.heading5}>
+                    {children}
+                </Text>
+             ),
+             heading6: (node, children, parent, styles) => (
+                <Text key={node.key} style={styles.heading6}>
+                    {children}
+                </Text>
+             ),
              // You can add other custom renderers here if needed
            };
 
