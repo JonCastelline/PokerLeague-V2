@@ -307,11 +307,12 @@ const PlayPage = () => {
   }
 
   if (mode === 'setup') {
+      const hasActiveGames = allGames.filter(game => game.gameStatus !== 'COMPLETED').length > 0;
       return (
           <PageLayout>
               <ScrollView contentContainerStyle={styles.setupContainer}>
                   <Text style={styles.title}>Select Game</Text>
-                  {allGames.filter(game => game.gameStatus !== 'COMPLETED').length > 0 ? (
+                  {hasActiveGames ? (
                     <Picker
                       selectedValue={selectedGameId}
                       onValueChange={(itemValue) => setSelectedGameId(itemValue)}
@@ -331,7 +332,7 @@ const PlayPage = () => {
                     <Text>No upcoming or active games found for this season.</Text>
                   )}
 
-                  {selectedGameId && (
+                  {hasActiveGames && selectedGameId && (
                     <>
                       <Text style={styles.title}>Select Players</Text>
                       <View style={{width: '100%'}}>
