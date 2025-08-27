@@ -48,7 +48,9 @@ const HistoryPage = () => {
       setError(null);
       api(getGameHistory, selectedSeasonId)
         .then(data => {
-          const completedGames = data.filter(game => game.gameStatus === 'COMPLETED');
+          const completedGames = data
+            .filter(game => game.gameStatus === 'COMPLETED')
+            .sort((a, b) => new Date(a.gameDate) - new Date(b.gameDate));
           setGames(completedGames);
         })
         .catch(err => {

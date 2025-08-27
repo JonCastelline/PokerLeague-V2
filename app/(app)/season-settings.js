@@ -1,7 +1,8 @@
 import { Picker } from '@react-native-picker/picker';
 import { DateTime } from 'luxon';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View, Linking } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import PageLayout from '../../components/PageLayout';
 import { useAuth } from '../../context/AuthContext';
@@ -76,6 +77,11 @@ const SeasonSettingsPage = () => {
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
   const [datePickerField, setDatePickerField] = useState(null); // 'startDate' or 'endDate'
 
+  const handleAddToCalendar = (gameId) => {
+    const url = `${API_BASE_URL}/api/games/${gameId}/calendar.ics`;
+    Linking.openURL(url).catch(err => console.error('An error occurred', err));
+  };
+
   const showDatePicker = (field) => {
     setDatePickerField(field);
     setDatePickerVisible(true);
@@ -105,7 +111,7 @@ const SeasonSettingsPage = () => {
       });
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const gamesData = await response.json();
-      setGames(gamesData);
+      setGames(gamesData.sort((a, b) => new Date(a.gameDate) - new Date(b.gameDate)));
     } catch (e) {
       console.error("Failed to fetch games:", e);
     } finally {
@@ -640,28 +646,35 @@ const SeasonSettingsPage = () => {
         ) : (
           games.map((game, index) => (
             <View key={index} style={styles.gameItem}>
-              <View>
+              <View style={styles.gameInfo}>
                 <Text>{game.gameName}</Text>
                 <Text>{DateTime.fromISO(game.gameDate).toFormat('MM/dd/yyyy')}</Text>
                 {game.gameTime && <Text>Time: {DateTime.fromISO(game.gameTime).toFormat('hh:mm a')}</Text>}
                 {game.gameLocation && <Text>Location: {game.gameLocation}</Text>}
               </View>
-              {isAdmin && !isSeasonFinalized && game.gameStatus === 'SCHEDULED' && (
-                <View style={styles.gameActions}>
-                  <TouchableOpacity
-                    style={[styles.button, styles.buttonPrimary, styles.smallButton]}
-                    onPress={() => handleEditGame(game)}
-                  >
-                    <Text style={styles.textStyle}>Edit</Text>
+              <View style={styles.gameActions}>
+                {isAdmin && !isSeasonFinalized && game.gameStatus === 'SCHEDULED' && (
+                  <>
+                    <TouchableOpacity
+                      style={[styles.button, styles.buttonPrimary, styles.smallButton]}
+                      onPress={() => handleEditGame(game)}
+                    >
+                      <Text style={styles.textStyle}>Edit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.button, styles.buttonDestructive, styles.smallButton, { marginLeft: 10 }]}
+                      onPress={() => handleDeleteGame(game.id)}
+                    >
+                      <Text style={styles.textStyle}>Delete</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+                {game.gameStatus !== 'COMPLETED' && (
+                  <TouchableOpacity onPress={() => handleAddToCalendar(game.id)} style={{ marginLeft: 10 }}>
+                    <MaterialCommunityIcons name="calendar-plus" size={30} color="#28a745" />
                   </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.button, styles.buttonDestructive, styles.smallButton, { marginLeft: 10 }]} 
-                    onPress={() => handleDeleteGame(game.id)}
-                  >
-                    <Text style={styles.textStyle}>Delete</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
+                )}
+              </View>
             </View>
           ))
         )}
@@ -1768,7 +1781,6 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: 5,
-    alignSelf: 'flex-end',
   },
 });
 

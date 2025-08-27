@@ -466,7 +466,7 @@ const PlayPage = () => {
 
   if (mode === 'review') {
     return (
-      <PageLayout>
+      <PageLayout noScroll>
         <ScrollView contentContainerStyle={styles.container}>
           <Text style={styles.title}>Final Results</Text>
           <View style={styles.playersContainer}>
@@ -524,7 +524,7 @@ const PlayPage = () => {
   }
 
   return (
-    <PageLayout>
+    <PageLayout noScroll>
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>Game Play</Text>
 
