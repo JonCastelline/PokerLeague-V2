@@ -69,66 +69,64 @@ const HistoryPage = () => {
     </TouchableOpacity>
   );
 
-  const ListEmptyComponent = () => (
+  const ListHeader = () => (
+    <>
+        <Text style={styles.title}>Game History</Text>
+        <View style={styles.pickerContainer}>
+            <Picker
+                selectedValue={selectedSeasonId}
+                onValueChange={(itemValue) => setSelectedSeasonId(itemValue)}
+                style={styles.picker}
+            >
+                {seasons.map(s => (
+                    <Picker.Item key={s.id} label={s.seasonName} value={s.id} />
+                ))}
+            </Picker>
+        </View>
+        {loadingGames && <ActivityIndicator size="large" color="#0000ff" />}
+    </>
+  );
+
+  const ListEmpty = () => (
     <View style={styles.emptyContainer}>
         { !loadingGames && <Text style={styles.emptyText}>No completed games found for this season.</Text> }
     </View>
   );
 
-  const renderContent = () => {
-    if (loadingSeasons) {
-        return <ActivityIndicator size="large" color="#0000ff" />;
-    }
-    if (error) {
-        return <Text style={styles.errorText}>{error}</Text>;
-    }
-    if (seasons.length === 0) {
-        return <Text style={styles.emptyText}>No seasons found for this league.</Text>;
-    }
+  if (loadingSeasons) {
+    return <PageLayout><ActivityIndicator size="large" color="#0000ff" /></PageLayout>;
+  }
 
-    return (
-        <>
-            <View style={styles.pickerContainer}>
-                <Picker
-                    selectedValue={selectedSeasonId}
-                    onValueChange={(itemValue) => setSelectedSeasonId(itemValue)}
-                    style={styles.picker}
-                >
-                    {seasons.map(s => (
-                        <Picker.Item key={s.id} label={s.seasonName} value={s.id} />
-                    ))}
-                </Picker>
-            </View>
-            {loadingGames ? (
-                <ActivityIndicator size="large" color="#0000ff" />
-            ) : (
-                <FlatList
-                    data={games}
-                    renderItem={renderGame}
-                    keyExtractor={item => item.id.toString()}
-                    ListEmptyComponent={ListEmptyComponent}
-                    contentContainerStyle={styles.listContentContainer}
-                />
-            )}
-        </>
-    );
+  if (error) {
+      return <PageLayout><Text style={styles.errorText}>{error}</Text></PageLayout>;
+  }
+
+  if (seasons.length === 0) {
+      return <PageLayout><Text style={styles.emptyText}>No seasons found for this league.</Text></PageLayout>;
   }
 
   return (
-    <PageLayout>
-      <View style={styles.container}>
-        <Text style={styles.title}>Game History</Text>
-        {renderContent()}
-      </View>
+    <PageLayout noScroll>
+        <FlatList
+            data={games}
+            renderItem={renderGame}
+            keyExtractor={item => item.id.toString()}
+            ListHeaderComponent={ListHeader}
+            ListEmptyComponent={ListEmpty}
+            contentContainerStyle={styles.listContentContainer}
+            style={styles.container}
+        />
     </PageLayout>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     width: '100%',
-    padding: 10,
+  },
+  listContentContainer: {
+    paddingHorizontal: 10,
+    paddingBottom: 20, // Add some padding at the bottom
   },
   title: {
     fontSize: 24,
@@ -145,9 +143,6 @@ const styles = StyleSheet.create({
   },
   picker: {
     width: '100%',
-  },
-  listContentContainer: {
-    flexGrow: 1,
   },
   gameItem: {
     backgroundColor: '#f9f9f9',
