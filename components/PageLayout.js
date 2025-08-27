@@ -7,7 +7,7 @@ import AppMenu from './AppMenu';
 import UserMenu from './UserMenu';
 import { useLeague } from '../context/LeagueContext';
 
-const PageLayout = ({ children }) => {
+const PageLayout = ({ children, noScroll }) => {
   const { currentLeague, loadingLeagues, leagueHomeContent, currentUserMembership, reloadCurrentUserMembership } = useLeague();
   const { user } = useAuth();
   const [userMenuVisible, setUserMenuVisible] = useState(false);
@@ -53,9 +53,15 @@ const PageLayout = ({ children }) => {
         </View>
       </View>
       <UserMenu isVisible={userMenuVisible} onClose={() => setUserMenuVisible(false)} />
-      <ScrollView contentContainerStyle={styles.content}>
-        {children}
-      </ScrollView>
+      {noScroll ? (
+        <View style={styles.noScrollContent}>
+          {children}
+        </View>
+      ) : (
+        <ScrollView contentContainerStyle={styles.content}>
+          {children}
+        </ScrollView>
+      )}
     </View>
   );
 };
@@ -115,6 +121,10 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     alignItems: 'center',
     paddingBottom: 30,
+  },
+  noScrollContent: {
+    flex: 1,
+    alignItems: 'stretch',
   },
   centered: {
     flex: 1,
