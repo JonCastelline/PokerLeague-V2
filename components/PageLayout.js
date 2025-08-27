@@ -113,6 +113,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     justifyContent: 'flex-start',
+    alignItems: 'center',
   },
   centered: {
     flex: 1,

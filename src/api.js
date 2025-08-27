@@ -138,6 +138,14 @@ export const getLeagueHomeContent = (leagueId, token) => {
   return apiFetch(`/api/leagues/${leagueId}/home-content`, { token });
 };
 
+export const updateLeagueHomeContent = (leagueId, content, logoImageUrl, token) => {
+  return apiFetch(`/api/leagues/${leagueId}/home-content`, {
+    method: 'PUT',
+    token,
+    body: JSON.stringify({ content, logoImageUrl }),
+  });
+};
+
 export const refreshInviteCode = (leagueId, token) => {
   return apiFetch(`/api/leagues/${leagueId}/refresh-invite`, {
     method: 'POST',
