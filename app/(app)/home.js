@@ -1,10 +1,9 @@
 import { useRouter } from 'expo-router';
-import React, { useState, useMemo } from 'react'; // Make sure useMemo is imported
+import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, TextInput, Alert, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
-import { Picker } from '@react-native-picker/picker'; // Not used in snippet, but in your original file
 import PageLayout from '../../components/PageLayout';
 import Markdown from 'react-native-markdown-display';
 import * as Clipboard from 'expo-clipboard';
@@ -12,18 +11,16 @@ import * as Clipboard from 'expo-clipboard';
 
          const HomePage = () => {
            const router = useRouter();
-           const { signOut, api } = useAuth(); // signOut and Picker not used in snippet, but in your original
+           const { api } = useAuth();
            const {
              leagues,
              loadingLeagues,
              selectedLeagueId,
-             switchLeague, // switchLeague not used in snippet
              currentLeague,
              currentUserMembership,
              refreshInviteCode,
              leagueHomeContent,
              inviteCode,
-             reloadLeagues, // reloadLeagues not used in snippet
              reloadHomeContent
            } = useLeague();
            const [editMode, setEditMode] = useState(false);
@@ -37,47 +34,46 @@ import * as Clipboard from 'expo-clipboard';
              text: {},
              heading1: {
                textAlign: 'center',
-               fontSize: 24, // Example style
+               fontSize: 24,
                fontWeight: 'bold',
                marginVertical: 10,
              },
              heading2: {
                textAlign: 'center',
-               fontSize: 20, // Example style
+               fontSize: 20,
                fontWeight: 'bold',
                marginVertical: 8,
              },
              heading3: {
                textAlign: 'center',
-               fontSize: 18, // Example style
+               fontSize: 18,
                fontWeight: 'bold',
                marginVertical: 6,
              },
              heading4: {
                textAlign: 'center',
-               fontSize: 16, // Example style
+               fontSize: 16,
                fontWeight: 'bold',
                marginVertical: 4,
              },
              heading5: {
                textAlign: 'center',
-               fontSize: 14, // Example style
+               fontSize: 14,
                fontWeight: 'bold',
                marginVertical: 2,
              },
              heading6: {
                textAlign: 'center',
-               fontSize: 12, // Example style
+               fontSize: 12,
                fontWeight: 'bold',
                marginVertical: 2,
              },
              markdownImage: { // Style for images rendered by Markdown
                width: width * 0.9,    // 90% of screen width
-               height: width * 0.6,    // Adjust aspect ratio as needed, or remove for auto height based on width
+               height: width * 0.6,
                marginVertical: 10,
-               alignSelf: 'center',    // Center the image
+               alignSelf: 'center',
              },
-             // Add other markdown element styles as needed (e.g., list_item, blockquote, etc.)
            }), [width]); // Recalculate if screen width changes
 
            // Custom image renderer that uses the 'markdownImage' style from the component's markdownStyles
@@ -128,7 +124,6 @@ import * as Clipboard from 'expo-clipboard';
                     {children}
                 </Text>
              ),
-             // You can add other custom renderers here if needed
            };
 
            const handleEdit = () => {
@@ -250,11 +245,7 @@ import * as Clipboard from 'expo-clipboard';
          // These are the general styles for the HomePage component,
          // NOT for the Markdown content specifically (unless passed explicitly).
          const styles = StyleSheet.create({
-           // Keep your original 'styles' StyleSheet here
-           // I've consolidated the duplicate 'adminControlsContainer'
-           // and made minor adjustments based on your original file.
-           // Please double-check these against your intended layout.
-           container: { // This seems to be unused, PageLayout likely handles main flex
+           container: {
              flex: 1,
              alignItems: 'center',
              padding: 20,
@@ -275,7 +266,7 @@ import * as Clipboard from 'expo-clipboard';
              fontSize: 18,
              color: 'gray',
              marginBottom: 40,
-             textAlign: 'center', // Added for consistency
+             textAlign: 'center',
            },
            button: {
              backgroundColor: '#fb5b5a',
@@ -292,23 +283,23 @@ import * as Clipboard from 'expo-clipboard';
              fontWeight: 'bold',
              paddingHorizontal: 10,
            },
-           adminControlsContainer: { // Consolidated definition
-             width: '80%', // Or '100%' depending on your need
+           adminControlsContainer: {
+             width: '80%',
              alignItems: 'center',
-             marginVertical: 10, // Or marginBottom: 20
+             marginVertical: 10,
            },
            editButtons: {
              flexDirection: 'row',
-             justifyContent: 'space-between', // Or 'space-around'
+             justifyContent: 'space-between',
              width: '100%',
            },
-           saveButton: { // Will inherit from styles.button and can override/add
-             flex: 1, // Example: take up available space
+           saveButton: {
+             flex: 1,
              marginRight: 5,
            },
-           cancelButton: { // Will inherit from styles.button and can override/add
+           cancelButton: {
              backgroundColor: '#6c757d', // Gray color
-             flex: 1, // Example: take up available space
+             flex: 1,
              marginLeft: 5,
            },
            inviteContainer: {
@@ -322,14 +313,14 @@ import * as Clipboard from 'expo-clipboard';
              marginBottom: 10,
              textAlign: 'center',
            },
-           copyButton: { // More specific style for copy button
-             width: 80, // Made it a bit wider for "Copy" text
-             height: 30, // Slightly smaller height
+           copyButton: {
+             width: 80,
+             height: 30,
              marginLeft: 10,
-             paddingVertical: 0, // Ensure text is centered if height is small
+             paddingVertical: 0,
              paddingHorizontal: 0,
-             justifyContent: 'center', // Center text
-             alignItems: 'center', // Center text
+             justifyContent: 'center',
+             alignItems: 'center',
            },
            contentContainer: {
              width: '100%',
@@ -351,9 +342,9 @@ import * as Clipboard from 'expo-clipboard';
              width: '100%',
              textAlignVertical: 'top',
              borderColor: '#ccc', // Added border for visibility
-             borderWidth: 1,       // Added border for visibility
-             borderRadius: 5,      // Added border radius
-             padding: 10,          // Added padding
+             borderWidth: 1,
+             borderRadius: 5,
+             padding: 10,
            },
          });
 
