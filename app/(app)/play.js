@@ -21,7 +21,7 @@ const PlayPage = () => {
   const [selectedPlayerIds, setSelectedPlayerIds] = useState(new Set());
   const [selectedPlayerToEliminate, setSelectedPlayerToEliminate] = useState(null);
   const [selectedGameId, setSelectedGameId] = useState(null);
-  const [activeSeasonId, setActiveSeasonId] = useState(null);
+  const [activeSeason, setActiveSeason] = useState(null);
   const [allGames, setAllGames] = useState([]);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [isTimerFinished, setIsTimerFinished] = useState(false);
@@ -50,7 +50,7 @@ const PlayPage = () => {
       setSelectedPlayerIds(activePlayerIds);
 
       const season = await api(apiActions.getActiveSeason, selectedLeagueId);
-      setActiveSeasonId(season.id);
+      setActiveSeason(season);
 
       const games = await api(apiActions.getGameHistory, season.id);
       setAllGames(games);
@@ -93,11 +93,9 @@ const PlayPage = () => {
   useFocusEffect(
     React.useCallback(() => {
       setIsPlayScreenActive(true);
-      console.log('Play screen focused');
 
       return () => {
         setIsPlayScreenActive(false);
-        console.log('Play screen blurred - attempting to stop timer sounds');
       };
     }, [])
   );
@@ -426,20 +424,28 @@ const PlayPage = () => {
                                     onChangeText={(text) => handleEditPlayerState(player.id, 'place', text)}
                                     keyboardType="numeric"
                                 />
-                                <Text>Kills:</Text>
-                                <TextInput
-                                    style={[styles.input, validationErrors[player.id]?.kills && styles.inputError]}
-                                    value={String(player.kills)}
-                                    onChangeText={(text) => handleEditPlayerState(player.id, 'kills', text)}
-                                    keyboardType="numeric"
-                                />
-                                <Text>Bounties:</Text>
-                                <TextInput
-                                    style={[styles.input, validationErrors[player.id]?.bounties && styles.inputError]}
-                                    value={String(player.bounties)}
-                                    onChangeText={(text) => handleEditPlayerState(player.id, 'bounties', text)}
-                                    keyboardType="numeric"
-                                />
+                                {activeSeason?.trackKills && (
+                                    <>
+                                        <Text>Kills:</Text>
+                                        <TextInput
+                                            style={[styles.input, validationErrors[player.id]?.kills && styles.inputError]}
+                                            value={String(player.kills)}
+                                            onChangeText={(text) => handleEditPlayerState(player.id, 'kills', text)}
+                                            keyboardType="numeric"
+                                        />
+                                    </>
+                                )}
+                                {activeSeason?.trackBounties && (
+                                    <>
+                                        <Text>Bounties:</Text>
+                                        <TextInput
+                                            style={[styles.input, validationErrors[player.id]?.bounties && styles.inputError]}
+                                            value={String(player.bounties)}
+                                            onChangeText={(text) => handleEditPlayerState(player.id, 'bounties', text)}
+                                            keyboardType="numeric"
+                                        />
+                                    </>
+                                )}
                             </View>
                         </View>
                     ))}
@@ -477,12 +483,16 @@ const PlayPage = () => {
                 <View key={player.id} style={styles.reviewPlayerItem}>
                     <View style={{flexDirection: 'row', alignItems: 'center', flex: 1}}>
                         {player.iconUrl ? <Image source={{ uri: player.iconUrl }} style={styles.playerIcon} /> : <View style={styles.playerIcon} />}
-                        <Text style={styles.reviewPlayerName}>{player.displayName} {player.hasBounty && <Text style={styles.bountyIndicator}>⭐️</Text>}</Text>
+                        <Text style={styles.reviewPlayerName}>{player.displayName} {activeSeason?.trackBounties && player.hasBounty && <Text style={styles.bountyIndicator}>⭐️</Text>}</Text>
                     </View>
                   <View style={styles.reviewPlayerStatsContainer}>
                     <Text style={styles.reviewPlayerStat}>Place: {place}</Text>
-                    <Text style={styles.reviewPlayerStat}>Kills: {player.kills}</Text>
-                    <Text style={styles.reviewPlayerStat}>Bounties: {player.bounties}</Text>
+                    {activeSeason?.trackKills && (
+                        <Text style={styles.reviewPlayerStat}>Kills: {player.kills}</Text>
+                    )}
+                    {activeSeason?.trackBounties && (
+                        <Text style={styles.reviewPlayerStat}>Bounties: {player.bounties}</Text>
+                    )}
                   </View>
                 </View>
               );
@@ -597,11 +607,13 @@ const PlayPage = () => {
                 <View style={[styles.playerItem, selectedPlayerToEliminate?.id === player.id && styles.selectedPlayerItem]}>
                     <View style={{flexDirection: 'row', alignItems: 'center', flex: 1}}>
                         {player.iconUrl ? <Image source={{ uri: player.iconUrl }} style={styles.playerIcon} /> : <View style={styles.playerIcon}></View>}
-                        <Text style={styles.playerDisplayName}>{String(player.displayName)} {player.hasBounty ? <Text style={styles.bountyIndicator}>⭐️</Text> : null}</Text>
+                        <Text style={styles.playerDisplayName}>{String(player.displayName)} {activeSeason?.trackBounties && player.hasBounty ? <Text style={styles.bountyIndicator}>⭐️</Text> : null}</Text>
                     </View>
                     <Text style={styles.playerStatsText}>
-                        {player.isEliminated && <Text>Place: {getOrdinal(player.place)} | </Text>}
-                        <Text>Kills: {player.kills} | Bounties: {player.bounties}</Text>
+                        {player.isEliminated && <Text>Place: {getOrdinal(player.place)} </Text>}
+                        {activeSeason?.trackKills && ` | Kills: ${player.kills}`}
+                        {activeSeason?.trackKills && activeSeason?.trackBounties && ` | `}
+                        {activeSeason?.trackBounties && `Bounties: ${player.bounties}`}
                     </Text>
                 </View>
             </TouchableOpacity>
