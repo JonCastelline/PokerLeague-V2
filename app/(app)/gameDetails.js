@@ -5,7 +5,7 @@ import { useLocalSearchParams } from 'expo-router';
 import PageLayout from '../../components/PageLayout';
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
-import { getGameResults } from '../../src/api';
+import { getGameResults, getSeasonSettings } from '../../src/api';
 
 const GameDetailsPage = () => {
   const { gameId } = useLocalSearchParams();
@@ -14,6 +14,7 @@ const GameDetailsPage = () => {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentSeasonSettings, setCurrentSeasonSettings] = useState(null);
 
   useEffect(() => {
     if (gameId) {
@@ -23,9 +24,19 @@ const GameDetailsPage = () => {
         .then(data => {
           const sortedData = data.sort((a, b) => a.place - b.place);
           setResults(sortedData);
+
+          if (sortedData.length > 0 && sortedData[0].game && sortedData[0].game.season && sortedData[0].game.season.id) {
+            return api(getSeasonSettings, sortedData[0].game.season.id);
+          }
+          return null; // No seasonId found or no results
+        })
+        .then(seasonSettings => {
+          if (seasonSettings) {
+            setCurrentSeasonSettings(seasonSettings);
+          }
         })
         .catch(err => {
-          console.error("Failed to fetch game details:", err);
+          console.error("Failed to fetch game details or season details:", err);
           setError("Failed to load game details. Please try again.");
         })
         .finally(() => {
@@ -34,30 +45,58 @@ const GameDetailsPage = () => {
     }
   }, [gameId, api]);
 
-  const renderResult = ({ item }) => (
-    <View style={styles.resultItem}>
-      <Text style={styles.place}>{item.place}</Text>
-      <View style={styles.playerContainer}>
-        <Image source={{ uri: item.player.iconUrl }} style={styles.playerIcon} />
-        <Text style={styles.playerName}>{item.player.displayName}</Text>
-      </View>
-      <View style={styles.statsContainer}>
-        <Text style={styles.stat}>Kills: {item.kills}</Text>
-        <Text style={styles.stat}>Bounties: {item.bounties}</Text>
-      </View>
-    </View>
-  );
+  const getHeaderStyles = (trackKills, trackBounties) => {
+    const showStats = trackKills || trackBounties;
+    return StyleSheet.create({
+      placeHeader: { flex: 1 },
+      playerHeader: { flex: showStats ? 3 : 5 },
+      statsHeader: { flex: 2, textAlign: 'right' },
+    });
+  };
 
-  const ListHeader = () => (
-    <>
-        <Text style={styles.title}>Game Results</Text>
-        <View style={styles.header}>
-            <Text style={[styles.headerText, styles.placeHeader]}>Place</Text>
-            <Text style={[styles.headerText, styles.playerHeader]}>Player</Text>
-            <Text style={[styles.headerText, styles.statsHeader]}>Stats</Text>
+  const getItemStyles = (trackKills, trackBounties) => {
+    const showStats = trackKills || trackBounties;
+    return StyleSheet.create({
+      place: { flex: 1 },
+      playerContainer: { flex: showStats ? 3 : 5 },
+      statsContainer: { flex: 2, alignItems: 'flex-end' },
+    });
+  };
+
+  const renderResult = ({ item }) => {
+    const itemStyles = getItemStyles(currentSeasonSettings?.trackKills, currentSeasonSettings?.trackBounties);
+    return (
+      <View style={styles.resultItem}>
+        <Text style={[styles.place, itemStyles.place]}>{item.place}</Text>
+        <View style={[styles.playerContainer, itemStyles.playerContainer]}>
+          <Image source={{ uri: item.player.iconUrl }} style={styles.playerIcon} />
+          <Text style={styles.playerName}>{item.player.displayName}</Text>
         </View>
-    </>
-  );
+        {(currentSeasonSettings?.trackKills || currentSeasonSettings?.trackBounties) && (
+          <View style={[styles.statsContainer, itemStyles.statsContainer]}>
+            {currentSeasonSettings?.trackKills && <Text style={styles.stat}>Kills: {item.kills}</Text>}
+            {currentSeasonSettings?.trackBounties && <Text style={styles.stat}>Bounties: {item.bounties}</Text>}
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  const ListHeader = () => {
+    const headerStyles = getHeaderStyles(currentSeasonSettings?.trackKills, currentSeasonSettings?.trackBounties);
+    return (
+      <>
+          <Text style={styles.title}>Game Results</Text>
+          <View style={styles.header}>
+              <Text style={[styles.headerText, headerStyles.placeHeader]}>Place</Text>
+              <Text style={[styles.headerText, headerStyles.playerHeader]}>Player</Text>
+              {(currentSeasonSettings?.trackKills || currentSeasonSettings?.trackBounties) && (
+                  <Text style={[styles.headerText, headerStyles.statsHeader]}>Stats</Text>
+              )}
+          </View>
+      </>
+    );
+  };
 
   if (loading) {
     return <PageLayout><ActivityIndicator size="large" color="#0000ff" /></PageLayout>;

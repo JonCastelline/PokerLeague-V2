@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center', // Center the logo
-    paddingTop: 50, // Adjust for status bar
+    paddingTop: 85, // Adjust for status bar
     paddingHorizontal: 10,
     backgroundColor: 'transparent',
     minHeight: 150, // Increased minHeight to ensure space
