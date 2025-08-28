@@ -108,6 +108,10 @@ export const getActiveSeason = (leagueId, token) => {
   return apiFetch(`/api/leagues/${leagueId}/seasons/active`, { token });
 };
 
+export const getSeasonSettings = (seasonId, token) => {
+  return apiFetch(`/api/seasons/${seasonId}/settings`, { token });
+};
+
 export const getSeasons = (leagueId, token) => {
   return apiFetch(`/api/leagues/${leagueId}/seasons`, { token });
 };

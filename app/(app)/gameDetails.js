@@ -5,7 +5,7 @@ import { useLocalSearchParams } from 'expo-router';
 import PageLayout from '../../components/PageLayout';
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
-import { getGameResults, getSeasonDetails } from '../../src/api';
+import { getGameResults, getSeasonSettings } from '../../src/api';
 
 const GameDetailsPage = () => {
   const { gameId } = useLocalSearchParams();
@@ -14,7 +14,7 @@ const GameDetailsPage = () => {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [currentSeasonDetails, setCurrentSeasonDetails] = useState(null);
+  const [currentSeasonSettings, setCurrentSeasonSettings] = useState(null);
 
   useEffect(() => {
     if (gameId) {
@@ -25,14 +25,14 @@ const GameDetailsPage = () => {
           const sortedData = data.sort((a, b) => a.place - b.place);
           setResults(sortedData);
 
-          if (sortedData.length > 0 && sortedData[0].seasonId) {
-            return api(getSeasonDetails, sortedData[0].seasonId);
+          if (sortedData.length > 0 && sortedData[0].game && sortedData[0].game.season && sortedData[0].game.season.id) {
+            return api(getSeasonSettings, sortedData[0].game.season.id);
           }
           return null; // No seasonId found or no results
         })
-        .then(seasonData => {
-          if (seasonData) {
-            setCurrentSeasonDetails(seasonData);
+        .then(seasonSettings => {
+          if (seasonSettings) {
+            setCurrentSeasonSettings(seasonSettings);
           }
         })
         .catch(err => {
@@ -64,7 +64,7 @@ const GameDetailsPage = () => {
   };
 
   const renderResult = ({ item }) => {
-    const itemStyles = getItemStyles(currentSeasonDetails?.trackKills, currentSeasonDetails?.trackBounties);
+    const itemStyles = getItemStyles(currentSeasonSettings?.trackKills, currentSeasonSettings?.trackBounties);
     return (
       <View style={styles.resultItem}>
         <Text style={[styles.place, itemStyles.place]}>{item.place}</Text>
@@ -72,10 +72,10 @@ const GameDetailsPage = () => {
           <Image source={{ uri: item.player.iconUrl }} style={styles.playerIcon} />
           <Text style={styles.playerName}>{item.player.displayName}</Text>
         </View>
-        {(currentSeasonDetails?.trackKills || currentSeasonDetails?.trackBounties) && (
+        {(currentSeasonSettings?.trackKills || currentSeasonSettings?.trackBounties) && (
           <View style={[styles.statsContainer, itemStyles.statsContainer]}>
-            {currentSeasonDetails?.trackKills && <Text style={styles.stat}>Kills: {item.kills}</Text>}
-            {currentSeasonDetails?.trackBounties && <Text style={styles.stat}>Bounties: {item.bounties}</Text>}
+            {currentSeasonSettings?.trackKills && <Text style={styles.stat}>Kills: {item.kills}</Text>}
+            {currentSeasonSettings?.trackBounties && <Text style={styles.stat}>Bounties: {item.bounties}</Text>}
           </View>
         )}
       </View>
@@ -83,14 +83,14 @@ const GameDetailsPage = () => {
   };
 
   const ListHeader = () => {
-    const headerStyles = getHeaderStyles(currentSeasonDetails?.trackKills, currentSeasonDetails?.trackBounties);
+    const headerStyles = getHeaderStyles(currentSeasonSettings?.trackKills, currentSeasonSettings?.trackBounties);
     return (
       <>
           <Text style={styles.title}>Game Results</Text>
           <View style={styles.header}>
               <Text style={[styles.headerText, headerStyles.placeHeader]}>Place</Text>
               <Text style={[styles.headerText, headerStyles.playerHeader]}>Player</Text>
-              {(currentSeasonDetails?.trackKills || currentSeasonDetails?.trackBounties) && (
+              {(currentSeasonSettings?.trackKills || currentSeasonSettings?.trackBounties) && (
                   <Text style={[styles.headerText, headerStyles.statsHeader]}>Stats</Text>
               )}
           </View>
