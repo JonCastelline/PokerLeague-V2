@@ -6,7 +6,7 @@ import { useLeague } from '../context/LeagueContext';
 import { useAuth } from '../context/AuthContext';
 import * as Animatable from 'react-native-animatable';
 
-const UserMenu = ({ isVisible, onClose }) => {
+const UserMenu = ({ isVisible, onClose, inviteCount }) => {
   const router = useRouter();
   const { leagues, switchLeague, selectedLeagueId, currentUserMembership } = useLeague();
   const { signOut, user } = useAuth();
@@ -94,7 +94,14 @@ const UserMenu = ({ isVisible, onClose }) => {
             <Text style={styles.menuItemText}>Create League</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('join-league')}>
-            <Text style={styles.menuItemText}>Join League</Text>
+            <View style={styles.menuItemContainer}>
+              <Text style={styles.menuItemText}>Join League</Text>
+              {inviteCount > 0 && 
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{inviteCount}</Text>
+                </View>
+              }
+            </View>
           </TouchableOpacity>
           <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('settings')}>
             <Text style={styles.menuItemText}>Settings</Text>
@@ -159,7 +166,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
   },
-    dropdownTrigger: {
+  dropdownTrigger: {
     paddingVertical: 10,
     paddingHorizontal: 15,
     borderWidth: 1,
@@ -199,6 +206,26 @@ const styles = StyleSheet.create({
     backgroundColor: '#e0e0e0',
     opacity: 0.6,
   },
+  menuItemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  badge: {
+    backgroundColor: 'red',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
 });
 
 export default UserMenu;
+

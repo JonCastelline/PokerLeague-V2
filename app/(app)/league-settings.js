@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Image } from 'react-native';
+import * as Linking from 'expo-linking';
 import { View, Text, StyleSheet, ActivityIndicator, FlatList, ScrollView, Switch, TextInput, Modal, TouchableOpacity, Alert, Dimensions } from 'react-native';
 import PageLayout from '../../components/PageLayout';
 import AddUnregisteredPlayerForm from '../../components/AddUnregisteredPlayerForm';
@@ -22,6 +23,7 @@ const LeagueSettingsPage = () => {
   // State for player management modal
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
+  const [inviteEmail, setInviteEmail] = useState('');
 
   const [nonOwnerAdminsCanManageRoles, setNonOwnerAdminsCanManageRoles] = useState(false);
 
@@ -137,7 +139,7 @@ const LeagueSettingsPage = () => {
     const action = isActive ? "Activate" : "Deactivate";
     Alert.alert(
       `${action} Player`,
-      `Are you sure you want to ${action.toLowerCase()} ${member.playerName}?`,
+      `Are you sure you want to ${action.toLowerCase()} ${member.displayName}?`,
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -173,7 +175,7 @@ const LeagueSettingsPage = () => {
     if (!selectedMember) return;
     Alert.alert(
       "Transfer Ownership",
-      `Are you sure you want to make ${selectedMember.playerName} the new owner?\n\nThis action is irreversible.`,
+      `Are you sure you want to make ${selectedMember.displayName} the new owner?\n\nThis action is irreversible.`,
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -207,8 +209,55 @@ const LeagueSettingsPage = () => {
     );
   };
 
+  const handleInvite = async (inviteMethod) => {
+    if (!selectedMember || !inviteEmail) {
+      Alert.alert("Validation Error", "Please enter an email address.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/leagues/${selectedLeagueId}/members/${selectedMember.id}/invite`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: inviteEmail }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`Failed to send invite: ${errorData}`);
+      }
+
+      if (inviteMethod === 'email') {
+        const data = await response.json();
+        const subject = `Invitation to join ${currentLeague.leagueName} on Poker League`;
+        const body = `You've been invited to join the \"${currentLeague.leagueName}\" league and claim the profile for \"${selectedMember.displayName}\".\n\nClick this link to sign up and join:\n\n${data.deepLink}`;
+        const url = `mailto:${inviteEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        
+        console.log("Generated mailto URL:", url);
+        try {
+          await Linking.openURL(url);
+        } catch (error) {
+          Alert.alert("Error", "Could not open email client. Please try again.");
+        }
+
+      } else { // 'in-app'
+        Alert.alert("Invite Sent", "An in-app invite has been sent to the user.");
+      }
+
+      setInviteEmail('');
+      setModalVisible(false);
+    } catch (e) {
+      console.error(e);
+      Alert.alert("Error", e.message);
+    }
+  };
+
   const openManageModal = (member) => {
     setSelectedMember(member);
+    setInviteEmail(''); // Reset email field when opening modal
     setModalVisible(true);
   };
 
@@ -254,7 +303,7 @@ const LeagueSettingsPage = () => {
           <Image source={{ uri: item.iconUrl }} style={styles.memberIcon} />
         )}
         <View>
-          <Text style={styles.memberName}>{item.displayName || item.playerName}</Text>
+          <Text style={styles.memberName}>{item.displayName}</Text>
           {(item.firstName || item.lastName) && (
             <Text style={styles.realNameText}>({item.firstName} {item.lastName})</Text>
           )}
@@ -276,16 +325,46 @@ const LeagueSettingsPage = () => {
     if (!selectedMember) return null;
 
     const isOwner = currentUserMembership?.isOwner;
-    const canAdminsManage = nonOwnerAdminsCanManageRoles; // Use the league-level setting
+    const canAdminsManage = nonOwnerAdminsCanManageRoles;
     const canManageRoles = isOwner || (isAdmin && canAdminsManage);
-
     const targetIsOwner = selectedMember.isOwner;
+
     if (targetIsOwner) {
         return null; // Safeguard: Owners should not be manageable from this modal
     }
 
+    // Unregistered player options
+    if (!selectedMember.playerAccountId) {
+      return (
+        <View style={styles.modalSection}>
+          <Text style={styles.modalSubtitle}>Invite to Claim</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter user's email"
+            value={inviteEmail}
+            onChangeText={setInviteEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+          <TouchableOpacity
+            style={[styles.button, styles.buttonPrimary, { marginTop: 10 }]}
+            onPress={() => handleInvite('in-app')}
+          >
+            <Text style={styles.textStyle}>Send In-App Invite</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.button, styles.buttonSecondary, { marginTop: 10 }]}
+            onPress={() => handleInvite('email')}
+          >
+            <Text style={styles.textStyle}>Send Email Invite</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    // Registered player options
     return (
-        <View style={styles.modalButtonContainer}>
+        <View style={styles.modalSection}>
             {isOwner && selectedMember.role === 'ADMIN' ? (
                 <TouchableOpacity
                     style={[styles.button, styles.buttonDestructive]}
@@ -294,7 +373,7 @@ const LeagueSettingsPage = () => {
                     <Text style={styles.textStyle}>Demote to Player</Text>
                 </TouchableOpacity>
             ) : null}
-            {canManageRoles && selectedMember.role === 'PLAYER' && selectedMember.playerAccountId !== null ? (
+            {canManageRoles && selectedMember.role === 'PLAYER' ? (
                 <TouchableOpacity
                     style={[styles.button, styles.buttonPrimary, { marginTop: 10 }]}
                     onPress={() => handleUpdateRole('ADMIN')}
@@ -302,7 +381,7 @@ const LeagueSettingsPage = () => {
                     <Text style={styles.textStyle}>Promote to Admin</Text>
                 </TouchableOpacity>
             ) : null}
-            {isOwner && selectedMember.playerAccountId !== null ? (
+            {isOwner ? (
                 <TouchableOpacity
                     style={[styles.button, styles.buttonDestructive, { marginTop: 10 }]}
                     onPress={handleTransferOwnership}
@@ -419,14 +498,13 @@ const LeagueSettingsPage = () => {
             >
                 <View style={styles.centeredView}>
                     <View style={styles.modalView}>
-                        <Text style={styles.modalText}>Manage {selectedMember.playerName}</Text>
+                        <Text style={styles.modalText}>Manage {selectedMember.displayName}</Text>
 
                         {renderManagementOptions()}
 
                         <TouchableOpacity
-                            style={[styles.button, styles.buttonClose]}
-                            onPress={() => setModalVisible(!modalVisible)}
-                        >
+                            style={[styles.button, styles.buttonClose, { marginTop: 20 }]}
+                            onPress={() => setModalVisible(!modalVisible)}>
                             <Text style={styles.textStyle}>Close</Text>
                         </TouchableOpacity>
                     </View>
@@ -496,6 +574,14 @@ const styles = StyleSheet.create({
   settingLabel: {
     marginRight: 10,
     flexShrink: 1,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    padding: 10,
+    borderRadius: 5,
+    width: '100%',
+    marginTop: 5,
   },
   memberList: {
     width: '100%',
@@ -585,27 +671,39 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.25,
     shadowRadius: 4,
-    elevation: 5
+    elevation: 5,
+    width: '90%',
   },
   modalText: {
     marginBottom: 15,
     textAlign: "center",
     fontWeight: 'bold'
   },
-  modalButtonContainer: {
-    width: '80%',
+  modalSubtitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 10,
+    marginBottom: 5,
+  },
+  modalSection: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 15,
   },
   button: {
     borderRadius: 10,
     padding: 10,
     elevation: 2,
-    marginBottom: 10,
+    width: '100%',
   },
   buttonClose: {
-    backgroundColor: '#2196F3',
+    backgroundColor: '#6c757d',
   },
   buttonPrimary: {
     backgroundColor: '#007bff',
+  },
+  buttonSecondary: {
+    backgroundColor: '#6c757d',
   },
   buttonPrimaryRed: {
     backgroundColor: '#fb5b5a',

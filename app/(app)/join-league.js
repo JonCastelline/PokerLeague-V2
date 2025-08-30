@@ -1,6 +1,6 @@
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, FlatList, ActivityIndicator } from 'react-native';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
 import { API_BASE_URL } from '../../src/config';
@@ -8,9 +8,56 @@ import PageLayout from '../../components/PageLayout';
 
 const JoinLeaguePage = () => {
   const [inviteCode, setInviteCode] = useState('');
-  const router = useRouter();
+  const [invites, setInvites] = useState([]);
+  const [loading, setLoading] = useState(true);
   const { token } = useAuth();
   const { reloadLeagues } = useLeague();
+  const router = useRouter();
+
+  const fetchInvites = useCallback(async () => {
+    if (!token) return;
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/player-accounts/me/invites`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setInvites(data);
+      } else {
+        setInvites([]);
+      }
+    } catch (error) {
+      console.error("Failed to fetch invites:", error);
+      setInvites([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchInvites();
+    }, [fetchInvites])
+  );
+
+  const handleAcceptInvite = async (inviteId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/player-accounts/me/invites/${inviteId}/accept`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to accept invite.');
+      }
+      Alert.alert('Success', 'You have successfully claimed the profile and joined the league!');
+      fetchInvites(); // Refresh invites list
+      reloadLeagues(); // Refresh leagues list
+    } catch (error) {
+      console.error('Accept invite error:', error);
+      Alert.alert('Error', error.message);
+    }
+  };
 
   const handleJoinLeague = () => {
     if (!inviteCode.trim()) {
@@ -23,9 +70,7 @@ const JoinLeaguePage = () => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        inviteCode: inviteCode,
-      }),
+      body: JSON.stringify({ inviteCode }),
     })
       .then(response => {
         if (!response.ok) {
@@ -36,7 +81,7 @@ const JoinLeaguePage = () => {
         return response.json();
       })
       .then(data => {
-        reloadLeagues(); // Reload leagues after successful join
+        reloadLeagues();
         Alert.alert('Success', `You have joined the league "${data.leagueName}"!`, [
           { text: 'OK', onPress: () => router.replace('/(app)/home') },
         ]);
@@ -47,39 +92,84 @@ const JoinLeaguePage = () => {
       });
   };
 
+  const renderInviteItem = ({ item }) => (
+    <View style={styles.inviteItemContainer}>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.inviteLeagueName}>{item.leagueName}</Text>
+        <Text style={styles.inviteClaimText}>Claim profile: {item.displayNameToClaim}</Text>
+      </View>
+      <TouchableOpacity style={styles.acceptButton} onPress={() => handleAcceptInvite(item.inviteId)}>
+        <Text style={styles.acceptButtonText}>Accept</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
   return (
-    <PageLayout>
+    <PageLayout noScroll>
       <View style={styles.contentContainer}>
         <Text style={styles.title}>Join a League</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter Invite Code"
-          value={inviteCode}
-          onChangeText={setInviteCode}
-          autoCapitalize="characters"
-        />
-        <TouchableOpacity style={styles.button} onPress={handleJoinLeague}>
-          <Text style={styles.buttonText}>Join League</Text>
-        </TouchableOpacity>
+
+        <View style={styles.sectionContainer}>
+          <Text style={styles.subtitle}>Your Invitations</Text>
+          {loading ? (
+            <ActivityIndicator size="large" color="#fb5b5a" />
+          ) : invites.length > 0 ? (
+            <FlatList
+              data={invites}
+              renderItem={renderInviteItem}
+              keyExtractor={(item) => item.inviteId.toString()}
+              style={{ width: '100%' }}
+            />
+          ) : (
+            <Text style={styles.noInvitesText}>You have no pending invitations.</Text>
+          )}
+        </View>
+
+        <View style={styles.separator} />
+
+        <View style={styles.sectionContainer}>
+          <Text style={styles.subtitle}>Join with Code</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter Invite Code"
+            value={inviteCode}
+            onChangeText={setInviteCode}
+            autoCapitalize="characters"
+          />
+          <TouchableOpacity style={styles.button} onPress={handleJoinLeague}>
+            <Text style={styles.buttonText}>Join League</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </PageLayout>
   );
-};
+}
 
 const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    padding: 20,
     width: '100%',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
+    textAlign: 'center',
     marginBottom: 20,
   },
+  sectionContainer: {
+    width: '90%',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  subtitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
   input: {
-    width: '80%',
+    width: '100%',
     height: 50,
     backgroundColor: 'white',
     borderRadius: 25,
@@ -95,11 +185,51 @@ const styles = StyleSheet.create({
     height: 50,
     alignItems: 'center',
     justifyContent: 'center',
-    width: '80%',
+    width: '100%',
   },
   buttonText: {
     color: 'white',
     fontSize: 16,
+    fontWeight: 'bold',
+  },
+  separator: {
+    height: 1,
+    backgroundColor: '#ddd',
+    marginVertical: 20,
+    width: '90%',
+  },
+  noInvitesText: {
+    textAlign: 'center',
+    color: '#666',
+    fontStyle: 'italic',
+  },
+  inviteItemContainer: {
+    backgroundColor: '#f0f0f0',
+    padding: 15,
+    borderRadius: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+    width: '100%',
+  },
+  inviteLeagueName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  inviteClaimText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  acceptButton: {
+    backgroundColor: '#28a745',
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 5,
+    marginLeft: 10,
+  },
+  acceptButtonText: {
+    color: 'white',
     fontWeight: 'bold',
   },
 });

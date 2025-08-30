@@ -6,16 +6,37 @@ import { useAuth } from '../context/AuthContext';
 import AppMenu from './AppMenu';
 import UserMenu from './UserMenu';
 import { useLeague } from '../context/LeagueContext';
+import { API_BASE_URL } from '../src/config';
 
 const PageLayout = ({ children, noScroll }) => {
   const { currentLeague, loadingLeagues, leagueHomeContent, currentUserMembership, reloadCurrentUserMembership } = useLeague();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [userMenuVisible, setUserMenuVisible] = useState(false);
+  const [inviteCount, setInviteCount] = useState(0);
+
+  const fetchInvites = useCallback(async () => {
+    if (!token) return;
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/player-accounts/me/invites`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setInviteCount(data.length);
+      } else {
+        setInviteCount(0);
+      }
+    } catch (error) {
+      console.error("Failed to fetch invites in PageLayout:", error);
+      setInviteCount(0);
+    }
+  }, [token]);
 
   useFocusEffect(
     useCallback(() => {
       reloadCurrentUserMembership();
-    }, [reloadCurrentUserMembership])
+      fetchInvites();
+    }, [reloadCurrentUserMembership, fetchInvites])
   );
 
   if (loadingLeagues) {
@@ -48,11 +69,12 @@ const PageLayout = ({ children, noScroll }) => {
               )}
               <Text style={styles.userName}>{displayUserName}</Text>
               <MaterialIcons name="arrow-drop-down" size={24} color="black" />
+              {inviteCount > 0 && <View style={styles.badge} />}
             </TouchableOpacity>
           )}
         </View>
       </View>
-      <UserMenu isVisible={userMenuVisible} onClose={() => setUserMenuVisible(false)} />
+      <UserMenu isVisible={userMenuVisible} onClose={() => setUserMenuVisible(false)} inviteCount={inviteCount} />
       {noScroll ? (
         <View style={styles.noScrollContent}>
           {children}
@@ -115,6 +137,17 @@ const styles = StyleSheet.create({
     height: 30,
     borderRadius: 15, // Make it circular
     marginRight: 5,
+  },
+  badge: {
+    position: 'absolute',
+    right: -5,
+    top: -5,
+    backgroundColor: 'red',
+    borderRadius: 9,
+    width: 18,
+    height: 18,
+    borderWidth: 2,
+    borderColor: '#f0f0f0',
   },
   content: {
     flexGrow: 1,

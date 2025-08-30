@@ -1,13 +1,19 @@
-import { Slot, useRouter, useSegments } from "expo-router";
-import { useEffect } from "react";
+import { Slot, useRouter, useSegments, useGlobalSearchParams, useRootNavigationState } from "expo-router";
+import { useEffect, useState } from "react";
 import { AuthProvider, useAuth } from "../context/AuthContext";
 import { ActivityIndicator, View } from 'react-native';
 import * as Audio from 'expo-audio';
+import * as SplashScreen from 'expo-splash-screen';
+
+// Prevent the splash screen from auto-hiding before asset loading is complete.
+SplashScreen.preventAutoHideAsync();
 
 const InitialLayout = () => {
   const { authenticated, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  const params = useGlobalSearchParams();
+  const navigationState = useRootNavigationState();
 
   useEffect(() => {
     const configureAudio = async () => {
@@ -24,24 +30,26 @@ const InitialLayout = () => {
   }, []);
 
   useEffect(() => {
-    if (isLoading) return;
+    if (!navigationState?.key || isLoading) {
+      return;
+    }
 
-    const inAuthGroup = segments[0] === "(auth)";
+    // Hide the splash screen now that the router is ready
+    SplashScreen.hideAsync();
+
+    const inAuthGroup = segments[0] === '(auth)';
+    const isSigningUpWithToken = inAuthGroup && segments[1] === 'signup' && params.token;
+
+    if (isSigningUpWithToken) {
+      return;
+    }
 
     if (authenticated && inAuthGroup) {
-      router.replace("/(app)/home");
-    } else if (!authenticated) {
-      router.replace("/(auth)");
+      router.replace('/(app)/home');
+    } else if (!authenticated && !inAuthGroup) {
+      router.replace('/(auth)');
     }
-  }, [authenticated, isLoading]);
-
-  if (isLoading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
-  }
+  }, [authenticated, isLoading, segments, router, params, navigationState]);
 
   return <Slot />;
 };
