@@ -27,6 +27,7 @@ const PlayPage = () => {
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [isTimerFinished, setIsTimerFinished] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
+  const [noActiveSeason, setNoActiveSeason] = useState(false);
   const pollingIntervalRef = useRef(null);
 
   const getOrdinal = (n) => {
@@ -44,14 +45,27 @@ const PlayPage = () => {
 
   const fetchInitialData = useCallback(async () => {
     if (!selectedLeagueId) return;
+    setLoading(true); // Ensure loading is true at the start
+    setError(null); // Clear any previous errors
+    setNoActiveSeason(false); // Clear previous no active season state
+
     try {
       const members = await api(apiActions.getLeagueMembers, selectedLeagueId);
       setAllPlayers(members);
       const activePlayerIds = new Set(members.filter(m => m.isActive).map(m => m.id));
       setSelectedPlayerIds(activePlayerIds);
 
-      const season = await api(apiActions.getActiveSeason, selectedLeagueId);
-      setActiveSeason(season);
+      let season = null;
+      try {
+        season = await api(apiActions.getActiveSeason, selectedLeagueId);
+        setActiveSeason(season);
+      } catch (e) {
+        if (e.message.includes('404')) {
+          setNoActiveSeason(true);
+          return; // Exit early, no further processing needed for this scenario
+        }
+        throw e; // Re-throw other errors to be caught by the outer catch
+      }
 
       const seasonSettings = await api(apiActions.getSeasonSettings, season.id);
       setActiveSeasonSettings(seasonSettings);
@@ -70,7 +84,9 @@ const PlayPage = () => {
       }
 
     } catch (e) {
-      handleApiError(e);
+      handleApiError(e); // Only handle non-404 errors here
+    } finally {
+      setLoading(false); // Ensure loading is set to false in all cases
     }
   }, [selectedLeagueId, api]);
 
@@ -306,6 +322,17 @@ const PlayPage = () => {
 
   if (error) {
     return <PageLayout><Text style={styles.errorText}>Error: {error}</Text></PageLayout>;
+  }
+
+  if (noActiveSeason) {
+    return (
+      <PageLayout>
+        <View style={styles.noSeasonContainer}>
+          <Text style={styles.noSeasonText}>No active season found for this league.</Text>
+          <Text style={styles.noSeasonText}>Please create a new season in the Season Settings to get started!</Text>
+        </View>
+      </PageLayout>
+    );
   }
 
   if (mode === 'setup') {
@@ -643,6 +670,17 @@ const PlayPage = () => {
 };
 
 const styles = StyleSheet.create({
+  noSeasonContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  noSeasonText: {
+    fontSize: 18,
+    textAlign: 'center',
+    marginBottom: 10,
+  },
   container: {
     padding: 20,
   },

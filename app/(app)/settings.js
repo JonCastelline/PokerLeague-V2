@@ -175,23 +175,25 @@ const SettingsScreen = () => {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Player Settings (Current League)</Text>
-        <Text style={styles.label}>Display Name:</Text>
-        <TextInput style={styles.input} value={displayName} onChangeText={setDisplayName} />
+      {selectedLeagueId && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Player Settings (Current League)</Text>
+          <Text style={styles.label}>Display Name:</Text>
+          <TextInput style={styles.input} value={displayName} onChangeText={setDisplayName} />
 
-        <Text style={styles.label}>Icon URL:</Text>
-        <TextInput style={styles.input} value={iconUrl} onChangeText={setIconUrl} keyboardType="url" autoCapitalize="none" />
-        {iconUrl ? (
-          <Image source={{ uri: iconUrl }} style={styles.iconPreview} />
-        ) : (
-          <Text style={styles.noPreviewText}>No icon URL provided</Text>
-        )}
+          <Text style={styles.label}>Icon URL:</Text>
+          <TextInput style={styles.input} value={iconUrl} onChangeText={setIconUrl} keyboardType="url" autoCapitalize="none" />
+          {iconUrl ? (
+            <Image source={{ uri: iconUrl }} style={styles.iconPreview} />
+          ) : (
+            <Text style={styles.noPreviewText}>No icon URL provided</Text>
+          )}
 
-        <TouchableOpacity style={styles.button} onPress={handleUpdatePlayerSettings} disabled={loading}>
-          <Text style={styles.buttonText}>Update Player Settings</Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity style={styles.button} onPress={handleUpdatePlayerSettings} disabled={loading}>
+            <Text style={styles.buttonText}>Update Player Settings</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </ScrollView>
   );
 };
