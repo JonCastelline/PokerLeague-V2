@@ -16,17 +16,14 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "queries": {
-        "intent": [
-          {
-            "action": "android.intent.action.SENDTO",
-            "data": {
-              "scheme": "mailto"
-            }
-          }
-        ]
-      },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ],
+      "package": "com.anonymous.PokerLeagueV2"
     },
     "web": {
       "bundler": "metro",

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Image } from 'react-native';
-import * as Linking from 'expo-linking';
+
 import { View, Text, StyleSheet, ActivityIndicator, FlatList, ScrollView, Switch, TextInput, Modal, TouchableOpacity, Alert, Dimensions } from 'react-native';
 import PageLayout from '../../components/PageLayout';
 import AddUnregisteredPlayerForm from '../../components/AddUnregisteredPlayerForm';
@@ -20,15 +20,14 @@ const LeagueSettingsPage = () => {
   const [loadingMembers, setLoadingMembers] = useState(true);
   const [errorMembers, setErrorMembers] = useState(null);
 
-  // State for player management modal
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedMember, setSelectedMember] = useState(null);
-  const [inviteEmail, setInviteEmail] = useState('');
-
   const [nonOwnerAdminsCanManageRoles, setNonOwnerAdminsCanManageRoles] = useState(false);
 
   const [logoImageUrl, setLogoImageUrl] = useState('');
   const [homeContent, setHomeContent] = useState(''); // To store the content text if we decide to add it later
+
+  const [selectedMember, setSelectedMember] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [playerEmail, setPlayerEmail] = useState('');
 
   const isAdmin = currentUserMembership?.role === 'ADMIN' || currentUserMembership?.isOwner;
 
@@ -209,8 +208,8 @@ const LeagueSettingsPage = () => {
     );
   };
 
-  const handleInvite = async (inviteMethod) => {
-    if (!selectedMember || !inviteEmail) {
+  const handleInvite = async () => {
+    if (!selectedMember || !playerEmail) {
       Alert.alert("Validation Error", "Please enter an email address.");
       return;
     }
@@ -222,7 +221,7 @@ const LeagueSettingsPage = () => {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email: inviteEmail }),
+        body: JSON.stringify({ email: playerEmail }),
       });
 
       if (!response.ok) {
@@ -230,24 +229,9 @@ const LeagueSettingsPage = () => {
         throw new Error(`Failed to send invite: ${errorData}`);
       }
 
-      if (inviteMethod === 'email') {
-        const data = await response.json();
-        const subject = `Invitation to join ${currentLeague.leagueName} on Poker League`;
-        const body = `You've been invited to join the \"${currentLeague.leagueName}\" league and claim the profile for \"${selectedMember.displayName}\".\n\nClick this link to sign up and join:\n\n${data.deepLink}`;
-        const url = `mailto:${inviteEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-        
-        console.log("Generated mailto URL:", url);
-        try {
-          await Linking.openURL(url);
-        } catch (error) {
-          Alert.alert("Error", "Could not open email client. Please try again.");
-        }
+      Alert.alert("Invite Sent", "An in-app invite has been sent to the user.");
 
-      } else { // 'in-app'
-        Alert.alert("Invite Sent", "An in-app invite has been sent to the user.");
-      }
-
-      setInviteEmail('');
+      setPlayerEmail(''); // Clear the email input after sending
       setModalVisible(false);
     } catch (e) {
       console.error(e);
@@ -257,7 +241,7 @@ const LeagueSettingsPage = () => {
 
   const openManageModal = (member) => {
     setSelectedMember(member);
-    setInviteEmail(''); // Reset email field when opening modal
+    setPlayerEmail(''); // Reset email field when opening modal
     setModalVisible(true);
   };
 
@@ -341,22 +325,16 @@ const LeagueSettingsPage = () => {
           <TextInput
             style={styles.input}
             placeholder="Enter user's email"
-            value={inviteEmail}
-            onChangeText={setInviteEmail}
+            value={playerEmail}
+            onChangeText={setPlayerEmail}
             keyboardType="email-address"
             autoCapitalize="none"
           />
           <TouchableOpacity
             style={[styles.button, styles.buttonPrimary, { marginTop: 10 }]}
-            onPress={() => handleInvite('in-app')}
+            onPress={handleInvite}
           >
             <Text style={styles.textStyle}>Send In-App Invite</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.button, styles.buttonSecondary, { marginTop: 10 }]}
-            onPress={() => handleInvite('email')}
-          >
-            <Text style={styles.textStyle}>Send Email Invite</Text>
           </TouchableOpacity>
         </View>
       );
