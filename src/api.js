@@ -79,7 +79,11 @@ export const finalizeGame = (gameId, token) => {
 };
 
 export const updateTimer = (gameId, timeRemainingInMillis, token) => {
-    return { url: `/games/${gameId}/live/timer`, method: 'PUT', data: { timeRemainingInMillis }, token };
+  return apiFetch(`/api/games/${gameId}/live/timer`, {
+    method: 'PUT',
+    token,
+    body: JSON.stringify({ timeRemainingInMillis }),
+  });
 };
 
 export const updateGameResults = (gameId, payload, token) => {

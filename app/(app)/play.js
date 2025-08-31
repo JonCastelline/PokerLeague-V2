@@ -121,7 +121,7 @@ const PlayPage = () => {
   );
 
   useEffect(() => {
-    if (mode === 'play' || mode === 'review') {
+    if ((mode === 'play' || mode === 'review') && selectedGameId) {
       setLoading(true);
       fetchGameState();
       pollingIntervalRef.current = setInterval(fetchGameState, 5000);
@@ -130,12 +130,13 @@ const PlayPage = () => {
         clearInterval(pollingIntervalRef.current);
       }
     }
+
     return () => {
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
       }
     };
-  }, [mode, fetchGameState]);
+  }, [mode, selectedGameId, fetchGameState]);
 
   useEffect(() => {
     if (gameState?.gameStatus === 'COMPLETED') {
