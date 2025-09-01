@@ -23,6 +23,7 @@ const LeagueSettingsPage = () => {
   const [errorMembers, setErrorMembers] = useState(null);
 
   const [nonOwnerAdminsCanManageRoles, setNonOwnerAdminsCanManageRoles] = useState(false);
+  const [leagueName, setLeagueName] = useState('');
 
   const [logoImageUrl, setLogoImageUrl] = useState('');
   const [homeContent, setHomeContent] = useState(''); // To store the content text if we decide to add it later
@@ -36,6 +37,7 @@ const LeagueSettingsPage = () => {
   useEffect(() => {
     if (currentLeague) {
       setNonOwnerAdminsCanManageRoles(currentLeague.nonOwnerAdminsCanManageRoles);
+      setLeagueName(currentLeague.leagueName || '');
     }
   }, [currentLeague]);
 
@@ -56,7 +58,7 @@ const LeagueSettingsPage = () => {
   const handleSaveLeagueSettings = async () => {
     if (!selectedLeagueId) return;
     try {
-      await api(apiActions.updateLeagueSettings, selectedLeagueId, { nonOwnerAdminsCanManageRoles });
+      await api(apiActions.updateLeagueSettings, selectedLeagueId, leagueName, nonOwnerAdminsCanManageRoles);
       alert('League settings saved successfully!');
       reloadLeagues();
     } catch (e) {
@@ -380,8 +382,22 @@ const LeagueSettingsPage = () => {
           </TouchableOpacity>
         ) : null}
 
-        {/* Admins Can Manage Roles */}
-        <View style={styles.settingItem}>
+        <View style={styles.settingsGroup}>
+          {/* League Name Input */}
+          {currentUserMembership?.isOwner && (
+            <View style={styles.settingItem}>
+              <Text style={styles.settingLabel}>League Name</Text>
+              <TextInput
+                style={[styles.input, {width: '70%'}]}
+                placeholder="Enter league name"
+                value={leagueName}
+                onChangeText={setLeagueName}
+              />
+            </View>
+          )}
+
+          {/* Admins Can Manage Roles */}
+          <View style={styles.settingItem}>
             <Text style={styles.settingLabel}>Admins Can Manage Roles</Text>
             <Switch
                 value={nonOwnerAdminsCanManageRoles}
@@ -389,14 +405,15 @@ const LeagueSettingsPage = () => {
                 disabled={!currentUserMembership?.isOwner} // Only owner can change this
             />
           </View>
-        {currentUserMembership?.isOwner && (
-          <TouchableOpacity
-            style={[styles.button, styles.buttonPrimaryRed, styles.actionButton]}
-            onPress={handleSaveLeagueSettings}
-          >
-            <Text style={styles.textStyle}>Save League Settings</Text>
-          </TouchableOpacity>
-        )}
+          {currentUserMembership?.isOwner && (
+            <TouchableOpacity
+              style={[styles.button, styles.buttonPrimaryRed, styles.actionButton]}
+              onPress={handleSaveLeagueSettings}
+            >
+              <Text style={styles.textStyle}>Save League Settings</Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
 
         <Text style={styles.subtitle}>League Members</Text>
@@ -528,7 +545,15 @@ const styles = StyleSheet.create({
   },
   settingLabel: {
     marginRight: 10,
-    flexShrink: 1,
+  },
+  settingsGroup: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 20,
+    marginTop: 20,
   },
   input: {
     borderWidth: 1,
@@ -536,7 +561,6 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 5,
     width: '100%',
-    marginTop: 5,
   },
   memberList: {
     width: '100%',
