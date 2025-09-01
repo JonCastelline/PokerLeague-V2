@@ -263,8 +263,8 @@ const SeasonSettingsPage = () => {
     }
 
     try {
-      const formattedStartDate = DateTime.fromJSDate(newSeasonStartDate).toFormat('yyyy-MM-dd');
-      const formattedEndDate = DateTime.fromJSDate(newSeasonEndDate).toFormat('yyyy-MM-dd');
+      const formattedStartDate = DateTime.fromJSDate(newSeasonStartDate).startOf('day').toUTC().toISO();
+      const formattedEndDate = DateTime.fromJSDate(newSeasonEndDate).endOf('day').toUTC().toISO();
 
       const response = await fetch(`${API_BASE_URL}/api/leagues/${selectedLeagueId}/seasons`, {
         method: 'POST',

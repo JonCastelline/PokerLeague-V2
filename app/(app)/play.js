@@ -27,6 +27,7 @@ const PlayPage = () => {
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [isTimerFinished, setIsTimerFinished] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
+  const [noActiveSeason, setNoActiveSeason] = useState(false);
   const pollingIntervalRef = useRef(null);
 
   const getOrdinal = (n) => {
@@ -44,14 +45,27 @@ const PlayPage = () => {
 
   const fetchInitialData = useCallback(async () => {
     if (!selectedLeagueId) return;
+    setLoading(true); // Ensure loading is true at the start
+    setError(null); // Clear any previous errors
+    setNoActiveSeason(false); // Clear previous no active season state
+
     try {
       const members = await api(apiActions.getLeagueMembers, selectedLeagueId);
       setAllPlayers(members);
       const activePlayerIds = new Set(members.filter(m => m.isActive).map(m => m.id));
       setSelectedPlayerIds(activePlayerIds);
 
-      const season = await api(apiActions.getActiveSeason, selectedLeagueId);
-      setActiveSeason(season);
+      let season = null;
+      try {
+        season = await api(apiActions.getActiveSeason, selectedLeagueId);
+        setActiveSeason(season);
+      } catch (e) {
+        if (e.message.includes('404')) {
+          setNoActiveSeason(true);
+          return; // Exit early, no further processing needed for this scenario
+        }
+        throw e; // Re-throw other errors to be caught by the outer catch
+      }
 
       const seasonSettings = await api(apiActions.getSeasonSettings, season.id);
       setActiveSeasonSettings(seasonSettings);
@@ -70,7 +84,9 @@ const PlayPage = () => {
       }
 
     } catch (e) {
-      handleApiError(e);
+      handleApiError(e); // Only handle non-404 errors here
+    } finally {
+      setLoading(false); // Ensure loading is set to false in all cases
     }
   }, [selectedLeagueId, api]);
 
@@ -79,6 +95,17 @@ const PlayPage = () => {
       fetchInitialData();
     }
   }, [mode, fetchInitialData]);
+
+  useEffect(() => {
+    if (mode === 'setup' && selectedGameId) {
+        const game = allGames.find(g => g.id === selectedGameId);
+        if (game && (game.gameStatus === 'IN_PROGRESS' || game.gameStatus === 'PAUSED')) {
+            fetchGameState();
+        } else {
+            setGameState(null); // Clear game state for scheduled games
+        }
+    }
+  }, [selectedGameId, allGames, mode, fetchGameState]);
 
   const fetchGameState = useCallback(async () => {
     if (!selectedGameId) return;
@@ -105,7 +132,7 @@ const PlayPage = () => {
   );
 
   useEffect(() => {
-    if (mode === 'play' || mode === 'review') {
+    if ((mode === 'play' || mode === 'review') && selectedGameId && isPlayScreenActive) {
       setLoading(true);
       fetchGameState();
       pollingIntervalRef.current = setInterval(fetchGameState, 5000);
@@ -114,12 +141,13 @@ const PlayPage = () => {
         clearInterval(pollingIntervalRef.current);
       }
     }
+
     return () => {
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
       }
     };
-  }, [mode, fetchGameState]);
+  }, [mode, selectedGameId, fetchGameState, isPlayScreenActive]);
 
   useEffect(() => {
     if (gameState?.gameStatus === 'COMPLETED') {
@@ -308,8 +336,21 @@ const PlayPage = () => {
     return <PageLayout><Text style={styles.errorText}>Error: {error}</Text></PageLayout>;
   }
 
+  if (noActiveSeason) {
+    return (
+      <PageLayout>
+        <View style={styles.noSeasonContainer}>
+          <Text style={styles.noSeasonText}>No active season found for this league.</Text>
+          <Text style={styles.noSeasonText}>Please create a new season in the Season Settings to get started!</Text>
+        </View>
+      </PageLayout>
+    );
+  }
+
   if (mode === 'setup') {
       const hasActiveGames = allGames.filter(game => game.gameStatus !== 'COMPLETED').length > 0;
+      const selectedGame = allGames.find(g => g.id === selectedGameId);
+
       return (
           <PageLayout>
               <ScrollView contentContainerStyle={styles.setupContainer}>
@@ -334,7 +375,7 @@ const PlayPage = () => {
                     <Text>No upcoming or active games found for this season.</Text>
                   )}
 
-                  {hasActiveGames && selectedGameId && (
+                  {selectedGame?.gameStatus === 'SCHEDULED' && (
                     <>
                       <Text style={styles.title}>Select Players</Text>
                       <View style={{width: '100%'}}>
@@ -354,6 +395,31 @@ const PlayPage = () => {
                       <TouchableOpacity style={[styles.button, styles.setupStartButton]} onPress={handleStartGame} disabled={isActionLoading}>
                           <Text style={styles.buttonText}>Start Game</Text>
                       </TouchableOpacity>
+                    </>
+                  )}
+
+                  {(selectedGame?.gameStatus === 'IN_PROGRESS' || selectedGame?.gameStatus === 'PAUSED') && (
+                    <>
+                        {loading && !gameState ? (
+                            <ActivityIndicator size="large" color="#fb5b5a" />
+                        ) : (
+                            <>
+                                <Text style={styles.title}>Players in Game</Text>
+                                <View style={{width: '100%'}}>
+                                    {gameState?.players.map(player => (
+                                        <View key={player.id} style={styles.playerSetupItem}>
+                                            <View style={{flexDirection: 'row', alignItems: 'center', flex: 1}}>
+                                                {player.iconUrl ? <Image source={{ uri: player.iconUrl }} style={styles.playerIcon} /> : <View style={styles.playerIcon} />}
+                                                <Text>{player.displayName}</Text>
+                                            </View>
+                                        </View>
+                                    ))}
+                                </View>
+                                <TouchableOpacity style={[styles.button, styles.setupStartButton]} onPress={() => setMode('play')} disabled={isActionLoading}>
+                                    <Text style={styles.buttonText}>Join Game</Text>
+                                </TouchableOpacity>
+                            </>
+                        )}
                     </>
                   )}
               </ScrollView>
@@ -643,6 +709,17 @@ const PlayPage = () => {
 };
 
 const styles = StyleSheet.create({
+  noSeasonContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  noSeasonText: {
+    fontSize: 18,
+    textAlign: 'center',
+    marginBottom: 10,
+  },
   container: {
     padding: 20,
   },

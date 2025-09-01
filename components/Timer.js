@@ -1,75 +1,100 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { CountdownCircleTimer } from 'react-native-countdown-circle-timer';
 import { useAudioPlayer } from 'expo-audio';
 import { useAuth } from '../context/AuthContext';
 import * as apiActions from '../src/api';
 
-const Timer = ({ timerState, blindLevels, isPlaying, onTimerEnd, warningSoundEnabled, warningSoundTimeSeconds, gameId }) => {
+const Timer = ({ gameId, timerState, blindLevels, isPlaying, onTimerEnd, warningSoundEnabled, warningSoundTimeSeconds }) => {
   const { api } = useAuth();
   const prevRemainingTimeRef = useRef(0);
+  const remainingTimeRef = useRef(0);
   const isMounted = useRef(false);
+  const updateIntervalRef = useRef(null);
+
+  const [initialRemainingTime, setInitialRemainingTime] = useState(0);
 
   const warningSoundPlayer = useAudioPlayer(require('../assets/ding.wav'));
   const alarmPlayer = useAudioPlayer(require('../assets/alarm.mp3'));
 
   useEffect(() => {
-      isMounted.current = true;
-      return () => {
-        isMounted.current = false;
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+      try {
+        if (alarmPlayer) { alarmPlayer.pause(); alarmPlayer.remove(); }
+        if (warningSoundPlayer) { warningSoundPlayer.pause(); warningSoundPlayer.remove(); }
+      } catch (e) {
+        console.warn("Error cleaning up audio players, but continuing.", e);
+      }
+    };
+  }, []);
 
+  useEffect(() => {
+    if (timerState && timerState.timeRemainingInMillis) {
+        const serverRemainingTimeSec = timerState.timeRemainingInMillis / 1000;
+        setInitialRemainingTime(serverRemainingTimeSec);
+        remainingTimeRef.current = serverRemainingTimeSec;
+    }
+  }, [timerState.currentLevelIndex]); // Only reset when the level changes
+
+  useEffect(() => {
+    const updateTimerOnBackend = async () => {
+        if (!isMounted.current) return;
+        const timeToSave = remainingTimeRef.current;
         try {
-          if (alarmPlayer) { // Check if player exists before calling methods
-            alarmPlayer.pause();
-            alarmPlayer.remove();
-          }
-          if (warningSoundPlayer) { // Check if player exists
-            warningSoundPlayer.pause();
-            warningSoundPlayer.remove();
-          }
-        } catch (e) {
-            console.warn("Error cleaning up audio players, but continuing.", e);
+            await api(apiActions.updateTimer, gameId, Math.round(timeToSave * 1000));
+        } catch (error) {
+            console.error('Failed to update timer on backend:', error);
         }
-      };
-    }, []);
+    };
+
+    if (isPlaying) {
+      updateIntervalRef.current = setInterval(updateTimerOnBackend, 5000);
+    } else {
+      if (updateIntervalRef.current) {
+        clearInterval(updateIntervalRef.current);
+        updateIntervalRef.current = null;
+        updateTimerOnBackend(); // Final update when paused
+      }
+    }
+
+    return () => {
+      if (updateIntervalRef.current) {
+        clearInterval(updateIntervalRef.current);
+        updateTimerOnBackend(); // Final update when navigating away
+      }
+    };
+  }, [isPlaying, gameId, api]);
 
   const handleComplete = () => {
     if (isMounted.current) {
-        alarmPlayer.seekTo(0);
-        alarmPlayer.play();
+      alarmPlayer.seekTo(0);
+      alarmPlayer.play();
     }
     if (onTimerEnd) {
-        onTimerEnd();
+      onTimerEnd();
     }
     return { shouldRepeat: false };
   };
 
-  const handleUpdate = (remainingTime) => {
-    if (isPlaying && remainingTime % 1 === 0) {
-        try {
-            api(apiActions.updateTimer, gameId, remainingTime * 1000);
-        } catch (error) {
-            console.error('Failed to update timer on backend:', error);
-        }
-    }
-  }
-
   const renderTime = ({ remainingTime }) => {
+    remainingTimeRef.current = remainingTime;
     const displayTime = Math.max(0, remainingTime);
 
     if (warningSoundEnabled && displayTime === warningSoundTimeSeconds && displayTime !== prevRemainingTimeRef.current) {
-        warningSoundPlayer.seekTo(0);
-        warningSoundPlayer.play();
+      warningSoundPlayer.seekTo(0);
+      warningSoundPlayer.play();
     }
     prevRemainingTimeRef.current = displayTime;
 
     if (displayTime === 0) {
-        return <Text style={styles.countdownText}>Level End</Text>;
+      return <Text style={styles.countdownText}>Level End</Text>;
     }
 
     const hours = Math.floor(displayTime / 3600);
     const minutes = Math.floor((displayTime % 3600) / 60);
-    const seconds = displayTime % 60;
+    const seconds = Math.floor(displayTime % 60);
 
     const formattedTime = [
       hours > 0 ? hours : null,
@@ -88,9 +113,10 @@ const Timer = ({ timerState, blindLevels, isPlaying, onTimerEnd, warningSoundEna
   return (
     <View style={styles.timerContainer}>
       <CountdownCircleTimer
-        key={timerState.currentLevelIndex} // Keep the key to reset the timer animation
+        key={timerState.currentLevelIndex}
         isPlaying={isPlaying}
-        duration={timerState.timeRemainingInMillis / 1000}
+        duration={initialRemainingTime} // Duration is the initial time for this level
+        initialRemainingTime={initialRemainingTime} // Start from this value
         colors={['#004777', '#F7B801', '#A30000', '#A30000']}
         colorsTime={[10, 6, 3, 0]}
         onComplete={handleComplete}
