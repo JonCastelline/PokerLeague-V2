@@ -7,10 +7,10 @@ import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import PageLayout from '../../components/PageLayout';
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
-import { API_BASE_URL } from '../../src/config';
+import * as apiActions from '../../src/api';
 
 const SeasonSettingsPage = () => {
-  const { token } = useAuth();
+  const { api } = useAuth();
   const { selectedLeagueId, currentUserMembership, loadingCurrentUserMembership } = useLeague();
 
   // State for all seasons
@@ -78,7 +78,7 @@ const SeasonSettingsPage = () => {
   const [datePickerField, setDatePickerField] = useState(null); // 'startDate' or 'endDate'
 
   const handleAddToCalendar = (gameId) => {
-    const url = `${API_BASE_URL}/api/games/${gameId}/calendar.ics`;
+    const url = `${apiActions.API_BASE_URL}/api/games/${gameId}/calendar.ics`;
     Linking.openURL(url).catch(err => console.error('An error occurred', err));
   };
 
@@ -103,61 +103,45 @@ const SeasonSettingsPage = () => {
   const isAdmin = currentUserMembership?.role === 'ADMIN' || currentUserMembership?.isOwner;
 
   const fetchGames = useCallback(async (seasonId) => {
-    if (!seasonId || !token) return;
+    if (!seasonId) return;
     setLoadingGames(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/seasons/${seasonId}/games`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const gamesData = await response.json();
+      const gamesData = await api(apiActions.getGameHistory, seasonId);
       setGames(gamesData.sort((a, b) => new Date(a.gameDate) - new Date(b.gameDate)));
     } catch (e) {
       console.error("Failed to fetch games:", e);
     } finally {
       setLoadingGames(false);
     }
-  }, [token]);
+  }, [api]);
 
   const fetchSettings = useCallback(async (seasonIdToFetch = null) => {
-    if (!selectedLeagueId || !token) return;
+    if (!selectedLeagueId) return;
     setLoadingSettings(true);
     try {
       let targetSeasonId = seasonIdToFetch;
 
-      // If no specific seasonId is provided, try to get the active season
       if (!targetSeasonId) {
-        const seasonResponse = await fetch(`${API_BASE_URL}/api/leagues/${selectedLeagueId}/seasons/active`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (!seasonResponse.ok) {
-          if (seasonResponse.status === 404) {
-            // This means no active season exists yet, which is a valid state
+        try {
+          const seasonData = await api(apiActions.getActiveSeason, selectedLeagueId);
+          targetSeasonId = seasonData.id;
+          setSelectedSeason(seasonData);
+        } catch (e) {
+          if (e.message.includes('404')) {
             setSettings(null);
             setSelectedSeason(null);
-            setLoadingSettings(false);
-            // Clear blindLevels and placePoints if no settings
             setBlindLevels([]);
             setPlacePoints([]);
             setGames([]);
-            return; // Exit early, no settings to fetch
+            return;
           }
-          throw new Error(`HTTP error! status: ${seasonResponse.status}`);
+          throw e;
         }
-        const seasonData = await seasonResponse.json();
-        targetSeasonId = seasonData.id;
-        setSelectedSeason(seasonData); // Set the full season object
       }
 
-      // If we have a targetSeasonId, fetch its settings
       if (targetSeasonId) {
-        const settingsResponse = await fetch(`${API_BASE_URL}/api/seasons/${targetSeasonId}/settings`, {
-            headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (!settingsResponse.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const settingsData = await settingsResponse.json();
+        const settingsData = await api(apiActions.getSeasonSettings, targetSeasonId);
         setSettings(settingsData);
-        // Populate blindLevels and placePoints state, and sort them
         setBlindLevels((settingsData.blindLevels || []).sort((a, b) => a.level - b.level));
         setPlacePoints(settingsData.placePoints || []);
         fetchGames(targetSeasonId);
@@ -169,54 +153,40 @@ const SeasonSettingsPage = () => {
     } finally {
       setLoadingSettings(false);
     }
-  }, [selectedLeagueId, token, fetchGames]);
+  }, [selectedLeagueId, api, fetchGames]);
 
   const fetchAllSeasons = useCallback(async () => {
-    if (!selectedLeagueId || !token) return;
+    if (!selectedLeagueId) return;
     setLoadingSeasons(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/leagues/${selectedLeagueId}/seasons`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (!response.ok) {
-        if (response.status === 404) {
-          setSeasons([]); // No seasons found
-          return;
-        }
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-      setSeasons(data);
+      const data = await api(apiActions.getSeasons, selectedLeagueId);
+      setSeasons(data || []);
     } catch (e) {
       console.error("Failed to fetch all seasons:", e);
       setErrorSeasons(e.message);
     } finally {
       setLoadingSeasons(false);
     }
-  }, [selectedLeagueId, token]);
+  }, [selectedLeagueId, api]);
 
   const handleSeasonChange = (seasonId) => {
     const newSelectedSeason = seasons.find(s => s.id === seasonId);
     if (newSelectedSeason) {
       setSelectedSeason(newSelectedSeason);
-      fetchSettings(newSelectedSeason.id); // Fetch settings for the newly selected season
+      fetchSettings(newSelectedSeason.id);
     }
   };
 
   useEffect(() => {
-    fetchAllSeasons(); // Fetch all seasons first
+    fetchAllSeasons();
   }, [fetchAllSeasons]);
 
-  // Effect to set the initial selected season after all seasons are fetched
   useEffect(() => {
     if (!selectedSeason && seasons.length > 0) {
-      // If no season is selected, and we have seasons, try to fetch the active one
       fetchSettings();
     } else if (seasons.length === 0 && !loadingSeasons) {
-      // If no seasons and not loading, ensure settings are cleared
       setSettings(null);
       setSelectedSeason(null);
-      // Clear blindLevels and placePoints if no settings
       setBlindLevels([]);
       setPlacePoints([]);
       setGames([]);
@@ -228,11 +198,9 @@ const SeasonSettingsPage = () => {
   };
 
   const handleNumericInputBlur = (field, currentValue) => {
-    // 1. Clean the input: remove commas, allow only one decimal point
-    let cleanedValue = currentValue.toString().replace(/,/g, ''); // Remove all commas
+    let cleanedValue = currentValue.toString().replace(/,/g, '');
     const decimalCount = (cleanedValue.match(/\./g) || []).length;
     if (decimalCount > 1) {
-      // If more than one decimal, keep only the first one
       cleanedValue = cleanedValue.substring(0, cleanedValue.indexOf('.') + 1) +
                      cleanedValue.substring(cleanedValue.indexOf('.') + 1).replace(/\./g, '');
     }
@@ -241,11 +209,10 @@ const SeasonSettingsPage = () => {
 
     if (isNaN(numValue)) {
       alert('Please enter a valid number.');
-      setSettings(prev => ({ ...prev, [field]: 0 })); // Revert to 0 or previous valid value
+      setSettings(prev => ({ ...prev, [field]: 0 }));
       return;
     }
 
-    // Check for maximum 2 decimal place after parsing
     const parts = numValue.toString().split('.');
     if (parts.length > 1 && parts[1].length > 2) {
       alert('Please enter a number with a maximum of 2 decimal places.');
@@ -257,7 +224,7 @@ const SeasonSettingsPage = () => {
   };
 
   const handleCreateSeason = async () => {
-    if (!selectedLeagueId || !token || !newSeasonName || !newSeasonStartDate || !newSeasonEndDate) {
+    if (!selectedLeagueId || !newSeasonName || !newSeasonStartDate || !newSeasonEndDate) {
       alert('Please fill in all season details.');
       return;
     }
@@ -265,31 +232,20 @@ const SeasonSettingsPage = () => {
     try {
       const formattedStartDate = DateTime.fromJSDate(newSeasonStartDate).startOf('day').toUTC().toISO();
       const formattedEndDate = DateTime.fromJSDate(newSeasonEndDate).endOf('day').toUTC().toISO();
+      const seasonData = {
+        seasonName: newSeasonName,
+        startDate: formattedStartDate,
+        endDate: formattedEndDate,
+      };
 
-      const response = await fetch(`${API_BASE_URL}/api/leagues/${selectedLeagueId}/seasons`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          seasonName: newSeasonName,
-          startDate: formattedStartDate,
-          endDate: formattedEndDate,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(`Failed to create season: ${errorData}`);
-      }
+      await api(apiActions.createSeason, selectedLeagueId, seasonData);
 
       alert('Season created successfully!');
       setCreateSeasonModalVisible(false);
       setNewSeasonName('');
       setNewSeasonStartDate(null);
       setNewSeasonEndDate(null);
-      fetchAllSeasons(); // Refresh seasons list
+      fetchAllSeasons();
     } catch (e) {
       console.error("Failed to create season:", e);
       alert(e.message);
@@ -297,32 +253,21 @@ const SeasonSettingsPage = () => {
   };
 
   const handleAddNewGame = async () => {
-    if (!selectedSeason || !token) return;
+    if (!selectedSeason) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/seasons/${selectedSeason.id}/games`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          gameDate: DateTime.fromJSDate(newGameDate).toFormat('yyyy-MM-dd'),
-          gameTime: DateTime.fromJSDate(newGameTime).toFormat('HH:mm:ss'),
-          gameLocation: newGameLocation,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(`Failed to add game: ${errorData}`);
-      }
+      const gameData = {
+        gameDate: DateTime.fromJSDate(newGameDate).toFormat('yyyy-MM-dd'),
+        gameTime: DateTime.fromJSDate(newGameTime).toFormat('HH:mm:ss'),
+        gameLocation: newGameLocation,
+      };
+      await api(apiActions.createGame, selectedSeason.id, gameData);
 
       alert('Game added successfully!');
       setCreateGameModalVisible(false);
-      setNewGameLocation(''); // Clear the location field
-      setNewGameTime(new Date()); // Clear the time field
-      fetchGames(selectedSeason.id); // Refresh games list
+      setNewGameLocation('');
+      setNewGameTime(new Date());
+      fetchGames(selectedSeason.id);
     } catch (e) {
       console.error("Failed to add game:", e);
       alert(e.message);
@@ -338,36 +283,25 @@ const SeasonSettingsPage = () => {
   };
 
   const handleUpdateGame = async () => {
-    if (!currentEditingGame || !token || !selectedSeason) return;
+    if (!currentEditingGame || !selectedSeason) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/seasons/${selectedSeason.id}/games/${currentEditingGame.id}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          gameName: editedGameName,
-          gameDate: DateTime.fromJSDate(editedGameDate).toFormat('yyyy-MM-dd'),
-          gameTime: DateTime.fromJSDate(editedGameTime).toFormat('HH:mm:ss'),
-          gameLocation: editedGameLocation,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(`Failed to update game: ${errorData}`);
-      }
+      const gameData = {
+        gameName: editedGameName,
+        gameDate: DateTime.fromJSDate(editedGameDate).toFormat('yyyy-MM-dd'),
+        gameTime: DateTime.fromJSDate(editedGameTime).toFormat('HH:mm:ss'),
+        gameLocation: editedGameLocation,
+      };
+      await api(apiActions.updateGame, selectedSeason.id, currentEditingGame.id, gameData);
 
       alert('Game updated successfully!');
       setEditGameModalVisible(false);
       setCurrentEditingGame(null);
       setEditedGameName('');
       setEditedGameDate(new Date());
-      setEditedGameTime(new Date()); // Clear the time field
+      setEditedGameTime(new Date());
       setEditedGameLocation('');
-      fetchGames(selectedSeason.id); // Refresh games list
+      fetchGames(selectedSeason.id);
     } catch (e) {
       console.error("Failed to update game:", e);
       alert(e.message);
@@ -383,32 +317,11 @@ const SeasonSettingsPage = () => {
         {
           text: "Delete",
           onPress: async () => {
-            if (!selectedSeason || !token) return;
+            if (!selectedSeason) return;
             try {
-              const response = await fetch(`${API_BASE_URL}/api/seasons/${selectedSeason.id}/games/${gameId}`, {
-                method: 'DELETE',
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                },
-              });
-
-              if (!response.ok) {
-                const errorText = await response.text();
-                let errorMessage = `Failed to delete game: ${errorText}`;
-                try {
-                  const errorJson = JSON.parse(errorText);
-                  if (errorJson.message) {
-                    errorMessage = errorJson.message;
-                  }
-                } catch (jsonError) {
-                  // If parsing fails, use the original errorText
-                  console.error("Failed to parse error response as JSON:", jsonError);
-                }
-                throw new Error(errorMessage);
-              }
-
+              await api(apiActions.deleteGame, selectedSeason.id, gameId);
               alert('Game deleted successfully!');
-              fetchGames(selectedSeason.id); // Refresh games list
+              fetchGames(selectedSeason.id);
             } catch (e) {
               console.error("Failed to delete game:", e);
               alert(e.message);
@@ -421,7 +334,7 @@ const SeasonSettingsPage = () => {
   };
 
   const handleFinalizeSeason = async () => {
-    if (!selectedSeason || !token) return;
+    if (!selectedSeason) return;
 
     Alert.alert(
       "Finalize Season",
@@ -431,21 +344,10 @@ const SeasonSettingsPage = () => {
           text: "Confirm",
           onPress: async () => {
             try {
-              const response = await fetch(`${API_BASE_URL}/api/leagues/${selectedLeagueId}/seasons/${selectedSeason.id}/finalize`, {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                },
-              });
-
-              if (!response.ok) {
-                const errorData = await response.text();
-                throw new Error(`Failed to finalize season: ${errorData}`);
-              }
-
+              await api(apiActions.finalizeSeason, selectedLeagueId, selectedSeason.id);
               alert('Season finalized successfully!');
-              fetchAllSeasons(); // Refresh seasons list to get updated isFinalized status
-              fetchSettings(selectedSeason.id); // Refresh settings for the current season
+              fetchAllSeasons();
+              fetchSettings(selectedSeason.id);
             } catch (e) {
               console.error("Failed to finalize season:", e);
               alert(e.message);
@@ -458,25 +360,15 @@ const SeasonSettingsPage = () => {
   };
 
   const saveSettings = async () => {
-      if (!selectedSeason?.id || !token || !settings) return;
+      if (!selectedSeason?.id || !settings) return;
       setLoadingSettings(true);
       try {
-          // Include blindLevels and placePoints in the settings object
           const settingsToSave = {
               ...settings,
               blindLevels: blindLevels,
               placePoints: placePoints,
           };
-
-          const response = await fetch(`${API_BASE_URL}/api/seasons/${selectedSeason.id}/settings`, {
-              method: 'PUT',
-              headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(settingsToSave), // Use settingsToSave
-          });
-          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+          await api(apiActions.updateSeasonSettings, selectedSeason.id, settingsToSave);
           alert('Settings saved successfully!');
       } catch (e) {
           console.error("Failed to save settings:", e);
@@ -705,7 +597,7 @@ const SeasonSettingsPage = () => {
                 const seasonEndLuxonDay = seasonEndLuxon.day;
 
                 const seasonStart = new Date(seasonStartLuxonYear, seasonStartLuxonMonth - 1, seasonStartLuxonDay, 0, 0, 0, 0);
-                const seasonEnd = new Date(seasonEndLuxonYear, seasonEndLuxonMonth - 1, seasonEndLuxonDay, 0, 0, 0, 0);
+                const seasonEnd = new Date(seasonEndLuxonYear, seasonEndLuxonMonth - 1, endDay, 0, 0, 0, 0);
 
                 if (today >= seasonStart && today <= seasonEnd) {
                   defaultDate = today;
@@ -1150,7 +1042,8 @@ const SeasonSettingsPage = () => {
 
         {isSeasonFinalized
           ? null
-          : (isAdmin
+          : (
+              isAdmin
               ? (
                 <>
                   <TouchableOpacity
@@ -1171,7 +1064,8 @@ const SeasonSettingsPage = () => {
                   )}
                 </>
               )
-              : null)}
+              : null
+            )}
       </View>
     );
   };
@@ -1752,7 +1646,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   placePointItemContent: {
-    flexDirection: 'column',
+    flexDirection: 'column', 
   },
   deleteButton: {
     backgroundColor: '#dc3545',

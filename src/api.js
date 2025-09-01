@@ -120,6 +120,10 @@ export const getSeasons = (leagueId, token) => {
   return apiFetch(`/api/leagues/${leagueId}/seasons`, { token });
 };
 
+export const getStandings = (seasonId, token) => {
+  return apiFetch(`/api/seasons/${seasonId}/standings`, { token });
+};
+
 export const nextLevel = (gameId, token) => {
   return apiFetch(`/api/games/${gameId}/live/next-level`, {
     method: 'POST',
@@ -136,6 +140,33 @@ export const previousLevel = (gameId, token) => {
 
 export const getLeagues = (token) => {
   return apiFetch(`/api/leagues`, { token });
+};
+
+export const createLeague = (leagueName, token) => {
+  return apiFetch(`/api/leagues`, {
+    method: 'POST',
+    token,
+    body: JSON.stringify({ leagueName }),
+  });
+};
+
+export const getMyInvites = (token) => {
+  return apiFetch(`/api/player-accounts/me/invites`, { token });
+};
+
+export const acceptInvite = (inviteId, token) => {
+  return apiFetch(`/api/player-accounts/me/invites/${inviteId}/accept`, {
+    method: 'POST',
+    token,
+  });
+};
+
+export const joinLeague = (inviteCode, token) => {
+  return apiFetch(`/api/leagues/join`, {
+    method: 'POST',
+    token,
+    body: JSON.stringify({ inviteCode }),
+  });
 };
 
 export const getCurrentUserMembership = (leagueId, token) => {
@@ -158,5 +189,125 @@ export const refreshInviteCode = (leagueId, token) => {
   return apiFetch(`/api/leagues/${leagueId}/refresh-invite`, {
     method: 'POST',
     token,
+  });
+};
+
+export const updateLeagueSettings = (leagueId, settings, token) => {
+  return apiFetch(`/api/leagues/${leagueId}`,
+    {
+      method: 'PUT',
+      token,
+      body: JSON.stringify(settings),
+    });
+};
+
+export const updateUserRole = (leagueId, memberId, newRole, token) => {
+  return apiFetch(`/api/leagues/${leagueId}/members/${memberId}/role`, {
+    method: 'PUT',
+    token,
+    body: JSON.stringify({ newRole: newRole }),
+  });
+};
+
+export const updateUserStatus = (leagueId, memberId, isActive, token) => {
+  return apiFetch(`/api/leagues/${leagueId}/members/${memberId}/status`, {
+    method: 'PUT',
+    token,
+    body: JSON.stringify({ isActive: isActive }),
+  });
+};
+
+export const transferOwnership = (leagueId, newOwnerLeagueMembershipId, token) => {
+  return apiFetch(`/api/leagues/${leagueId}/transfer-ownership`, {
+    method: 'PUT',
+    token,
+    body: JSON.stringify({ newOwnerLeagueMembershipId: newOwnerLeagueMembershipId }),
+  });
+};
+
+export const inviteUserToClaim = (leagueId, memberId, email, token) => {
+  return apiFetch(`/api/leagues/${leagueId}/members/${memberId}/invite`, {
+    method: 'POST',
+    token,
+    body: JSON.stringify({ email: email }),
+  });
+};
+
+export const createSeason = (leagueId, seasonData, token) => {
+  return apiFetch(`/api/leagues/${leagueId}/seasons`, {
+    method: 'POST',
+    token,
+    body: JSON.stringify(seasonData),
+  });
+};
+
+export const createGame = (seasonId, gameData, token) => {
+  return apiFetch(`/api/seasons/${seasonId}/games`, {
+    method: 'POST',
+    token,
+    body: JSON.stringify(gameData),
+  });
+};
+
+export const updateGame = (seasonId, gameId, gameData, token) => {
+  return apiFetch(`/api/seasons/${seasonId}/games/${gameId}`, {
+    method: 'PUT',
+    token,
+    body: JSON.stringify(gameData),
+  });
+};
+
+export const deleteGame = (seasonId, gameId, token) => {
+  return apiFetch(`/api/seasons/${seasonId}/games/${gameId}`, {
+    method: 'DELETE',
+    token,
+  });
+};
+
+export const finalizeSeason = (leagueId, seasonId, token) => {
+  return apiFetch(`/api/leagues/${leagueId}/seasons/${seasonId}/finalize`, {
+    method: 'POST',
+    token,
+  });
+};
+
+export const updateSeasonSettings = (seasonId, settings, token) => {
+  return apiFetch(`/api/seasons/${seasonId}/settings`, {
+    method: 'PUT',
+    token,
+    body: JSON.stringify(settings),
+  });
+};
+
+export const addUnregisteredPlayer = (leagueId, displayName, token) => {
+  return apiFetch(`/api/leagues/${leagueId}/members/unregistered`, {
+    method: 'POST',
+    token,
+    body: JSON.stringify({ displayName }),
+  });
+};
+
+export const getInviteDetails = (token) => {
+  return apiFetch(`/api/auth/invite-details/${token}`);
+};
+
+export const signup = (userData) => {
+  return apiFetch(`/api/auth/signup`, {
+    method: 'POST',
+    body: JSON.stringify(userData),
+  });
+};
+
+export const registerAndClaim = (claimData) => {
+  return apiFetch(`/api/auth/register-and-claim`, {
+    method: 'POST',
+    body: JSON.stringify(claimData),
+  });
+};
+
+export const login = (email, password) => {
+  return apiFetch(`/api/auth/signin`, {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
   });
 };

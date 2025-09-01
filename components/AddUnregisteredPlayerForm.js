@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { API_BASE_URL } from '../src/config';
+import * as apiActions from '../src/api';
 import { useAuth } from '../context/AuthContext';
 
 const AddUnregisteredPlayerForm = ({ leagueId, onPlayerAdded }) => {
   const [playerName, setPlayerName] = useState('');
-  const { token } = useAuth();
+  const { api } = useAuth();
 
   const handleAddPlayer = async () => {
     if (!playerName.trim()) {
@@ -14,21 +14,7 @@ const AddUnregisteredPlayerForm = ({ leagueId, onPlayerAdded }) => {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/leagues/${leagueId}/members/unregistered`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ displayName: playerName }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'Failed to add unregistered player.');
-      }
-
-      const newMember = await response.json();
+      const newMember = await api(apiActions.addUnregisteredPlayer, leagueId, playerName);
       Alert.alert('Success', `Player ${newMember.displayName} added successfully!`);
       setPlayerName('');
       onPlayerAdded(); // Notify parent component to refresh list
