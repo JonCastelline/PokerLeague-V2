@@ -241,6 +241,21 @@ export const createSeason = (leagueId, seasonData, token) => {
   });
 };
 
+export const updateSeason = (leagueId, seasonId, seasonData, token) => {
+  return apiFetch(`/api/leagues/${leagueId}/seasons/${seasonId}`, {
+    method: 'PUT',
+    token,
+    body: JSON.stringify(seasonData),
+  });
+};
+
+export const deleteSeason = (leagueId, seasonId, token) => {
+  return apiFetch(`/api/leagues/${leagueId}/seasons/${seasonId}`, {
+    method: 'DELETE',
+    token,
+  });
+};
+
 export const createGame = (seasonId, gameData, token) => {
   return apiFetch(`/api/seasons/${seasonId}/games`, {
     method: 'POST',
