@@ -272,6 +272,23 @@ const LeagueSettingsPage = () => {
           >
             <Text style={styles.textStyle}>Send In-App Invite</Text>
           </TouchableOpacity>
+          {isAdmin ? (
+              selectedMember.isActive ? (
+                  <TouchableOpacity
+                      style={[styles.button, styles.buttonDestructive, { marginTop: 10 }]} 
+                      onPress={() => handleUpdateStatus(selectedMember, false)}
+                  >
+                      <Text style={styles.textStyle}>Deactivate Player</Text>
+                  </TouchableOpacity>
+              ) : (
+                  <TouchableOpacity
+                      style={[styles.button, styles.buttonPrimary, { marginTop: 10 }]} 
+                      onPress={() => handleUpdateStatus(selectedMember, true)}
+                  >
+                      <Text style={styles.textStyle}>Activate Player</Text>
+                  </TouchableOpacity>
+              )
+          ) : null}
         </View>
       );
     }
