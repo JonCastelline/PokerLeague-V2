@@ -18,9 +18,7 @@ import * as Clipboard from 'expo-clipboard';
              selectedLeagueId,
              currentLeague,
              currentUserMembership,
-             refreshInviteCode,
              leagueHomeContent,
-             inviteCode,
              reloadHomeContent
            } = useLeague();
            const [editMode, setEditMode] = useState(false);
@@ -199,22 +197,6 @@ import * as Clipboard from 'expo-clipboard';
                          <TouchableOpacity style={styles.button} onPress={handleEdit}>
                            <Text style={styles.buttonText}>Edit Content</Text>
                          </TouchableOpacity>
-                         <View style={styles.inviteContainer}>
-                           {inviteCode && (
-                             <Text style={styles.inviteCodeText}>
-                               {inviteCode}{' '}
-                               <TouchableOpacity
-                                 style={[styles.button, styles.copyButton]}
-                                 onPress={() => Clipboard.setString(inviteCode)}
-                               >
-                                 <Text style={styles.buttonText}>Copy</Text>
-                               </TouchableOpacity>
-                             </Text>
-                           )}
-                           <TouchableOpacity style={styles.button} onPress={() => refreshInviteCode(selectedLeagueId)}>
-                             <Text style={styles.buttonText}>Generate Invite Code</Text>
-                           </TouchableOpacity>
-                         </View>
                        </>
                      )}
                    </View>

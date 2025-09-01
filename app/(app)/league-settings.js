@@ -10,10 +10,12 @@ import * as apiActions from '../../src/api';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 
+import * as Clipboard from 'expo-clipboard';
+
 const LeagueSettingsPage = () => {
   const router = useRouter();
   const { api } = useAuth();
-  const { selectedLeagueId, currentUserMembership, loadingCurrentUserMembership, reloadHomeContent, reloadCurrentUserMembership, currentLeague, reloadLeagues } = useLeague();
+  const { selectedLeagueId, currentUserMembership, loadingCurrentUserMembership, reloadHomeContent, reloadCurrentUserMembership, currentLeague, reloadLeagues, refreshInviteCode, inviteCode } = useLeague();
 
   // Existing state for members
   const [members, setMembers] = useState([]);
@@ -415,6 +417,29 @@ const LeagueSettingsPage = () => {
                 </View>
             </Modal>
         ) : null}
+
+        {isAdmin && (
+          <View style={styles.inviteContainer}>
+            <Text style={styles.subtitle}>Invite Code</Text>
+            {inviteCode && (
+              <View style={styles.inviteCodeRow}>
+                <Text style={styles.inviteCodeTextContent}>
+                  {inviteCode}
+                </Text>
+                <TouchableOpacity
+                  style={[styles.button, styles.buttonPrimary, styles.actionButton]}
+                  onPress={() => Clipboard.setString(inviteCode)}
+                >
+                  <Text style={styles.textStyle}>Copy</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            <TouchableOpacity style={[styles.button, styles.buttonPrimaryRed, styles.actionButton]} onPress={() => refreshInviteCode(selectedLeagueId)}>
+              <Text style={styles.textStyle}>Generate Invite Code</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
       </ScrollView>
     </PageLayout>
   );
@@ -437,6 +462,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 30,
     marginBottom: 10,
+    textAlign: 'center',
   },
   logoContainer: {
     width: 150,
@@ -625,6 +651,8 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textAlign: "center"
   },
+  inviteCodeRow: {},
+  inviteCodeTextContent: {},
 });
 
 export default LeagueSettingsPage;
