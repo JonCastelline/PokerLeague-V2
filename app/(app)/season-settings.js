@@ -192,8 +192,9 @@ const SeasonSettingsPage = () => {
     setLoadingSeasons(true);
     try {
       const data = await api(apiActions.getSeasons, selectedLeagueId);
-      setSeasons(data || []);
-      return data || [];
+      const sortedData = [...data].sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
+      setSeasons(sortedData || []);
+      return sortedData || [];
     } catch (e) {
       console.error("Failed to fetch all seasons:", e);
       setErrorSeasons(e.message);

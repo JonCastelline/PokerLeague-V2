@@ -192,7 +192,8 @@ export const refreshInviteCode = (leagueId, token) => {
   });
 };
 
-export const updateLeagueSettings = (leagueId, settings, token) => {
+export const updateLeagueSettings = (leagueId, leagueName, nonOwnerAdminsCanManageRoles, token) => {
+  const settings = { leagueName, nonOwnerAdminsCanManageRoles };
   return apiFetch(`/api/leagues/${leagueId}`,
     {
       method: 'PUT',
