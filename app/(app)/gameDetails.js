@@ -15,6 +15,7 @@ const GameDetailsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentSeasonSettings, setCurrentSeasonSettings] = useState(null);
+  const [gameName, setGameName] = useState(null);
 
   useEffect(() => {
     if (gameId) {
@@ -24,6 +25,13 @@ const GameDetailsPage = () => {
         .then(data => {
           const sortedData = data.sort((a, b) => a.place - b.place);
           setResults(sortedData);
+
+          // Extract game name
+          if (sortedData.length > 0 && sortedData[0].game) {
+            setGameName(sortedData[0].game.gameName);
+          } else {
+            setGameName(null);
+          }
 
           if (sortedData.length > 0 && sortedData[0].game && sortedData[0].game.season && sortedData[0].game.season.id) {
             return api(getSeasonSettings, sortedData[0].game.season.id);
@@ -82,11 +90,12 @@ const GameDetailsPage = () => {
     );
   };
 
-  const ListHeader = () => {
+  const ListHeader = ({ gameName }) => {
     const headerStyles = getHeaderStyles(currentSeasonSettings?.trackKills, currentSeasonSettings?.trackBounties);
     return (
       <>
           <Text style={styles.title}>Game Results</Text>
+          {gameName && <Text style={styles.gameNameText}>{gameName}</Text>}
           <View style={styles.header}>
               <Text style={[styles.headerText, headerStyles.placeHeader]}>Place</Text>
               <Text style={[styles.headerText, headerStyles.playerHeader]}>Player</Text>
@@ -112,7 +121,7 @@ const GameDetailsPage = () => {
         data={results}
         renderItem={renderResult}
         keyExtractor={item => item.id.toString()}
-        ListHeaderComponent={ListHeader}
+        ListHeaderComponent={() => <ListHeader gameName={gameName} />}
         contentContainerStyle={styles.container}
       />
     </PageLayout>
@@ -129,6 +138,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 20,
     textAlign: 'center',
+  },
+  gameNameText: {
+    fontSize: 18,
+    textAlign: 'center',
+    marginBottom: 10,
+    color: '#666',
   },
   header: {
     flexDirection: 'row',

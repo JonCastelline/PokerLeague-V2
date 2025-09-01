@@ -10,10 +10,12 @@ import * as apiActions from '../../src/api';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 
+import * as Clipboard from 'expo-clipboard';
+
 const LeagueSettingsPage = () => {
   const router = useRouter();
   const { api } = useAuth();
-  const { selectedLeagueId, currentUserMembership, loadingCurrentUserMembership, reloadHomeContent, reloadCurrentUserMembership, currentLeague, reloadLeagues } = useLeague();
+  const { selectedLeagueId, currentUserMembership, loadingCurrentUserMembership, reloadHomeContent, reloadCurrentUserMembership, currentLeague, reloadLeagues, refreshInviteCode, inviteCode, setInviteCode } = useLeague();
 
   // Existing state for members
   const [members, setMembers] = useState([]);
@@ -42,6 +44,14 @@ const LeagueSettingsPage = () => {
       router.replace('/(app)/home');
     }
   }, [isAdmin, loadingCurrentUserMembership, router]);
+
+  // Clear invite code when league changes or component unmounts
+  useEffect(() => {
+    setInviteCode(null);
+    return () => {
+      setInviteCode(null);
+    };
+  }, [selectedLeagueId, setInviteCode]);
 
   const handleSaveLeagueSettings = async () => {
     if (!selectedLeagueId) return;
@@ -262,6 +272,23 @@ const LeagueSettingsPage = () => {
           >
             <Text style={styles.textStyle}>Send In-App Invite</Text>
           </TouchableOpacity>
+          {isAdmin ? (
+              selectedMember.isActive ? (
+                  <TouchableOpacity
+                      style={[styles.button, styles.buttonDestructive, { marginTop: 10 }]} 
+                      onPress={() => handleUpdateStatus(selectedMember, false)}
+                  >
+                      <Text style={styles.textStyle}>Deactivate Player</Text>
+                  </TouchableOpacity>
+              ) : (
+                  <TouchableOpacity
+                      style={[styles.button, styles.buttonPrimary, { marginTop: 10 }]} 
+                      onPress={() => handleUpdateStatus(selectedMember, true)}
+                  >
+                      <Text style={styles.textStyle}>Activate Player</Text>
+                  </TouchableOpacity>
+              )
+          ) : null}
         </View>
       );
     }
@@ -415,6 +442,29 @@ const LeagueSettingsPage = () => {
                 </View>
             </Modal>
         ) : null}
+
+        {isAdmin && (
+          <View style={styles.inviteContainer}>
+            <Text style={styles.subtitle}>Invite Code</Text>
+            {inviteCode && (
+              <View style={styles.inviteCodeRow}>
+                <Text style={styles.inviteCodeTextContent}>
+                  {inviteCode}
+                </Text>
+                <TouchableOpacity
+                  style={[styles.button, styles.buttonPrimary, styles.actionButton]}
+                  onPress={() => Clipboard.setString(inviteCode)}
+                >
+                  <Text style={styles.textStyle}>Copy</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            <TouchableOpacity style={[styles.button, styles.buttonPrimaryRed, styles.actionButton]} onPress={() => refreshInviteCode(selectedLeagueId)}>
+              <Text style={styles.textStyle}>Generate Invite Code</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
       </ScrollView>
     </PageLayout>
   );
@@ -437,6 +487,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 30,
     marginBottom: 10,
+    textAlign: 'center',
   },
   logoContainer: {
     width: 150,
@@ -625,6 +676,8 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textAlign: "center"
   },
+  inviteCodeRow: {},
+  inviteCodeTextContent: {},
 });
 
 export default LeagueSettingsPage;

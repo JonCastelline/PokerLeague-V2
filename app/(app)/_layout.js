@@ -9,6 +9,7 @@ function AppLayout() {
       <Stack.Screen name="play" options={{ title: 'Play' }} />
       <Stack.Screen name="standings" options={{ title: 'Standings' }} />
       <Stack.Screen name="history" options={{ title: 'History' }} />
+      <Stack.Screen name="gameDetails" options={{ title: 'Game Details' }} />
       <Stack.Screen name="season-settings" options={{ title: 'Season' }} />
       <Stack.Screen name="league-settings" options={{ title: 'League' }} />
       <Stack.Screen name="create-league" options={{ title: 'Create League' }} />
