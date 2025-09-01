@@ -35,7 +35,7 @@ const SeasonSettingsPage = () => {
   // State for Games
   const [games, setGames] = useState([]);
   const [loadingGames, setLoadingGames] = useState(false);
-  const [hasGamesInSelectedSeason, setHasGamesInSelectedSeason] = useState(false); // New state
+  const [hasGamesInSelectedSeason, setHasGamesInSelectedSeason] = useState(false);
 
   // State for Blind Levels and Place Points
   const [blindLevels, setBlindLevels] = useState([]);
@@ -111,9 +111,9 @@ const SeasonSettingsPage = () => {
       setNewSeasonStartDate(date);
     } else if (datePickerField === 'endDate') {
       setNewSeasonEndDate(date);
-    } else if (datePickerField === 'editedStartDate') { // New condition
+    } else if (datePickerField === 'editedStartDate') {
       setEditedSeasonStartDate(date);
-    } else if (datePickerField === 'editedEndDate') { // New condition
+    } else if (datePickerField === 'editedEndDate') {
       setEditedSeasonEndDate(date);
     }
     hideDatePicker();
@@ -165,8 +165,8 @@ const SeasonSettingsPage = () => {
         setSettings(settingsData);
         setBlindLevels((settingsData.blindLevels || []).sort((a, b) => a.level - b.level));
         setPlacePoints(settingsData.placePoints || []);
-        const fetchedGames = await fetchGames(targetSeasonId); // Get the returned gamesData
-        setHasGamesInSelectedSeason(fetchedGames.length > 0); // Use fetchedGames directly
+        const fetchedGames = await fetchGames(targetSeasonId);
+        setHasGamesInSelectedSeason(fetchedGames.length > 0);
 
         // Initialize duration and warning time states
         if (settingsData.durationSeconds !== undefined) {
@@ -188,16 +188,16 @@ const SeasonSettingsPage = () => {
   }, [selectedLeagueId, api, fetchGames]);
 
   const fetchAllSeasons = useCallback(async () => {
-    if (!selectedLeagueId) return []; // Return empty array
+    if (!selectedLeagueId) return [];
     setLoadingSeasons(true);
     try {
       const data = await api(apiActions.getSeasons, selectedLeagueId);
       setSeasons(data || []);
-      return data || []; // Return the fetched data
+      return data || [];
     } catch (e) {
       console.error("Failed to fetch all seasons:", e);
       setErrorSeasons(e.message);
-      return []; // Return empty array on error
+      return [];
     } finally {
       setLoadingSeasons(false);
     }
@@ -433,14 +433,14 @@ const SeasonSettingsPage = () => {
 
     Alert.alert(
       "Delete Season",
-      `Are you sure you want to delete the season "${selectedSeason.seasonName}"? This action cannot be undone.`, // Added season name to alert
+      `Are you sure you want to delete the season "${selectedSeason.seasonName}"? This action cannot be undone.`,
       [
         { text: "Cancel", style: "cancel" },
         {
           text: "Delete",
           onPress: async () => {
             try {
-              await api(apiActions.deleteSeason, selectedLeagueId, selectedSeason.id); // Assuming deleteSeason API action
+              await api(apiActions.deleteSeason, selectedLeagueId, selectedSeason.id);
               alert('Season deleted successfully!');
               fetchAllSeasons(); // Refresh seasons list
             } catch (e) {
@@ -1191,7 +1191,7 @@ const SeasonSettingsPage = () => {
                 </TouchableOpacity>
                 {!hasGamesInSelectedSeason && ( // Conditional render
                   <TouchableOpacity
-                    style={[styles.button, styles.buttonDestructive, styles.actionButton]} // Removed disabled and opacity
+                    style={[styles.button, styles.buttonDestructive, styles.actionButton]}
                     onPress={handleDeleteSeason}
                   >
                     <Text style={styles.textStyle}>Delete Season</Text>
@@ -1523,8 +1523,8 @@ const SeasonSettingsPage = () => {
           date={ 
             datePickerField === 'startDate' ? (newSeasonStartDate || new Date()) :
             datePickerField === 'endDate' ? (newSeasonEndDate || new Date()) :
-            datePickerField === 'editedStartDate' ? (editedSeasonStartDate || new Date()) : // New
-            datePickerField === 'editedEndDate' ? (editedSeasonEndDate || new Date()) : // New
+            datePickerField === 'editedStartDate' ? (editedSeasonStartDate || new Date()) :
+            datePickerField === 'editedEndDate' ? (editedSeasonEndDate || new Date()) :
             new Date() // Default
           }
         />
@@ -1548,7 +1548,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginTop: 15, // Reduced from 30
+    marginTop: 15,
     marginBottom: 10,
   },
   noSeasonsContainer: {
@@ -1578,7 +1578,6 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     alignItems: 'center',
     alignSelf: 'center',
-    // Removed marginBottom: 20,
     paddingHorizontal: 10,
   },
   settingsContainer: {
@@ -1769,7 +1768,7 @@ const styles = StyleSheet.create({
     width: 'auto',
     alignSelf: 'center',
     marginTop: 10,
-    marginBottom: 15, // Added marginBottom
+    marginBottom: 15,
   },
   textStyle: {
     color: "white",
