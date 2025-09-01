@@ -12,6 +12,10 @@ const AppMenu = () => {
   const { signOut } = useAuth();
   const animatableRef = useRef(null);
 
+  if (!selectedLeagueId) {
+    return null;
+  }
+
   const isAdmin = currentUserMembership?.role === 'ADMIN' || currentUserMembership?.isOwner;
 
   const navigateTo = (path) => {
