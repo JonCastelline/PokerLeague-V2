@@ -29,7 +29,8 @@ const StandingsPage = () => {
       try {
         // 1. Fetch all seasons
         const seasonsData = await api(apiActions.getSeasons, currentLeague.id);
-        setAllSeasons(seasonsData);
+        const sortedSeasonsData = [...seasonsData].sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
+        setAllSeasons(sortedSeasonsData);
 
         let defaultSeasonId = null;
         const today = new Date();
