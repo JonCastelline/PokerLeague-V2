@@ -24,6 +24,14 @@ const SeasonSettingsPage = () => {
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [errorSettings, setErrorSettings] = useState(null);
 
+  // New states for timer duration (minutes and seconds)
+  const [durationMinutes, setDurationMinutes] = useState('');
+  const [durationSecondsInput, setDurationSecondsInput] = useState('');
+
+  // New states for warning sound time (minutes and seconds)
+  const [warningMinutes, setWarningMinutes] = useState('');
+  const [warningSecondsInput, setWarningSecondsInput] = useState('');
+
   // State for Games
   const [games, setGames] = useState([]);
   const [loadingGames, setLoadingGames] = useState(false);
@@ -145,6 +153,16 @@ const SeasonSettingsPage = () => {
         setBlindLevels((settingsData.blindLevels || []).sort((a, b) => a.level - b.level));
         setPlacePoints(settingsData.placePoints || []);
         fetchGames(targetSeasonId);
+
+        // Initialize duration and warning time states
+        if (settingsData.durationSeconds !== undefined) {
+          setDurationMinutes(Math.floor(settingsData.durationSeconds / 60).toString());
+          setDurationSecondsInput((settingsData.durationSeconds % 60).toString());
+        }
+        if (settingsData.warningSoundTimeSeconds !== undefined) {
+          setWarningMinutes(Math.floor(settingsData.warningSoundTimeSeconds / 60).toString());
+          setWarningSecondsInput((settingsData.warningSoundTimeSeconds % 60).toString());
+        }
       }
 
     } catch (e) {
@@ -363,8 +381,14 @@ const SeasonSettingsPage = () => {
       if (!selectedSeason?.id || !settings) return;
       setLoadingSettings(true);
       try {
+          // Convert minutes and seconds to total seconds
+          const totalDurationSeconds = (parseInt(durationMinutes, 10) || 0) * 60 + (parseInt(durationSecondsInput, 10) || 0);
+          const totalWarningSoundTimeSeconds = (parseInt(warningMinutes, 10) || 0) * 60 + (parseInt(warningSecondsInput, 10) || 0);
+
           const settingsToSave = {
               ...settings,
+              durationSeconds: totalDurationSeconds,
+              warningSoundTimeSeconds: totalWarningSoundTimeSeconds,
               blindLevels: blindLevels,
               placePoints: placePoints,
           };
@@ -895,14 +919,27 @@ const SeasonSettingsPage = () => {
         ) : null}
 
         <View style={styles.settingItem}>
-            <Text style={styles.settingLabel}>Timer Duration (seconds)</Text>
-            <TextInput
-                style={styles.numericInput}
-                value={String(settings.durationSeconds)}
-                onChangeText={(value) => handleSettingChange('durationSeconds', parseInt(value, 10) || 0)}
-                keyboardType="numeric"
-                editable={isSeasonFinalized ? false : (isAdmin ? true : false)}
-            />
+            <Text style={styles.settingLabel}>Timer Duration</Text>
+            <View style={styles.timeInputContainer}>
+                <TextInput
+                    style={styles.timeInput}
+                    value={durationMinutes}
+                    onChangeText={(value) => setDurationMinutes(value.replace(/[^0-9]/g, ''))}
+                    keyboardType="numeric"
+                    editable={isSeasonFinalized ? false : (isAdmin ? true : false)}
+                    maxLength={3}
+                />
+                <Text style={styles.timeLabel}>min</Text>
+                <TextInput
+                    style={styles.timeInput}
+                    value={durationSecondsInput}
+                    onChangeText={(value) => setDurationSecondsInput(value.replace(/[^0-9]/g, ''))}
+                    keyboardType="numeric"
+                    editable={isSeasonFinalized ? false : (isAdmin ? true : false)}
+                    maxLength={2}
+                />
+                <Text style={styles.timeLabel}>sec</Text>
+            </View>
         </View>
 
         <View style={styles.settingItem}>
@@ -916,14 +953,27 @@ const SeasonSettingsPage = () => {
 
         {settings.warningSoundEnabled ? (
             <View style={styles.settingItem}>
-                <Text style={styles.settingLabel}>Warning Sound Time (seconds)</Text>
-                <TextInput
-                    style={styles.numericInput}
-                    value={String(settings.warningSoundTimeSeconds)}
-                    onChangeText={(value) => handleSettingChange('warningSoundTimeSeconds', parseInt(value, 10) || 0)}
-                    keyboardType="numeric"
-                    editable={isSeasonFinalized ? false : (isAdmin ? true : false)}
-                />
+                <Text style={styles.settingLabel}>Warning Sound Time</Text>
+                <View style={styles.timeInputContainer}>
+                    <TextInput
+                        style={styles.timeInput}
+                        value={warningMinutes}
+                        onChangeText={(value) => setWarningMinutes(value.replace(/[^0-9]/g, ''))}
+                        keyboardType="numeric"
+                        editable={isSeasonFinalized ? false : (isAdmin ? true : false)}
+                        maxLength={3}
+                    />
+                    <Text style={styles.timeLabel}>min</Text>
+                    <TextInput
+                        style={styles.timeInput}
+                        value={warningSecondsInput}
+                        onChangeText={(value) => setWarningSecondsInput(value.replace(/[^0-9]/g, ''))}
+                        keyboardType="numeric"
+                        editable={isSeasonFinalized ? false : (isAdmin ? true : false)}
+                        maxLength={2}
+                    />
+                    <Text style={styles.timeLabel}>sec</Text>
+                </View>
             </View>
         ) : null}
 
@@ -1472,6 +1522,26 @@ const styles = StyleSheet.create({
     padding: 8,
     width: 60, // Fixed width for 6 characters
     textAlign: 'center',
+    marginBottom: 10,
+  },
+  timeInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    flex: 1,
+  },
+  timeInput: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+    padding: 8,
+    width: 50, // Smaller width for minutes/seconds
+    textAlign: 'center',
+    marginBottom: 10,
+    marginHorizontal: 5,
+  },
+  timeLabel: {
+    fontSize: 14,
     marginBottom: 10,
   },
   modalInput: {
