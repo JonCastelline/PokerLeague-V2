@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, FlatList, ActivityIndicator, Image } from 'reac
 import { useAuth } from '../../context/AuthContext';
 import PageLayout from '../../components/PageLayout';
 import { useLeague } from '../../context/LeagueContext';
-import { API_BASE_URL } from '../../src/config';
+import * as apiActions from '../../src/api';
 
 const StandingsPage = () => {
   const [standings, setStandings] = useState([]);
@@ -13,12 +13,12 @@ const StandingsPage = () => {
   const [seasonSettings, setSeasonSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { token } = useAuth();
+  const { api } = useAuth();
   const { currentLeague } = useLeague();
 
   useEffect(() => {
     const fetchAllData = async () => {
-      if (!token || !currentLeague) {
+      if (!currentLeague) {
         setLoading(false);
         return;
       }
@@ -28,11 +28,7 @@ const StandingsPage = () => {
 
       try {
         // 1. Fetch all seasons
-        const seasonsResponse = await fetch(`${API_BASE_URL}/api/leagues/${currentLeague.id}/seasons`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (!seasonsResponse.ok) throw new Error(`HTTP error! status: ${seasonsResponse.status}`);
-        const seasonsData = await seasonsResponse.json();
+        const seasonsData = await api(apiActions.getSeasons, currentLeague.id);
         setAllSeasons(seasonsData);
 
         let defaultSeasonId = null;
@@ -57,18 +53,10 @@ const StandingsPage = () => {
 
         // 2. Fetch standings and season settings for the default/selected season
         if (defaultSeasonId) {
-          const standingsResponse = await fetch(`${API_BASE_URL}/api/seasons/${defaultSeasonId}/standings`, {
-            headers: { 'Authorization': `Bearer ${token}` },
-          });
-          if (!standingsResponse.ok) throw new Error(`HTTP error! status: ${standingsResponse.status}`);
-          const standingsData = await standingsResponse.json();
+          const standingsData = await api(apiActions.getStandings, defaultSeasonId);
           setStandings(standingsData);
 
-          const settingsResponse = await fetch(`${API_BASE_URL}/api/seasons/${defaultSeasonId}/settings`, {
-            headers: { 'Authorization': `Bearer ${token}` },
-          });
-          if (!settingsResponse.ok) throw new Error(`HTTP error! status: ${settingsResponse.status}`);
-          const settingsData = await settingsResponse.json();
+          const settingsData = await api(apiActions.getSeasonSettings, defaultSeasonId);
           setSeasonSettings(settingsData);
         }
 
@@ -81,11 +69,11 @@ const StandingsPage = () => {
     };
 
     fetchAllData();
-  }, [token, currentLeague]); // Re-run when token or currentLeague changes
+  }, [api, currentLeague]); // Re-run when token or currentLeague changes
 
   useEffect(() => {
     const fetchStandingsAndSettings = async () => {
-      if (!selectedSeasonId || !token) {
+      if (!selectedSeasonId) {
         return;
       }
 
@@ -93,18 +81,10 @@ const StandingsPage = () => {
       setError(null);
 
       try {
-        const standingsResponse = await fetch(`${API_BASE_URL}/api/seasons/${selectedSeasonId}/standings`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (!standingsResponse.ok) throw new Error(`HTTP error! status: ${standingsResponse.status}`);
-        const standingsData = await standingsResponse.json();
+        const standingsData = await api(apiActions.getStandings, selectedSeasonId);
         setStandings(standingsData);
 
-        const settingsResponse = await fetch(`${API_BASE_URL}/api/seasons/${selectedSeasonId}/settings`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (!settingsResponse.ok) throw new Error(`HTTP error! status: ${settingsResponse.status}`);
-        const settingsData = await settingsResponse.json();
+        const settingsData = await api(apiActions.getSeasonSettings, selectedSeasonId);
         setSeasonSettings(settingsData);
 
       } catch (e) {
@@ -116,7 +96,7 @@ const StandingsPage = () => {
     };
 
     fetchStandingsAndSettings();
-  }, [selectedSeasonId, token]); // Re-run when selectedSeasonId or token changes
+  }, [selectedSeasonId, api]); // Re-run when selectedSeasonId or token changes
 
   const renderItem = ({ item, index }) => (
     <View style={[styles.tableRow, index % 2 === 0 ? styles.evenRow : styles.oddRow]}>

@@ -2,7 +2,7 @@ import { useRouter, Link } from 'expo-router';
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
-import { API_BASE_URL } from '../../src/config';
+import * as apiActions from '../../src/api';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -10,43 +10,17 @@ export default function LoginPage() {
   const router = useRouter();
   const { signIn } = useAuth();
 
-  const handleLogin = () => {
-    fetch(`${API_BASE_URL}/api/auth/signin`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email: email,
-        password: password,
-      }),
-    })
-      .then(response => {
-        if (!response.ok) {
-          if (response.status === 401) {
-            throw new Error('Invalid email or password. Please try again or sign up.');
-          }
-          return response.text().then(text => {
-            try {
-              const errorData = JSON.parse(text);
-              throw new Error(errorData.message || 'Login failed. An unknown error occurred.');
-            } catch (e) {
-              throw new Error(text || 'Login failed. An unknown error occurred.');
-            }
-          });
-        }
-        return response.json();
-      })
-      .then(data => {
-        const user = { id: data.id, firstName: data.firstName, lastName: data.lastName, email: data.email };
-        signIn(data.accessToken, user);
-        console.log(`Login successful for ${user.firstName} ${user.lastName}`);
-        router.replace('/(app)/home');
-      })
-      .catch(error => {
-        console.error(error);
-        Alert.alert('Login Error', error.message);
-      });
+  const handleLogin = async () => {
+    try {
+      const data = await apiActions.login(email, password);
+      const user = { id: data.id, firstName: data.firstName, lastName: data.lastName, email: data.email };
+      signIn(data.accessToken, user);
+      console.log(`Login successful for ${user.firstName} ${user.lastName}`);
+      router.replace('/(app)/home');
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Login Error', error.message);
+    }
   };
 
   return (

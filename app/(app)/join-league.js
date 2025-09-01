@@ -3,37 +3,29 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, FlatList, A
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
-import { API_BASE_URL } from '../../src/config';
+import * as apiActions from '../../src/api';
 import PageLayout from '../../components/PageLayout';
 
 const JoinLeaguePage = () => {
   const [inviteCode, setInviteCode] = useState('');
   const [invites, setInvites] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { token } = useAuth();
+  const { api } = useAuth();
   const { reloadLeagues } = useLeague();
   const router = useRouter();
 
   const fetchInvites = useCallback(async () => {
-    if (!token) return;
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/player-accounts/me/invites`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setInvites(data);
-      } else {
-        setInvites([]);
-      }
+      const data = await api(apiActions.getMyInvites);
+      setInvites(data || []);
     } catch (error) {
       console.error("Failed to fetch invites:", error);
       setInvites([]);
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [api]);
 
   useFocusEffect(
     useCallback(() => {
@@ -43,13 +35,7 @@ const JoinLeaguePage = () => {
 
   const handleAcceptInvite = async (inviteId) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/player-accounts/me/invites/${inviteId}/accept`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (!response.ok) {
-        throw new Error('Failed to accept invite.');
-      }
+      await api(apiActions.acceptInvite, inviteId);
       Alert.alert('Success', 'You have successfully claimed the profile and joined the league!');
       fetchInvites(); // Refresh invites list
       reloadLeagues(); // Refresh leagues list
@@ -59,37 +45,21 @@ const JoinLeaguePage = () => {
     }
   };
 
-  const handleJoinLeague = () => {
+  const handleJoinLeague = async () => {
     if (!inviteCode.trim()) {
       Alert.alert('Error', 'Please enter an invite code.');
       return;
     }
-    fetch(`${API_BASE_URL}/api/leagues/join`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ inviteCode }),
-    })
-      .then(response => {
-        if (!response.ok) {
-          return response.text().then(text => {
-            throw new Error(text || 'Failed to join league. An unknown error occurred.');
-          });
-        }
-        return response.json();
-      })
-      .then(data => {
-        reloadLeagues();
-        Alert.alert('Success', `You have joined the league "${data.leagueName}"!`, [
-          { text: 'OK', onPress: () => router.replace('/(app)/home') },
-        ]);
-      })
-      .catch(error => {
-        console.error(error);
-        Alert.alert('Error', error.message);
-      });
+    try {
+      const data = await api(apiActions.joinLeague, inviteCode);
+      reloadLeagues();
+      Alert.alert('Success', `You have joined the league "${data.leagueName}"!`, [
+        { text: 'OK', onPress: () => router.replace('/(app)/home') },
+      ]);
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Error', error.message);
+    }
   };
 
   const renderInviteItem = ({ item }) => (

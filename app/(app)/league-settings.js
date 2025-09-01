@@ -6,13 +6,13 @@ import PageLayout from '../../components/PageLayout';
 import AddUnregisteredPlayerForm from '../../components/AddUnregisteredPlayerForm';
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
-import { API_BASE_URL } from '../../src/config';
+import * as apiActions from '../../src/api';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 
 const LeagueSettingsPage = () => {
   const router = useRouter();
-  const { token } = useAuth();
+  const { api } = useAuth();
   const { selectedLeagueId, currentUserMembership, loadingCurrentUserMembership, reloadHomeContent, reloadCurrentUserMembership, currentLeague, reloadLeagues } = useLeague();
 
   // Existing state for members
@@ -44,18 +44,9 @@ const LeagueSettingsPage = () => {
   }, [isAdmin, loadingCurrentUserMembership, router]);
 
   const handleSaveLeagueSettings = async () => {
-    if (!selectedLeagueId || !token) return;
+    if (!selectedLeagueId) return;
     try {
-      const response = await fetch(`${API_BASE_URL}/api/leagues/${selectedLeagueId}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ nonOwnerAdminsCanManageRoles: nonOwnerAdminsCanManageRoles }),
-        });
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      await api(apiActions.updateLeagueSettings, selectedLeagueId, { nonOwnerAdminsCanManageRoles });
       alert('League settings saved successfully!');
       reloadLeagues();
     } catch (e) {
@@ -65,41 +56,27 @@ const LeagueSettingsPage = () => {
   };
 
   const fetchHomeContent = useCallback(async () => {
-    if (!selectedLeagueId || !token) return;
+    if (!selectedLeagueId) return;
     try {
-      const response = await fetch(`${API_BASE_URL}/api/leagues/${selectedLeagueId}/home-content`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (!response.ok) {
-        if (response.status === 404) {
-          // No home content yet, which is fine
-          setHomeContent('');
-          setLogoImageUrl('');
-          return;
-        }
-        throw new Error(`HTTP error! status: ${response.status}`);
+      const data = await api(apiActions.getLeagueHomeContent, selectedLeagueId);
+      if (data) {
+        setHomeContent(data.content || '');
+        setLogoImageUrl(data.logoImageUrl || '');
       }
-      const data = await response.json();
-      setHomeContent(data.content || '');
-      setLogoImageUrl(data.logoImageUrl || '');
     } catch (e) {
+        if (e.message.includes('404')) {
+            setHomeContent('');
+            setLogoImageUrl('');
+            return;
+        }
       console.error("Failed to fetch home content:", e);
-      // Handle error, maybe set an error state
     }
-  }, [selectedLeagueId, token]);
+  }, [selectedLeagueId, api]);
 
   const handleSaveLogoImageUrl = async () => {
-    if (!selectedLeagueId || !token) return;
+    if (!selectedLeagueId) return;
     try {
-      const response = await fetch(`${API_BASE_URL}/api/leagues/${selectedLeagueId}/home-content`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ content: homeContent, logoImageUrl: logoImageUrl }),
-      });
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      await api(apiActions.updateLeagueHomeContent, selectedLeagueId, homeContent, logoImageUrl);
       alert('Logo URL saved successfully!');
       reloadHomeContent(); // Refresh to show updated logo across the app
     } catch (e) {
@@ -112,18 +89,7 @@ const LeagueSettingsPage = () => {
   const handleUpdateRole = async (newRole) => {
     if (!selectedMember) return;
     try {
-      const response = await fetch(`${API_BASE_URL}/api/leagues/${selectedLeagueId}/members/${selectedMember.id}/role`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ newRole: newRole }),
-      });
-      if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(`Failed to update role: ${errorData}`);
-      }
+      await api(apiActions.updateUserRole, selectedLeagueId, selectedMember.id, newRole);
       await fetchLeagueMembers(); // Refresh member list
       setModalVisible(false);
     } catch (e) {
@@ -145,18 +111,7 @@ const LeagueSettingsPage = () => {
           text: action,
           onPress: async () => {
             try {
-              const response = await fetch(`${API_BASE_URL}/api/leagues/${selectedLeagueId}/members/${member.id}/status`, {
-                method: 'PUT',
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ isActive: isActive }),
-              });
-              if (!response.ok) {
-                const errorData = await response.text();
-                throw new Error(`Failed to update status: ${errorData}`);
-              }
+              await api(apiActions.updateUserStatus, selectedLeagueId, member.id, isActive);
               await fetchLeagueMembers(); // Refresh member list
               setModalVisible(false);
             } catch (e) {
@@ -181,18 +136,7 @@ const LeagueSettingsPage = () => {
           text: "Confirm",
           onPress: async () => {
             try {
-              const response = await fetch(`${API_BASE_URL}/api/leagues/${selectedLeagueId}/transfer-ownership`, {
-                method: 'PUT',
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ newOwnerLeagueMembershipId: selectedMember.id }),
-              });
-              if (!response.ok) {
-                const errorData = await response.text();
-                throw new Error(`Failed to transfer ownership: ${errorData}`);
-              }
+              await api(apiActions.transferOwnership, selectedLeagueId, selectedMember.id);
               await fetchLeagueMembers(); // Refresh member list
               setModalVisible(false);
               alert('Ownership transferred successfully.');
@@ -215,22 +159,8 @@ const LeagueSettingsPage = () => {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/leagues/${selectedLeagueId}/members/${selectedMember.id}/invite`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: playerEmail }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(`Failed to send invite: ${errorData}`);
-      }
-
+      await api(apiActions.inviteUserToClaim, selectedLeagueId, selectedMember.id, playerEmail);
       Alert.alert("Invite Sent", "An in-app invite has been sent to the user.");
-
       setPlayerEmail(''); // Clear the email input after sending
       setModalVisible(false);
     } catch (e) {
@@ -246,14 +176,10 @@ const LeagueSettingsPage = () => {
   };
 
   const fetchLeagueMembers = useCallback(async () => {
-    if (!selectedLeagueId || !token) return;
+    if (!selectedLeagueId) return;
     setLoadingMembers(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/leagues/${selectedLeagueId}/members`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
+      const data = await api(apiActions.getLeagueMembers, selectedLeagueId);
       setMembers(data);
     } catch (e) {
       console.error("Failed to fetch league members:", e);
@@ -261,7 +187,7 @@ const LeagueSettingsPage = () => {
     } finally {
       setLoadingMembers(false);
     }
-  }, [selectedLeagueId, token]);
+  }, [selectedLeagueId, api]);
 
   useFocusEffect(
     useCallback(() => {
@@ -331,7 +257,7 @@ const LeagueSettingsPage = () => {
             autoCapitalize="none"
           />
           <TouchableOpacity
-            style={[styles.button, styles.buttonPrimary, { marginTop: 10 }]}
+            style={[styles.button, styles.buttonPrimary, { marginTop: 10 }]} 
             onPress={handleInvite}
           >
             <Text style={styles.textStyle}>Send In-App Invite</Text>
@@ -353,7 +279,7 @@ const LeagueSettingsPage = () => {
             ) : null}
             {canManageRoles && selectedMember.role === 'PLAYER' ? (
                 <TouchableOpacity
-                    style={[styles.button, styles.buttonPrimary, { marginTop: 10 }]}
+                    style={[styles.button, styles.buttonPrimary, { marginTop: 10 }]} 
                     onPress={() => handleUpdateRole('ADMIN')}
                 >
                     <Text style={styles.textStyle}>Promote to Admin</Text>
@@ -361,7 +287,7 @@ const LeagueSettingsPage = () => {
             ) : null}
             {isOwner ? (
                 <TouchableOpacity
-                    style={[styles.button, styles.buttonDestructive, { marginTop: 10 }]}
+                    style={[styles.button, styles.buttonDestructive, { marginTop: 10 }]} 
                     onPress={handleTransferOwnership}
                 >
                     <Text style={styles.textStyle}>Transfer Ownership</Text>
@@ -370,14 +296,14 @@ const LeagueSettingsPage = () => {
             {isAdmin && !targetIsOwner ? (
                 selectedMember.isActive ? (
                     <TouchableOpacity
-                        style={[styles.button, styles.buttonDestructive, { marginTop: 10 }]}
+                        style={[styles.button, styles.buttonDestructive, { marginTop: 10 }]} 
                         onPress={() => handleUpdateStatus(selectedMember, false)}
                     >
                         <Text style={styles.textStyle}>Deactivate Player</Text>
                     </TouchableOpacity>
                 ) : (
                     <TouchableOpacity
-                        style={[styles.button, styles.buttonPrimary, { marginTop: 10 }]}
+                        style={[styles.button, styles.buttonPrimary, { marginTop: 10 }]} 
                         onPress={() => handleUpdateStatus(selectedMember, true)}
                     >
                         <Text style={styles.textStyle}>Activate Player</Text>
@@ -481,7 +407,7 @@ const LeagueSettingsPage = () => {
                         {renderManagementOptions()}
 
                         <TouchableOpacity
-                            style={[styles.button, styles.buttonClose, { marginTop: 20 }]}
+                            style={[styles.button, styles.buttonClose, { marginTop: 20 }]} 
                             onPress={() => setModalVisible(!modalVisible)}>
                             <Text style={styles.textStyle}>Close</Text>
                         </TouchableOpacity>

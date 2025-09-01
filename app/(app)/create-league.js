@@ -3,53 +3,30 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
-import { API_BASE_URL } from '../../src/config';
+import * as apiActions from '../../src/api';
 import PageLayout from '../../components/PageLayout';
 
 const CreateLeaguePage = () => {
   const [leagueName, setLeagueName] = useState('');
   const router = useRouter();
-  const { token } = useAuth();
+  const { api } = useAuth();
   const { reloadLeagues } = useLeague();
 
-  const handleCreateLeague = () => {
+  const handleCreateLeague = async () => {
     if (!leagueName.trim()) {
       Alert.alert('Error', 'Please enter a name for your league.');
       return;
     }
-    fetch(`${API_BASE_URL}/api/leagues`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        leagueName: leagueName,
-      }),
-    })
-      .then(response => {
-        if (!response.ok) {
-          return response.text().then(text => {
-            try {
-              const errorData = JSON.parse(text);
-              throw new Error(errorData.message || 'Failed to create league.');
-            } catch (e) {
-              throw new Error(text || 'Failed to create league. An unknown error occurred.');
-            }
-          });
-        }
-        return response.json();
-      })
-      .then(async (data) => {
-        await reloadLeagues();
-        Alert.alert('Success', `League "${data.leagueName}" created!`, [
-          { text: 'OK', onPress: () => router.replace('/(app)/home') },
-        ]);
-      })
-      .catch(error => {
-        console.error(error);
-        Alert.alert('Error', error.message);
-      });
+    try {
+      const data = await api(apiActions.createLeague, leagueName);
+      await reloadLeagues();
+      Alert.alert('Success', `League "${data.leagueName}" created!`, [
+        { text: 'OK', onPress: () => router.replace('/(app)/home') },
+      ]);
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Error', error.message);
+    }
   };
 
   return (

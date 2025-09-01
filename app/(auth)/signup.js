@@ -1,7 +1,7 @@
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert } from 'react-native';
-import { API_BASE_URL } from '../../src/config';
+import * as apiActions from '../../src/api';
 
 export default function SignUpPage() {
   const [firstName, setFirstName] = useState('');
@@ -16,20 +16,13 @@ export default function SignUpPage() {
   useEffect(() => {
     if (token) {
       setIsLoading(true);
-      fetch(`${API_BASE_URL}/api/auth/invite-details/${token}`)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('Invalid or expired invite token.');
-          }
-          return response.json();
-        })
+      apiActions.getInviteDetails(token)
         .then(data => {
           setInviteDetails(data);
           setEmail(data.email);
         })
         .catch(error => {
           Alert.alert('Error', error.message);
-          // Optionally, redirect or handle the error state
         })
         .finally(() => {
           setIsLoading(false);
@@ -37,12 +30,9 @@ export default function SignUpPage() {
     }
   }, [token]);
 
-  const handleSignUp = () => {
+  const handleSignUp = async () => {
     const isClaiming = !!token;
-    const url = isClaiming
-      ? `${API_BASE_URL}/api/auth/register-and-claim`
-      : `${API_BASE_URL}/api/auth/signup`;
-
+    const action = isClaiming ? apiActions.registerAndClaim : apiActions.signup;
     const body = isClaiming
       ? {
           firstName: firstName,
@@ -58,37 +48,17 @@ export default function SignUpPage() {
           password: password,
         };
 
-    fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    })
-      .then(response => {
-        if (!response.ok) {
-          return response.text().then(text => {
-            try {
-              const errorData = JSON.parse(text);
-              throw new Error(errorData.message || 'Sign up failed. Please try again.');
-            } catch (e) {
-              throw new Error(text || 'Sign up failed. An unknown error occurred.');
-            }
-          });
-        }
-        return response.json();
-      })
-      .then(data => {
-        Alert.alert(
-          isClaiming ? 'Profile Claimed!' : 'Signup Successful',
-          isClaiming ? 'You have successfully claimed your profile.' : 'You can now log in.',
-        );
-        router.replace('/(auth)'); // Navigate to login
-      })
-      .catch(error => {
-        console.error('Signup/claim request failed:', error);
-        Alert.alert('Sign Up Error', error.message);
-      });
+    try {
+      await action(body);
+      Alert.alert(
+        isClaiming ? 'Profile Claimed!' : 'Signup Successful',
+        isClaiming ? 'You have successfully claimed your profile.' : 'You can now log in.',
+      );
+      router.replace('/(auth)'); // Navigate to login
+    } catch (error) {
+      console.error('Signup/claim request failed:', error);
+      Alert.alert('Sign Up Error', error.message);
+    }
   };
 
   if (isLoading) {
