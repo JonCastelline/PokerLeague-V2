@@ -35,6 +35,7 @@ const SeasonSettingsPage = () => {
   // State for Games
   const [games, setGames] = useState([]);
   const [loadingGames, setLoadingGames] = useState(false);
+  const [hasGamesInSelectedSeason, setHasGamesInSelectedSeason] = useState(false); // New state
 
   // State for Blind Levels and Place Points
   const [blindLevels, setBlindLevels] = useState([]);
@@ -63,6 +64,12 @@ const SeasonSettingsPage = () => {
   const [newSeasonName, setNewSeasonName] = useState('');
   const [newSeasonStartDate, setNewSeasonStartDate] = useState(null);
   const [newSeasonEndDate, setNewSeasonEndDate] = useState(null);
+
+  // State for edit season modal
+  const [editSeasonModalVisible, setEditSeasonModalVisible] = useState(false);
+  const [editedSeasonName, setEditedSeasonName] = useState('');
+  const [editedSeasonStartDate, setEditedSeasonStartDate] = useState(null);
+  const [editedSeasonEndDate, setEditedSeasonEndDate] = useState(null);
 
   // State for create game modal
   const [createGameModalVisible, setCreateGameModalVisible] = useState(false);
@@ -104,6 +111,10 @@ const SeasonSettingsPage = () => {
       setNewSeasonStartDate(date);
     } else if (datePickerField === 'endDate') {
       setNewSeasonEndDate(date);
+    } else if (datePickerField === 'editedStartDate') { // New condition
+      setEditedSeasonStartDate(date);
+    } else if (datePickerField === 'editedEndDate') { // New condition
+      setEditedSeasonEndDate(date);
     }
     hideDatePicker();
   };
@@ -116,8 +127,10 @@ const SeasonSettingsPage = () => {
     try {
       const gamesData = await api(apiActions.getGameHistory, seasonId);
       setGames(gamesData.sort((a, b) => new Date(a.gameDate) - new Date(b.gameDate)));
+      return gamesData; // Return gamesData
     } catch (e) {
       console.error("Failed to fetch games:", e);
+      return []; // Return empty array on error
     } finally {
       setLoadingGames(false);
     }
@@ -152,7 +165,8 @@ const SeasonSettingsPage = () => {
         setSettings(settingsData);
         setBlindLevels((settingsData.blindLevels || []).sort((a, b) => a.level - b.level));
         setPlacePoints(settingsData.placePoints || []);
-        fetchGames(targetSeasonId);
+        const fetchedGames = await fetchGames(targetSeasonId); // Get the returned gamesData
+        setHasGamesInSelectedSeason(fetchedGames.length > 0); // Use fetchedGames directly
 
         // Initialize duration and warning time states
         if (settingsData.durationSeconds !== undefined) {
@@ -174,14 +188,16 @@ const SeasonSettingsPage = () => {
   }, [selectedLeagueId, api, fetchGames]);
 
   const fetchAllSeasons = useCallback(async () => {
-    if (!selectedLeagueId) return;
+    if (!selectedLeagueId) return []; // Return empty array
     setLoadingSeasons(true);
     try {
       const data = await api(apiActions.getSeasons, selectedLeagueId);
       setSeasons(data || []);
+      return data || []; // Return the fetched data
     } catch (e) {
       console.error("Failed to fetch all seasons:", e);
       setErrorSeasons(e.message);
+      return []; // Return empty array on error
     } finally {
       setLoadingSeasons(false);
     }
@@ -267,6 +283,41 @@ const SeasonSettingsPage = () => {
     } catch (e) {
       console.error("Failed to create season:", e);
       alert(e.message);
+    }
+  };
+
+  const handleEditSeason = async () => {
+    if (!selectedSeason || !editedSeasonName || !editedSeasonStartDate || !editedSeasonEndDate) {
+      alert('Please fill in all season details.');
+      return;
+    }
+
+    try {
+      const formattedStartDate = DateTime.fromJSDate(editedSeasonStartDate).startOf('day').toUTC().toISO();
+      const formattedEndDate = DateTime.fromJSDate(editedSeasonEndDate).endOf('day').toUTC().toISO();
+      const seasonData = {
+        seasonName: editedSeasonName,
+        startDate: formattedStartDate,
+        endDate: formattedEndDate,
+      };
+
+      await api(apiActions.updateSeason, selectedLeagueId, selectedSeason.id, seasonData);
+      alert('Season updated successfully!');
+      setEditSeasonModalVisible(false);
+
+      // Refresh seasons list and then update selectedSeason state
+      const fetchedSeasons = await fetchAllSeasons(); // Get the updated seasons directly
+
+      // Find the updated season object from the fetched seasons array
+      const updatedSeason = fetchedSeasons.find(s => s.id === selectedSeason.id);
+      if (updatedSeason) {
+        setSelectedSeason(updatedSeason); // Update selectedSeason state with fresh data
+      }
+
+      fetchSettings(updatedSeason.id); // Refresh current season settings using the updated selectedSeason state
+    } catch (e) {
+      console.error("Failed to update season:", e);
+      alert(`Failed to update season: ${e.message}`);
     }
   };
 
@@ -369,6 +420,32 @@ const SeasonSettingsPage = () => {
             } catch (e) {
               console.error("Failed to finalize season:", e);
               alert(e.message);
+            }
+          },
+          style: "destructive",
+        },
+      ]
+    );
+  };
+
+  const handleDeleteSeason = async () => {
+    if (!selectedSeason) return;
+
+    Alert.alert(
+      "Delete Season",
+      `Are you sure you want to delete the season "${selectedSeason.seasonName}"? This action cannot be undone.`, // Added season name to alert
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          onPress: async () => {
+            try {
+              await api(apiActions.deleteSeason, selectedLeagueId, selectedSeason.id); // Assuming deleteSeason API action
+              alert('Season deleted successfully!');
+              fetchAllSeasons(); // Refresh seasons list
+            } catch (e) {
+              console.error("Failed to delete season:", e);
+              alert(`Failed to delete season: ${e.message}`);
             }
           },
           style: "destructive",
@@ -694,40 +771,8 @@ const SeasonSettingsPage = () => {
           }}
           onCancel={() => setGameDatePickerVisible(false)}
           date={newGameDate}
-          minimumDate={selectedSeason?.startDate ? new Date(
-            (() => {
-              const [startDatePart] = selectedSeason.startDate.split('T');
-              const [startYear, startMonth, startDay] = startDatePart.split('-').map(Number);
-              return startYear;
-            })(),
-            (() => {
-              const [startDatePart] = selectedSeason.startDate.split('T');
-              const [startYear, startMonth, startDay] = startDatePart.split('-').map(Number);
-              return startMonth - 1; // Month is 0-indexed for Date constructor
-            })(),
-            (() => {
-              const [startDatePart] = selectedSeason.startDate.split('T');
-              const [startYear, startMonth, startDay] = startDatePart.split('-').map(Number);
-              return startDay;
-            })()
-          ) : undefined}
-          maximumDate={selectedSeason?.endDate ? new Date(
-            (() => {
-              const [endDatePart] = selectedSeason.endDate.split('T');
-              const [endYear, endMonth, endDay] = endDatePart.split('-').map(Number);
-              return endYear;
-            })(),
-            (() => {
-              const [endDatePart] = selectedSeason.endDate.split('T');
-              const [endYear, endMonth, endDay] = endDatePart.split('-').map(Number);
-              return endMonth - 1; // Month is 0-indexed for Date constructor
-            })(),
-            (() => {
-              const [endDatePart] = selectedSeason.endDate.split('T');
-              const [endYear, endMonth, endDay] = endDatePart.split('-').map(Number);
-              return endDay;
-            })()
-          ) : undefined}
+          minimumDate={selectedSeason?.startDate ? DateTime.fromISO(selectedSeason.startDate).toJSDate() : undefined}
+          maximumDate={selectedSeason?.endDate ? DateTime.fromISO(selectedSeason.endDate).toJSDate() : undefined}
         />
 
         {/* Game Time Picker Modal */}
@@ -804,40 +849,8 @@ const SeasonSettingsPage = () => {
           }}
           onCancel={() => setEditGameDatePickerVisible(false)}
           date={editedGameDate}
-          minimumDate={selectedSeason?.startDate ? new Date(
-            (() => {
-              const [startDatePart] = selectedSeason.startDate.split('T');
-              const [startYear, startMonth, startDay] = startDatePart.split('-').map(Number);
-              return startYear;
-            })(),
-            (() => {
-              const [startDatePart] = selectedSeason.startDate.split('T');
-              const [startYear, startMonth, startDay] = startDatePart.split('-').map(Number);
-              return startMonth - 1; // Month is 0-indexed for Date constructor
-            })(),
-            (() => {
-              const [startDatePart] = selectedSeason.startDate.split('T');
-              const [startYear, startMonth, startDay] = startDatePart.split('-').map(Number);
-              return startDay;
-            })()
-          ) : undefined}
-          maximumDate={selectedSeason?.endDate ? new Date(
-            (() => {
-              const [endDatePart] = selectedSeason.endDate.split('T');
-              const [endYear, endMonth, endDay] = endDatePart.split('-').map(Number);
-              return endYear;
-            })(),
-            (() => {
-              const [endDatePart] = selectedSeason.endDate.split('T');
-              const [endYear, endMonth, endDay] = endDatePart.split('-').map(Number);
-              return endMonth - 1; // Month is 0-indexed for Date constructor
-            })(),
-            (() => {
-              const [endDatePart] = selectedSeason.endDate.split('T');
-              const [endYear, endMonth, endDay] = endDatePart.split('-').map(Number);
-              return endDay;
-            })()
-          ) : undefined}
+          minimumDate={selectedSeason?.startDate ? DateTime.fromISO(selectedSeason.startDate).toJSDate() : undefined}
+          maximumDate={selectedSeason?.endDate ? DateTime.fromISO(selectedSeason.endDate).toJSDate() : undefined}
         />
 
         {/* Edit Game Time Picker Modal */}
@@ -1163,6 +1176,29 @@ const SeasonSettingsPage = () => {
                 </Picker>
               </View>
             </View>
+            {isAdmin && selectedSeason && !selectedSeason.isFinalized && (
+              <View style={styles.seasonActionButtonsContainer}>
+                <TouchableOpacity
+                  style={[styles.button, styles.buttonPrimary, styles.actionButton]}
+                  onPress={() => {
+                    setEditedSeasonName(selectedSeason.seasonName);
+                    setEditedSeasonStartDate(selectedSeason.startDate ? DateTime.fromISO(selectedSeason.startDate).toJSDate() : null);
+                    setEditedSeasonEndDate(selectedSeason.endDate ? DateTime.fromISO(selectedSeason.endDate).toJSDate() : null);
+                    setEditSeasonModalVisible(true);
+                  }}
+                >
+                  <Text style={styles.textStyle}>Edit Season</Text>
+                </TouchableOpacity>
+                {!hasGamesInSelectedSeason && ( // Conditional render
+                  <TouchableOpacity
+                    style={[styles.button, styles.buttonDestructive, styles.actionButton]} // Removed disabled and opacity
+                    onPress={handleDeleteSeason}
+                  >
+                    <Text style={styles.textStyle}>Delete Season</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
             {(isAdmin ? (!selectedSeason?.isFinalized ? (
               <TouchableOpacity
                 style={[styles.button, styles.buttonPrimaryRed, styles.actionButton]}
@@ -1226,6 +1262,47 @@ const SeasonSettingsPage = () => {
               <TouchableOpacity
                 style={[styles.button, styles.buttonClose, styles.modalButton]}
                 onPress={() => setCreateSeasonModalVisible(false)}>
+                <Text style={styles.textStyle}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Edit Season Modal */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={editSeasonModalVisible}
+          onRequestClose={() => setEditSeasonModalVisible(false)}>
+          <View style={styles.centeredView}>
+            <View style={styles.modalView}>
+              <Text style={styles.modalText}>Edit Season</Text>
+              <TextInput
+                style={[styles.input, styles.modalInput]}
+                placeholder="Season Name"
+                value={editedSeasonName}
+                onChangeText={setEditedSeasonName}
+              />
+              <TouchableOpacity onPress={() => showDatePicker('editedStartDate')} style={styles.dateInputButton}>
+                <Text style={styles.dateInputText}>
+                  Start Date: {editedSeasonStartDate ? DateTime.fromJSDate(editedSeasonStartDate).toFormat('MM/dd/yyyy') : 'Select Date'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => showDatePicker('editedEndDate')} style={styles.dateInputButton}>
+                <Text style={styles.dateInputText}>
+                  End Date: {editedSeasonEndDate ? DateTime.fromJSDate(editedSeasonEndDate).toFormat('MM/dd/yyyy') : 'Select Date'}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.button, styles.buttonPrimaryRed, styles.modalButton]}
+                onPress={handleEditSeason}
+              >
+                <Text style={styles.textStyle}>Save Changes</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, styles.buttonClose, styles.modalButton]}
+                onPress={() => setEditSeasonModalVisible(false)}>
                 <Text style={styles.textStyle}>Cancel</Text>
               </TouchableOpacity>
             </View>
@@ -1443,7 +1520,13 @@ const SeasonSettingsPage = () => {
           mode="date"
           onConfirm={handleConfirmDate}
           onCancel={hideDatePicker}
-          date={datePickerField === 'startDate' ? (newSeasonStartDate || new Date()) : (newSeasonEndDate || new Date())}
+          date={ 
+            datePickerField === 'startDate' ? (newSeasonStartDate || new Date()) :
+            datePickerField === 'endDate' ? (newSeasonEndDate || new Date()) :
+            datePickerField === 'editedStartDate' ? (editedSeasonStartDate || new Date()) : // New
+            datePickerField === 'editedEndDate' ? (editedSeasonEndDate || new Date()) : // New
+            new Date() // Default
+          }
         />
 
 
@@ -1465,7 +1548,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginTop: 30,
+    marginTop: 15, // Reduced from 30
     marginBottom: 10,
   },
   noSeasonsContainer: {
@@ -1490,6 +1573,13 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch', // Make it stretch to fill parent's width
     marginBottom: 20,
     marginHorizontal: 10, // Add horizontal margin for spacing
+  },
+  seasonActionButtonsContainer: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    alignSelf: 'center',
+    // Removed marginBottom: 20,
+    paddingHorizontal: 10,
   },
   settingsContainer: {
     backgroundColor: '#f0f0f0',
@@ -1679,6 +1769,7 @@ const styles = StyleSheet.create({
     width: 'auto',
     alignSelf: 'center',
     marginTop: 10,
+    marginBottom: 15, // Added marginBottom
   },
   textStyle: {
     color: "white",
