@@ -15,7 +15,7 @@ import * as Clipboard from 'expo-clipboard';
 const LeagueSettingsPage = () => {
   const router = useRouter();
   const { api } = useAuth();
-  const { selectedLeagueId, currentUserMembership, loadingCurrentUserMembership, reloadHomeContent, reloadCurrentUserMembership, currentLeague, reloadLeagues, refreshInviteCode, inviteCode } = useLeague();
+  const { selectedLeagueId, currentUserMembership, loadingCurrentUserMembership, reloadHomeContent, reloadCurrentUserMembership, currentLeague, reloadLeagues, refreshInviteCode, inviteCode, setInviteCode } = useLeague();
 
   // Existing state for members
   const [members, setMembers] = useState([]);
@@ -44,6 +44,14 @@ const LeagueSettingsPage = () => {
       router.replace('/(app)/home');
     }
   }, [isAdmin, loadingCurrentUserMembership, router]);
+
+  // Clear invite code when league changes or component unmounts
+  useEffect(() => {
+    setInviteCode(null);
+    return () => {
+      setInviteCode(null);
+    };
+  }, [selectedLeagueId, setInviteCode]);
 
   const handleSaveLeagueSettings = async () => {
     if (!selectedLeagueId) return;
