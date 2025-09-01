@@ -96,6 +96,17 @@ const PlayPage = () => {
     }
   }, [mode, fetchInitialData]);
 
+  useEffect(() => {
+    if (mode === 'setup' && selectedGameId) {
+        const game = allGames.find(g => g.id === selectedGameId);
+        if (game && (game.gameStatus === 'IN_PROGRESS' || game.gameStatus === 'PAUSED')) {
+            fetchGameState();
+        } else {
+            setGameState(null); // Clear game state for scheduled games
+        }
+    }
+  }, [selectedGameId, allGames, mode, fetchGameState]);
+
   const fetchGameState = useCallback(async () => {
     if (!selectedGameId) return;
     try {
@@ -338,6 +349,8 @@ const PlayPage = () => {
 
   if (mode === 'setup') {
       const hasActiveGames = allGames.filter(game => game.gameStatus !== 'COMPLETED').length > 0;
+      const selectedGame = allGames.find(g => g.id === selectedGameId);
+
       return (
           <PageLayout>
               <ScrollView contentContainerStyle={styles.setupContainer}>
@@ -362,7 +375,7 @@ const PlayPage = () => {
                     <Text>No upcoming or active games found for this season.</Text>
                   )}
 
-                  {hasActiveGames && selectedGameId && (
+                  {selectedGame?.gameStatus === 'SCHEDULED' && (
                     <>
                       <Text style={styles.title}>Select Players</Text>
                       <View style={{width: '100%'}}>
@@ -382,6 +395,31 @@ const PlayPage = () => {
                       <TouchableOpacity style={[styles.button, styles.setupStartButton]} onPress={handleStartGame} disabled={isActionLoading}>
                           <Text style={styles.buttonText}>Start Game</Text>
                       </TouchableOpacity>
+                    </>
+                  )}
+
+                  {(selectedGame?.gameStatus === 'IN_PROGRESS' || selectedGame?.gameStatus === 'PAUSED') && (
+                    <>
+                        {loading && !gameState ? (
+                            <ActivityIndicator size="large" color="#fb5b5a" />
+                        ) : (
+                            <>
+                                <Text style={styles.title}>Players in Game</Text>
+                                <View style={{width: '100%'}}>
+                                    {gameState?.players.map(player => (
+                                        <View key={player.id} style={styles.playerSetupItem}>
+                                            <View style={{flexDirection: 'row', alignItems: 'center', flex: 1}}>
+                                                {player.iconUrl ? <Image source={{ uri: player.iconUrl }} style={styles.playerIcon} /> : <View style={styles.playerIcon} />}
+                                                <Text>{player.displayName}</Text>
+                                            </View>
+                                        </View>
+                                    ))}
+                                </View>
+                                <TouchableOpacity style={[styles.button, styles.setupStartButton]} onPress={() => setMode('play')} disabled={isActionLoading}>
+                                    <Text style={styles.buttonText}>Join Game</Text>
+                                </TouchableOpacity>
+                            </>
+                        )}
                     </>
                   )}
               </ScrollView>
