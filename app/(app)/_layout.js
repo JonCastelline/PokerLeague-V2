@@ -1,6 +1,6 @@
-
 import { Stack } from 'expo-router';
 import { LeagueProvider } from '../../context/LeagueContext';
+import { GameProvider } from '../../context/GameContext';
 
 function AppLayout() {
   return (
@@ -21,7 +21,9 @@ function AppLayout() {
 export default function AppLayoutWrapper() {
   return (
     <LeagueProvider>
-      <AppLayout />
+      <GameProvider>
+        <AppLayout />
+      </GameProvider>
     </LeagueProvider>
   );
 }

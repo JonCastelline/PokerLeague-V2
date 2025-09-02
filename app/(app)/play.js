@@ -3,6 +3,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView, Alert, Switch, TextInput, Image } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
+import { useGame } from '../../context/GameContext';
 import * as apiActions from '../../src/api';
 import PageLayout from '../../components/PageLayout';
 import Timer from '../../components/Timer';
@@ -11,7 +12,7 @@ import { Picker } from '@react-native-picker/picker';
 const PlayPage = () => {
   const { api } = useAuth();
   const { selectedLeagueId } = useLeague();
-  const [gameState, setGameState] = useState(null);
+  const { gameState, setGameState, isActionLoading, isTimerFinished, setIsTimerFinished, handleAction, startPolling, stopPolling, fetchGameState } = useGame();
   const [editableGameState, setEditableGameState] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -24,11 +25,9 @@ const PlayPage = () => {
   const [activeSeason, setActiveSeason] = useState(null);
   const [activeSeasonSettings, setActiveSeasonSettings] = useState(null);
   const [allGames, setAllGames] = useState([]);
-  const [isActionLoading, setIsActionLoading] = useState(false);
-  const [isTimerFinished, setIsTimerFinished] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
   const [noActiveSeason, setNoActiveSeason] = useState(false);
-  const pollingIntervalRef = useRef(null);
+  const [isPlayScreenActive, setIsPlayScreenActive] = useState(true);
 
   const getOrdinal = (n) => {
     if (n === null || n === undefined) return '';
@@ -45,9 +44,9 @@ const PlayPage = () => {
 
   const fetchInitialData = useCallback(async () => {
     if (!selectedLeagueId) return;
-    setLoading(true); // Ensure loading is true at the start
-    setError(null); // Clear any previous errors
-    setNoActiveSeason(false); // Clear previous no active season state
+    setLoading(true);
+    setError(null);
+    setNoActiveSeason(false);
 
     try {
       const members = await api(apiActions.getLeagueMembers, selectedLeagueId);
@@ -62,9 +61,9 @@ const PlayPage = () => {
       } catch (e) {
         if (e.message.includes('404')) {
           setNoActiveSeason(true);
-          return; // Exit early, no further processing needed for this scenario
+          return;
         }
-        throw e; // Re-throw other errors to be caught by the outer catch
+        throw e;
       }
 
       const seasonSettings = await api(apiActions.getSeasonSettings, season.id);
@@ -100,63 +99,36 @@ const PlayPage = () => {
     if (mode === 'setup' && selectedGameId) {
         const game = allGames.find(g => g.id === selectedGameId);
         if (game && (game.gameStatus === 'IN_PROGRESS' || game.gameStatus === 'PAUSED')) {
-            fetchGameState();
+            fetchGameState(selectedGameId);
         } else {
-            setGameState(null); // Clear game state for scheduled games
+            setGameState(null);
         }
     }
-  }, [selectedGameId, allGames, mode, fetchGameState]);
+  }, [selectedGameId, allGames, mode, fetchGameState, setGameState]);
 
-  const fetchGameState = useCallback(async () => {
-    if (!selectedGameId) return;
-    try {
-      const data = await api(apiActions.getGameState, selectedGameId);
-      setGameState(data);
-    } catch (e) {
-      handleApiError(e);
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (isPlayScreenActive && gameState?.gameStatus === 'IN_PROGRESS') {
+      startPolling(selectedGameId);
+    } else {
+      stopPolling();
     }
-  }, [selectedGameId, api]);
+  }, [isPlayScreenActive, gameState?.gameStatus, selectedGameId, startPolling, stopPolling]);
 
-  const [isPlayScreenActive, setIsPlayScreenActive] = useState(true);
-
-  useFocusEffect(
+    useFocusEffect(
     React.useCallback(() => {
       setIsPlayScreenActive(true);
-
       return () => {
         setIsPlayScreenActive(false);
+        stopPolling();
       };
-    }, [])
+    }, [stopPolling])
   );
 
   useEffect(() => {
-    if ((mode === 'play' || mode === 'review') && selectedGameId && isPlayScreenActive) {
-      setLoading(true);
-      fetchGameState();
-      pollingIntervalRef.current = setInterval(fetchGameState, 5000);
-    } else {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-      }
-    }
-
-    return () => {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-      }
-    };
-  }, [mode, selectedGameId, fetchGameState, isPlayScreenActive]);
-
-  useEffect(() => {
     if (gameState?.gameStatus === 'COMPLETED') {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-        pollingIntervalRef.current = null;
-      }
+      stopPolling();
     }
-  }, [gameState]);
+  }, [gameState, stopPolling]);
 
   useEffect(() => {
     if (!gameState || gameState.gameStatus === 'COMPLETED') return;
@@ -164,34 +136,9 @@ const PlayPage = () => {
     const remaining = gameState.players.filter(p => !p.isEliminated).length;
     if (remaining <= 1 && mode === 'play') {
       setMode('review');
-    } else if (remaining > 1 && mode === 'review') {
-      setMode('play');
     }
   }, [gameState, mode]);
 
-
-  const handleAction = async (action, ...args) => {
-    if (isActionLoading) return;
-    setIsActionLoading(true);
-    try {
-      if (action === apiActions.nextLevel || action === apiActions.previousLevel) {
-        setIsTimerFinished(false);
-      }
-      const newGameState = await api(action, ...args);
-      if (action === apiActions.finalizeGame) {
-        setGameState(prevState => ({ ...prevState, gameStatus: 'COMPLETED' }));
-        setMode('play');
-      } else {
-        setGameState(newGameState);
-      }
-    } catch (e) {
-      if (e.message !== '401') {
-        Alert.alert('Error', e.message);
-      }
-    } finally {
-      setIsActionLoading(false);
-    }
-  };
 
   const handleStartGame = () => {
     if (!selectedGameId) {
@@ -621,6 +568,7 @@ const PlayPage = () => {
                   onTimerEnd={() => setIsTimerFinished(true)}
                   warningSoundEnabled={gameState.settings.warningSoundEnabled}
                   warningSoundTimeSeconds={gameState.settings.warningSoundTimeSeconds}
+                  handleAction={handleAction}
               />
           )
         )}
