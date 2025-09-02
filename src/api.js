@@ -303,6 +303,13 @@ export const addUnregisteredPlayer = (leagueId, displayName, token) => {
   });
 };
 
+export const removePlayerFromLeague = (leagueId, memberId, token) => {
+  return apiFetch(`/api/leagues/${leagueId}/members/${memberId}`, {
+    method: 'DELETE',
+    token,
+  });
+};
+
 export const getInviteDetails = (token) => {
   return apiFetch(`/api/auth/invite-details/${token}`);
 };
