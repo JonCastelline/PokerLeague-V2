@@ -1,18 +1,25 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { CountdownCircleTimer } from 'react-native-countdown-circle-timer';
 import { useAudioPlayer } from 'expo-audio';
-import { useAuth } from '../context/AuthContext';
+import { useLeague } from '../context/LeagueContext';
+import { useGame } from '../context/GameContext';
 import * as apiActions from '../src/api';
+import TimerModal from './TimerModal';
 
 const Timer = ({ gameId, timerState, blindLevels, isPlaying, onTimerEnd, warningSoundEnabled, warningSoundTimeSeconds }) => {
-  const { api } = useAuth();
+  const { currentUserMembership } = useLeague();
+  const { handleAction, fireAndForgetAction } = useGame();
+  const isAdmin = currentUserMembership?.role === 'ADMIN' || currentUserMembership?.role === 'OWNER';
   const prevRemainingTimeRef = useRef(0);
   const remainingTimeRef = useRef(0);
   const isMounted = useRef(false);
   const updateIntervalRef = useRef(null);
 
   const [initialRemainingTime, setInitialRemainingTime] = useState(0);
+  const [isModalVisible, setModalVisible] = useState(false);
+  const [timerKey, setTimerKey] = useState(0);
+  const isInitialMount = useRef(true);
 
   const warningSoundPlayer = useAudioPlayer(require('../assets/ding.wav'));
   const alarmPlayer = useAudioPlayer(require('../assets/alarm.mp3'));
@@ -35,37 +42,22 @@ const Timer = ({ gameId, timerState, blindLevels, isPlaying, onTimerEnd, warning
         const serverRemainingTimeSec = timerState.timeRemainingInMillis / 1000;
         setInitialRemainingTime(serverRemainingTimeSec);
         remainingTimeRef.current = serverRemainingTimeSec;
+        setTimerKey(prevKey => prevKey + 1); // Force re-render of CountdownCircleTimer
     }
-  }, [timerState.currentLevelIndex]); // Only reset when the level changes
+  }, [timerState.currentLevelIndex, timerState.timeRemainingInMillis]);
+
+  
 
   useEffect(() => {
-    const updateTimerOnBackend = async () => {
-        if (!isMounted.current) return;
-        const timeToSave = remainingTimeRef.current;
-        try {
-            await api(apiActions.updateTimer, gameId, Math.round(timeToSave * 1000));
-        } catch (error) {
-            console.error('Failed to update timer on backend:', error);
-        }
-    };
-
-    if (isPlaying) {
-      updateIntervalRef.current = setInterval(updateTimerOnBackend, 5000);
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
     } else {
-      if (updateIntervalRef.current) {
-        clearInterval(updateIntervalRef.current);
-        updateIntervalRef.current = null;
-        updateTimerOnBackend(); // Final update when paused
+      if (alarmPlayer) {
+        alarmPlayer.pause();
+        alarmPlayer.seekTo(0);
       }
     }
-
-    return () => {
-      if (updateIntervalRef.current) {
-        clearInterval(updateIntervalRef.current);
-        updateTimerOnBackend(); // Final update when navigating away
-      }
-    };
-  }, [isPlaying, gameId, api]);
+  }, [timerState.currentLevelIndex]);
 
   const handleComplete = () => {
     if (isMounted.current) {
@@ -76,6 +68,32 @@ const Timer = ({ gameId, timerState, blindLevels, isPlaying, onTimerEnd, warning
       onTimerEnd();
     }
     return { shouldRepeat: false };
+  };
+
+  const handleOpenModal = async () => {
+    if (!isAdmin) return;
+    if (isPlaying) {
+      await handleAction(apiActions.pauseGame, gameId);
+    }
+    setModalVisible(true);
+  };
+
+  const handleSetTime = async (timeInMillis) => {
+    const newGameState = await handleAction(apiActions.setTime, gameId, timeInMillis);
+    if (newGameState) {
+      setInitialRemainingTime(newGameState.timer.timeRemainingInMillis / 1000);
+      setTimerKey(prevKey => prevKey + 1);
+    }
+    setModalVisible(false);
+  };
+
+  const handleResetLevel = async () => {
+    const newGameState = await handleAction(apiActions.resetLevel, gameId);
+    if (newGameState) {
+      setInitialRemainingTime(newGameState.timer.timeRemainingInMillis / 1000);
+      setTimerKey(prevKey => prevKey + 1);
+    }
+    setModalVisible(false);
   };
 
   const renderTime = ({ remainingTime }) => {
@@ -112,18 +130,29 @@ const Timer = ({ gameId, timerState, blindLevels, isPlaying, onTimerEnd, warning
 
   return (
     <View style={styles.timerContainer}>
-      <CountdownCircleTimer
-        key={timerState.currentLevelIndex}
-        isPlaying={isPlaying}
-        duration={initialRemainingTime} // Duration is the initial time for this level
-        initialRemainingTime={initialRemainingTime} // Start from this value
-        colors={['#004777', '#F7B801', '#A30000', '#A30000']}
-        colorsTime={[10, 6, 3, 0]}
-        onComplete={handleComplete}
-        size={200}
-      >
-        {renderTime}
-      </CountdownCircleTimer>
+        <TouchableOpacity onPress={handleOpenModal} disabled={!isAdmin}>
+            <CountdownCircleTimer
+                key={timerKey}
+                isPlaying={isPlaying}
+                duration={initialRemainingTime}
+                initialRemainingTime={initialRemainingTime}
+                colors={['#004777', '#F7B801', '#A30000', '#A30000']}
+                colorsTime={[10, 6, 3, 0]}
+                onComplete={handleComplete}
+                size={200}
+            >
+                {renderTime}
+            </CountdownCircleTimer>
+        </TouchableOpacity>
+
+      {isAdmin && (
+          <TimerModal
+            visible={isModalVisible}
+            onClose={() => setModalVisible(false)}
+            onSetTime={handleSetTime}
+            onResetLevel={handleResetLevel}
+          />
+      )}
 
       <View style={styles.levelContainer}>
         <Text style={styles.levelText}>Level: {timerState.currentLevelIndex + 1}</Text>

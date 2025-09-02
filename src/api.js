@@ -138,6 +138,21 @@ export const previousLevel = (gameId, token) => {
   });
 };
 
+export const resetLevel = (gameId, token) => {
+  return apiFetch(`/api/games/${gameId}/live/reset-level`, {
+    method: 'POST',
+    token,
+  });
+};
+
+export const setTime = (gameId, timeRemainingInMillis, token) => {
+  return apiFetch(`/api/games/${gameId}/live/set-time`, {
+    method: 'POST',
+    token,
+    body: JSON.stringify({ timeRemainingInMillis }),
+  });
+};
+
 export const getLeagues = (token) => {
   return apiFetch(`/api/leagues`, { token });
 };
