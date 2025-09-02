@@ -142,7 +142,7 @@ const LeagueSettingsPage = () => {
 
     Alert.alert(
       "Remove Player",
-      `Are you sure you want to remove ${selectedMember.displayName} from the league? This action cannot be undone.`,
+      `Are you sure you want to remove ${selectedMember.displayName} from the league?`,
       [
         { text: "Cancel", style: "cancel" },
         {
