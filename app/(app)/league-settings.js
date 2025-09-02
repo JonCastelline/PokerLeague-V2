@@ -119,7 +119,7 @@ const LeagueSettingsPage = () => {
       `Are you sure you want to ${action.toLowerCase()} ${member.displayName}?`,
       [
         { text: "Cancel", style: "cancel" },
-        {
+        { 
           text: action,
           onPress: async () => {
             try {
@@ -132,6 +132,33 @@ const LeagueSettingsPage = () => {
             }
           },
           style: isActive ? "default" : "destructive",
+        },
+      ]
+    );
+  };
+
+  const handleRemovePlayer = () => {
+    if (!selectedMember) return;
+
+    Alert.alert(
+      "Remove Player",
+      `Are you sure you want to remove ${selectedMember.displayName} from the league? This action cannot be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Remove",
+          onPress: async () => {
+            try {
+              await api(apiActions.removePlayerFromLeague, selectedLeagueId, selectedMember.id);
+              await fetchLeagueMembers(); // Refresh member list
+              setModalVisible(false);
+              alert(`${selectedMember.displayName} has been removed.`);
+            } catch (e) {
+              console.error(e);
+              alert(e.message);
+            }
+          },
+          style: "destructive",
         },
       ]
     );
@@ -322,7 +349,7 @@ const LeagueSettingsPage = () => {
                     <Text style={styles.textStyle}>Transfer Ownership</Text>
                 </TouchableOpacity>
             ) : null}
-            {isAdmin && !targetIsOwner ? (
+            {isAdmin && canAdminsManage && !targetIsOwner ? (
                 selectedMember.isActive ? (
                     <TouchableOpacity
                         style={[styles.button, styles.buttonDestructive, { marginTop: 10 }]} 
@@ -338,6 +365,13 @@ const LeagueSettingsPage = () => {
                         <Text style={styles.textStyle}>Activate Player</Text>
                     </TouchableOpacity>
                 )
+            ) : null}
+            {isAdmin && canAdminsManage && !targetIsOwner ? (
+                <TouchableOpacity
+                    style={[styles.button, styles.buttonDestructive, { marginTop: 10 }]} 
+                    onPress={handleRemovePlayer}>
+                    <Text style={styles.textStyle}>Remove Player</Text>
+                </TouchableOpacity>
             ) : null}
         </View>
     );
