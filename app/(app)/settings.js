@@ -5,10 +5,11 @@ import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
 import axios from 'axios';
 import { API_BASE_URL } from '../../src/config';
+import * as apiActions from '../../src/api';
 
 const SettingsScreen = () => {
-  const { user, updateAuthUser, isLoading, token, signOut } = useAuth();
-  const { selectedLeagueId, reloadLeagues, reloadCurrentUserMembership } = useLeague();
+  const { user, updateAuthUser, isLoading, token, signOut, api } = useAuth();
+  const { selectedLeagueId, reloadLeagues, reloadCurrentUserMembership, currentUserMembership } = useLeague();
   const router = useRouter();
 
   // Account Settings State
@@ -38,14 +39,9 @@ const SettingsScreen = () => {
       if (!selectedLeagueId || !user || isLoading) return;
       setLoading(true);
       try {
-        const response = await axios.get(
-          `${API_BASE_URL}/api/leagues/${selectedLeagueId}/members/me`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        setDisplayName(response.data.displayName || '');
-        setIconUrl(response.data.iconUrl || '');
+        const response = await api(apiActions.getCurrentUserMembership, selectedLeagueId);
+        setDisplayName(response.displayName || '');
+        setIconUrl(response.iconUrl || '');
       } catch (error) {
         console.error('Error fetching player settings:', error);
         Alert.alert('Error', 'Failed to fetch player settings.');
@@ -55,23 +51,17 @@ const SettingsScreen = () => {
     };
 
     fetchPlayerSettings();
-  }, [user, selectedLeagueId, isLoading]);
+  }, [user, selectedLeagueId, isLoading, api]);
 
   const handleUpdateAccount = async () => {
     if (!user || !token) return;
     setLoading(true);
     try {
       const oldEmail = user.email; // Store old email
-      const response = await axios.put(
-        `${API_BASE_URL}/api/player-accounts/me`,
-        { firstName, lastName, email },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const response = await api(apiActions.updatePlayerAccount, { firstName, lastName, email });
 
       if (oldEmail === email) { // Email did NOT change
-        updateAuthUser(response.data);
+        updateAuthUser(response);
         Alert.alert('Success', 'Account details updated successfully!');
       } else { // Email DID change
         Alert.alert(
@@ -97,13 +87,7 @@ const SettingsScreen = () => {
     }
     setLoading(true);
     try {
-      await axios.put(
-        `${API_BASE_URL}/api/player-accounts/me/password`,
-        { currentPassword, newPassword },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      await api(apiActions.changePassword, { currentPassword, newPassword });
       Alert.alert('Success', 'Password changed successfully!');
       setCurrentPassword('');
       setNewPassword('');
@@ -120,13 +104,7 @@ const SettingsScreen = () => {
     if (!user || !token) return;
     setLoading(true);
     try {
-      const response = await axios.put(
-        `${API_BASE_URL}/api/leagues/${selectedLeagueId}/members/me`,
-        { displayName, iconUrl },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      await api(apiActions.updateLeagueMembershipSettings, selectedLeagueId, { displayName, iconUrl });
       reloadCurrentUserMembership(); // Re-fetch current user's membership to update displayed player name/icon
       Alert.alert('Success', 'Player settings updated successfully!');
     } catch (error) {
@@ -135,6 +113,33 @@ const SettingsScreen = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLeaveLeague = () => {
+    if (!selectedLeagueId) return;
+
+    Alert.alert(
+      "Leave League",
+      "Are you sure you want to leave this league?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Leave",
+          onPress: async () => {
+            try {
+              await api(apiActions.leaveLeague, selectedLeagueId);
+              Alert.alert("Success", "You have left the league.");
+              reloadLeagues(); // Reload the list of leagues
+              router.replace('/(app)/home'); // Redirect to home, which will show create/join options if no other leagues
+            } catch (e) {
+              console.error(e);
+              Alert.alert("Error", e.message);
+            }
+          },
+          style: "destructive",
+        },
+      ]
+    );
   };
 
   return (
@@ -191,6 +196,16 @@ const SettingsScreen = () => {
 
           <TouchableOpacity style={styles.button} onPress={handleUpdatePlayerSettings} disabled={loading}>
             <Text style={styles.buttonText}>Update Player Settings</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {selectedLeagueId && !currentUserMembership?.isOwner && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Leave League</Text>
+          <Text style={styles.leaveLeagueText}>If you leave this league, you will lose access to its games and standings.</Text>
+          <TouchableOpacity style={[styles.button, styles.leaveLeagueButton]} onPress={handleLeaveLeague} disabled={loading}>
+            <Text style={styles.buttonText}>Leave League</Text>
           </TouchableOpacity>
         </View>
       )}

@@ -334,3 +334,10 @@ export const login = (email, password) => {
     body: JSON.stringify({ email, password }),
   });
 };
+
+export const leaveLeague = (leagueId, token) => {
+  return apiFetch(`/api/leagues/${leagueId}/leave`, {
+    method: 'POST',
+    token,
+  });
+};
