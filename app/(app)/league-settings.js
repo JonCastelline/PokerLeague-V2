@@ -219,7 +219,53 @@ const LeagueSettingsPage = () => {
     setLoadingMembers(true);
     try {
       const data = await api(apiActions.getLeagueMembers, selectedLeagueId);
-      setMembers(data);
+
+      const sortedMembers = data.sort((a, b) => {
+        // Owner always comes first
+        if (a.isOwner && !b.isOwner) return -1;
+        if (!a.isOwner && b.isOwner) return 1;
+
+        // Active Admins
+        const aIsActiveAdmin = a.isActive && a.role === 'ADMIN';
+        const bIsActiveAdmin = b.isActive && b.role === 'ADMIN';
+        if (aIsActiveAdmin && !bIsActiveAdmin) return -1;
+        if (!aIsActiveAdmin && bIsActiveAdmin) return 1;
+
+        // Active Registered Players
+        const aIsActiveRegisteredPlayer = a.isActive && a.playerAccountId && a.role === 'PLAYER';
+        const bIsActiveRegisteredPlayer = b.isActive && b.playerAccountId && b.role === 'PLAYER';
+        if (aIsActiveRegisteredPlayer && !bIsActiveRegisteredPlayer) return -1;
+        if (!aIsActiveRegisteredPlayer && bIsActiveRegisteredPlayer) return 1;
+
+        // Active Unregistered Players
+        const aIsActiveUnregistered = a.isActive && !a.playerAccountId;
+        const bIsActiveUnregistered = b.isActive && !b.playerAccountId;
+        if (aIsActiveUnregistered && !bIsActiveUnregistered) return -1;
+        if (!aIsActiveUnregistered && bIsActiveUnregistered) return 1;
+
+        // Inactive Admins
+        const aIsInactiveAdmin = !a.isActive && a.role === 'ADMIN';
+        const bIsInactiveAdmin = !b.isActive && b.role === 'ADMIN';
+        if (aIsInactiveAdmin && !bIsInactiveAdmin) return -1;
+        if (!aIsInactiveAdmin && bIsInactiveAdmin) return 1;
+
+        // Inactive Registered Players
+        const aIsInactiveRegisteredPlayer = !a.isActive && a.playerAccountId && a.role === 'PLAYER';
+        const bIsInactiveRegisteredPlayer = !b.isActive && b.playerAccountId && b.role === 'PLAYER';
+        if (aIsInactiveRegisteredPlayer && !bIsInactiveRegisteredPlayer) return -1;
+        if (!aIsInactiveRegisteredPlayer && bIsInactiveRegisteredPlayer) return 1;
+
+        // Inactive Unregistered Players (at the very bottom)
+        const aIsInactiveUnregistered = !a.isActive && !a.playerAccountId;
+        const bIsInactiveUnregistered = !b.isActive && !b.playerAccountId;
+        if (aIsInactiveUnregistered && !bIsInactiveUnregistered) return -1;
+        if (!aIsInactiveUnregistered && bIsInactiveUnregistered) return 1;
+
+        // Fallback to alphabetical by displayName
+        return a.displayName.localeCompare(b.displayName);
+      });
+
+      setMembers(sortedMembers);
     } catch (e) {
       console.error("Failed to fetch league members:", e);
       setErrorMembers(e.message);
