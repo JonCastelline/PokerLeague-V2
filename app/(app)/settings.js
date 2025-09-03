@@ -180,6 +180,13 @@ const SettingsScreen = () => {
         </TouchableOpacity>
       </View>
 
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Security</Text>
+        <TouchableOpacity style={styles.button} onPress={() => router.push('/(app)/security-questions')}>
+          <Text style={styles.buttonText}>Set Security Questions</Text>
+        </TouchableOpacity>
+      </View>
+
       {selectedLeagueId && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Player Settings (Current League)</Text>
