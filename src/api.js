@@ -350,6 +350,29 @@ export const login = (email, password) => {
   });
 };
 
+export const getSecurityQuestionsByEmail = (email) => {
+  return apiFetch(`/api/public/security-questions?email=${email}`);
+};
+
+export const verifySecurityAnswersAndResetPassword = (email, answers, newPassword) => {
+  return apiFetch(`/api/auth/forgot-password/verify-answers`, {
+    method: 'POST',
+    body: JSON.stringify({ email, answers, newPassword }),
+  });
+};
+
+export const getAllSecurityQuestions = (token) => {
+  return apiFetch(`/api/security-questions`, { token });
+};
+
+export const setSecurityAnswer = (data, token) => {
+  return apiFetch(`/api/player-accounts/me/security-answers`, {
+    method: 'POST',
+    token,
+    body: JSON.stringify(data),
+  });
+};
+
 export const leaveLeague = (leagueId, token) => {
   return apiFetch(`/api/leagues/${leagueId}/leave`, {
     method: 'POST',

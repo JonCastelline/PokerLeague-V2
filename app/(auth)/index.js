@@ -49,6 +49,9 @@ export default function LoginPage() {
       <Link href="/signup" style={styles.signupText}>
         Don't have an account? Sign up
       </Link>
+      <Link href="/forgot-password" style={styles.forgotPasswordText}>
+        Forgot Password?
+      </Link>
     </View>
   );
 }
@@ -94,5 +97,9 @@ const styles = StyleSheet.create({
   },
   signupText: {
     color: '#003f5c',
+  },
+  forgotPasswordText: {
+    color: '#003f5c',
+    marginTop: 10,
   },
 });
