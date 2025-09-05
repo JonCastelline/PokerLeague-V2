@@ -1,4 +1,5 @@
 import { API_BASE_URL } from './config';
+export { API_BASE_URL } from './config';
 
 const apiFetch = async (url, options = {}) => {
   const { token, ...restOptions } = options;
@@ -391,5 +392,13 @@ export const leaveLeague = (leagueId, token) => {
   return apiFetch(`/api/leagues/${leagueId}/leave`, {
     method: 'POST',
     token,
+  });
+};
+
+export const updateLeagueMembershipSettings = (leagueId, settings, token) => {
+  return apiFetch(`/api/leagues/${leagueId}/members/me`, {
+    method: 'PUT',
+    token,
+    body: JSON.stringify(settings),
   });
 };
