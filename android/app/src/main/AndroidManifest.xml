@@ -27,6 +27,7 @@
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="pokerleaguev2"/>
+        <data android:scheme="exp+pokerleague-v2"/>
       </intent-filter>
     </activity>
   </application>
