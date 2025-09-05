@@ -191,6 +191,60 @@ const LeagueSettingsPage = () => {
     );
   };
 
+  const handleResetDisplayName = async () => {
+    if (!selectedMember) return;
+
+    Alert.alert(
+      "Reset Display Name",
+      `Are you sure you want to reset ${selectedMember.displayName}'s display name? It will revert to their first and last name.`, 
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Reset",
+          onPress: async () => {
+            try {
+              await api(apiActions.resetPlayerDisplayName, selectedLeagueId, selectedMember.id);
+              await fetchLeagueMembers(); // Refresh member list
+              setModalVisible(false);
+              alert(`${selectedMember.displayName}'s display name has been reset.`);
+            } catch (e) {
+              console.error(e);
+              alert(e.message);
+            }
+          },
+          style: "destructive",
+        },
+      ]
+    );
+  };
+
+  const handleResetPlayerIcon = async () => {
+    if (!selectedMember) return;
+
+    Alert.alert(
+      "Reset Player Icon",
+      `Are you sure you want to reset ${selectedMember.displayName}'s icon? It will revert to no icon.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Reset",
+          onPress: async () => {
+            try {
+              await api(apiActions.resetPlayerIconUrl, selectedLeagueId, selectedMember.id);
+              await fetchLeagueMembers(); // Refresh member list
+              setModalVisible(false);
+              alert(`${selectedMember.displayName}'s icon has been reset.`);
+            } catch (e) {
+              console.error(e);
+              alert(e.message);
+            }
+          },
+          style: "destructive",
+        },
+      ]
+    );
+  };
+
   const handleInvite = async () => {
     if (!selectedMember || !playerEmail) {
       Alert.alert("Validation Error", "Please enter an email address.");
@@ -417,6 +471,20 @@ const LeagueSettingsPage = () => {
                     style={[styles.button, styles.buttonDestructive, { marginTop: 10 }]} 
                     onPress={handleRemovePlayer}>
                     <Text style={styles.textStyle}>Remove Player</Text>
+                </TouchableOpacity>
+            ) : null}
+            {isAdmin && canAdminsManage && !targetIsOwner ? (
+                <TouchableOpacity
+                    style={[styles.button, styles.buttonDestructive, { marginTop: 10 }]} 
+                    onPress={handleResetDisplayName}>
+                    <Text style={styles.textStyle}>Reset Display Name</Text>
+                </TouchableOpacity>
+            ) : null}
+            {isAdmin && canAdminsManage && !targetIsOwner ? (
+                <TouchableOpacity
+                    style={[styles.button, styles.buttonDestructive, { marginTop: 10 }]} 
+                    onPress={handleResetPlayerIcon}>
+                    <Text style={styles.textStyle}>Reset Player Icon</Text>
                 </TouchableOpacity>
             ) : null}
         </View>
