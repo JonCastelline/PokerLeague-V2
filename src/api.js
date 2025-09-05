@@ -325,6 +325,20 @@ export const removePlayerFromLeague = (leagueId, memberId, token) => {
   });
 };
 
+export const resetPlayerDisplayName = (leagueId, memberId, token) => {
+  return apiFetch(`/api/leagues/${leagueId}/members/${memberId}/reset-display-name`, {
+    method: 'PUT',
+    token,
+  });
+};
+
+export const resetPlayerIconUrl = (leagueId, memberId, token) => {
+  return apiFetch(`/api/leagues/${leagueId}/members/${memberId}/reset-icon-url`, {
+    method: 'PUT',
+    token,
+  });
+};
+
 export const getInviteDetails = (token) => {
   return apiFetch(`/api/auth/invite-details/${token}`);
 };
