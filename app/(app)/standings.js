@@ -180,16 +180,19 @@ const StandingsPage = () => {
         keyExtractor={item => item.playerId.toString()}
         renderItem={renderItem}
         ListHeaderComponent={renderHeader}
-        contentContainerStyle={styles.container}
+        style={styles.flatListStyle}
+        contentContainerStyle={styles.containerContent}
       />
     </PageLayout>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  flatListStyle: {
     flex: 1,
     width: '100%',
+  },
+  containerContent: {
     padding: 20,
   },
   centered: {
