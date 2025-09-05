@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, TextInput } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useAuth } from '../../context/AuthContext';
 import * as apiActions from '../../src/api';
 import { Picker } from '@react-native-picker/picker';
@@ -65,7 +66,7 @@ const SecurityQuestionsScreen = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <KeyboardAwareScrollView style={styles.container}>
       <Text style={styles.title}>Set Security Questions</Text>
       {selectedQuestions.map((_, index) => (
         <View key={index} style={styles.questionContainer}>
@@ -88,7 +89,7 @@ const SecurityQuestionsScreen = () => {
       <TouchableOpacity style={styles.button} onPress={handleSave}>
         <Text style={styles.buttonText}>Save</Text>
       </TouchableOpacity>
-    </View>
+    </KeyboardAwareScrollView>
   );
 };
 

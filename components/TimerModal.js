@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { Modal, View, Text, TextInput, Button, StyleSheet } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 const TimerModal = ({ visible, onClose, onSetTime, onResetLevel }) => {
     const [minutes, setMinutes] = useState('');
@@ -28,29 +29,31 @@ const TimerModal = ({ visible, onClose, onSetTime, onResetLevel }) => {
         >
             <View style={styles.centeredView}>
                 <View style={styles.modalView}>
-                    <Text style={styles.modalText}>Adjust Timer</Text>
-                    <View style={styles.inputContainer}>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Minutes"
-                            keyboardType="number-pad"
-                            onChangeText={setMinutes}
-                            value={minutes}
-                        />
-                        <Text style={styles.separator}>:</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Seconds"
-                            keyboardType="number-pad"
-                            onChangeText={setSeconds}
-                            value={seconds}
-                        />
-                    </View>
-                    <View style={styles.buttonContainer}>
-                        <Button title="Set Time" onPress={handleSetTime} />
-                        <Button title="Reset Level" onPress={handleResetLevel} />
-                        <Button title="Cancel" onPress={onClose} color="red" />
-                    </View>
+                    <KeyboardAwareScrollView>
+                        <Text style={styles.modalText}>Adjust Timer</Text>
+                        <View style={styles.inputContainer}>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Minutes"
+                                keyboardType="number-pad"
+                                onChangeText={setMinutes}
+                                value={minutes}
+                            />
+                            <Text style={styles.separator}>:</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Seconds"
+                                keyboardType="number-pad"
+                                onChangeText={setSeconds}
+                                value={seconds}
+                            />
+                        </View>
+                        <View style={styles.buttonContainer}>
+                            <Button title="Set Time" onPress={handleSetTime} />
+                            <Button title="Reset Level" onPress={handleResetLevel} />
+                            <Button title="Cancel" onPress={onClose} color="red" />
+                        </View>
+                    </KeyboardAwareScrollView>
                 </View>
             </View>
         </Modal>

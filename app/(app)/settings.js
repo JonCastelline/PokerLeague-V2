@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
-import { View, Text, StyleSheet, TextInput, Alert, ActivityIndicator, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Alert, ActivityIndicator, TouchableOpacity, Image } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
 import axios from 'axios';
@@ -143,7 +144,7 @@ const SettingsScreen = () => {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <KeyboardAwareScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <Text style={styles.title}>Settings</Text>
 
       {loading && <ActivityIndicator size="large" color="#0000ff" style={styles.loadingIndicator} />}
@@ -216,7 +217,7 @@ const SettingsScreen = () => {
           </TouchableOpacity>
         </View>
       )}
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 };
 

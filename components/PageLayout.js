@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, StyleSheet, Image, ActivityIndicator, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, StyleSheet, Image, ActivityIndicator, Text, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
@@ -7,6 +7,7 @@ import AppMenu from './AppMenu';
 import UserMenu from './UserMenu';
 import { useLeague } from '../context/LeagueContext';
 import { API_BASE_URL } from '../src/config';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 const PageLayout = ({ children, noScroll }) => {
   const { currentLeague, loadingLeagues, leagueHomeContent, currentUserMembership, reloadCurrentUserMembership } = useLeague();
@@ -80,9 +81,9 @@ const PageLayout = ({ children, noScroll }) => {
           {children}
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.content}>
+        <KeyboardAwareScrollView contentContainerStyle={styles.content}>
           {children}
-        </ScrollView>
+        </KeyboardAwareScrollView>
       )}
     </View>
   );

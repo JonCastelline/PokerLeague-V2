@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView, Alert, Switch, TextInput, Image } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Switch, TextInput, Image } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
 import { useGame } from '../../context/GameContext';
@@ -300,7 +301,7 @@ const PlayPage = () => {
 
       return (
           <PageLayout>
-              <ScrollView contentContainerStyle={styles.setupContainer}>
+              <KeyboardAwareScrollView contentContainerStyle={styles.setupContainer}>
                   <Text style={styles.title}>Select Game</Text>
                   {hasActiveGames ? (
                     <Picker
@@ -369,7 +370,7 @@ const PlayPage = () => {
                         )}
                     </>
                   )}
-              </ScrollView>
+              </KeyboardAwareScrollView>
           </PageLayout>
       );
    }
@@ -424,7 +425,7 @@ const PlayPage = () => {
   if (mode === 'edit') {
     return (
         <PageLayout>
-            <ScrollView contentContainerStyle={styles.container}>
+            <KeyboardAwareScrollView contentContainerStyle={styles.container}>
                 <Text style={styles.title}>Edit Results</Text>
                 <View style={styles.playersContainer}>
                     {editableGameState.players.map((player) => (
@@ -483,7 +484,7 @@ const PlayPage = () => {
                         <Text style={styles.buttonText}>Cancel</Text>
                     </TouchableOpacity>
                 </View>
-            </ScrollView>
+            </KeyboardAwareScrollView>
         </PageLayout>
     );
   }
@@ -491,7 +492,7 @@ const PlayPage = () => {
   if (mode === 'review') {
     return (
       <PageLayout noScroll>
-        <ScrollView contentContainerStyle={styles.container}>
+        <KeyboardAwareScrollView contentContainerStyle={styles.container}>
           <Text style={styles.title}>Final Results</Text>
           <View style={styles.playersContainer}>
             {sortedPlayers.map((player) => {
@@ -549,14 +550,14 @@ const PlayPage = () => {
           ) : (
             <ActivityIndicator size="large" color="#fb5b5a" style={{ marginTop: 20 }} />
           )}
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </PageLayout>
     );
   }
 
   return (
     <PageLayout noScroll>
-      <ScrollView contentContainerStyle={styles.container}>
+      <KeyboardAwareScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>Game Play</Text>
 
         {gameState.gameStatus === 'COMPLETED' ? (
@@ -654,7 +655,7 @@ const PlayPage = () => {
             </View>
         )}
 
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </PageLayout>
   );
 };

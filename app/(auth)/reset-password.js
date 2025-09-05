@@ -2,6 +2,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert } from 'react-native';
 import * as apiActions from '../../src/api';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -44,7 +45,7 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAwareScrollView contentContainerStyle={styles.container}>
       <Text style={styles.logo}>Reset Password</Text>
       {questions.map(q => (
         <View key={q.id} style={styles.inputView}>
@@ -78,7 +79,7 @@ export default function ResetPasswordPage() {
       <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit}>
         <Text style={styles.submitText}>RESET PASSWORD</Text>
       </TouchableOpacity>
-    </View>
+    </KeyboardAwareScrollView>
   );
 }
 

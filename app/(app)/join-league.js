@@ -75,7 +75,7 @@ const JoinLeaguePage = () => {
   );
 
   return (
-    <PageLayout noScroll>
+    <PageLayout>
       <View style={styles.contentContainer}>
         <Text style={styles.title}>Join a League</Text>
 

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Image } from 'react-native';
 
-import { View, Text, StyleSheet, ActivityIndicator, FlatList, ScrollView, Switch, TextInput, Modal, TouchableOpacity, Alert, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, FlatList, Switch, TextInput, Modal, TouchableOpacity, Alert, Dimensions } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import PageLayout from '../../components/PageLayout';
 import AddUnregisteredPlayerForm from '../../components/AddUnregisteredPlayerForm';
 import { useAuth } from '../../context/AuthContext';
@@ -493,7 +494,7 @@ const LeagueSettingsPage = () => {
 
   return (
     <PageLayout>
-      <ScrollView contentContainerStyle={styles.container}>
+      <KeyboardAwareScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>League Settings</Text>
 
         {/* League Logo */}
@@ -630,7 +631,7 @@ const LeagueSettingsPage = () => {
           </View>
         )}
 
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </PageLayout>
   );
 };
