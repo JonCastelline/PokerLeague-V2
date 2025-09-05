@@ -2,6 +2,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert } from 'react-native';
 import * as apiActions from '../../src/api';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 export default function SignUpPage() {
   const [firstName, setFirstName] = useState('');
@@ -70,7 +71,7 @@ export default function SignUpPage() {
   }
 
   return (
-    <View style={styles.container}>
+    <KeyboardAwareScrollView contentContainerStyle={styles.container}>
       <Text style={styles.logo}>Sign Up</Text>
       {inviteDetails && (
         <Text style={styles.claimText}>
@@ -115,7 +116,7 @@ export default function SignUpPage() {
       <TouchableOpacity style={styles.signupBtn} onPress={handleSignUp}>
         <Text style={styles.signupText}>{token ? 'REGISTER AND CLAIM' : 'SIGN UP'}</Text>
       </TouchableOpacity>
-    </View>
+    </KeyboardAwareScrollView>
   );
 }
 

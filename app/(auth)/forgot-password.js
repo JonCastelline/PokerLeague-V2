@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert } from 'react-native';
 import * as apiActions from '../../src/api';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -22,7 +23,7 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAwareScrollView contentContainerStyle={styles.container}>
       <Text style={styles.logo}>Forgot Password</Text>
       <View style={styles.inputView}>
         <TextInput
@@ -35,7 +36,7 @@ export default function ForgotPasswordPage() {
       <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit}>
         <Text style={styles.submitText}>SUBMIT</Text>
       </TouchableOpacity>
-    </View>
+    </KeyboardAwareScrollView>
   );
 }
 

@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { Modal, View, Text, TextInput, Button, StyleSheet } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 const TimerModal = ({ visible, onClose, onSetTime, onResetLevel }) => {
     const [minutes, setMinutes] = useState('');
@@ -28,29 +29,33 @@ const TimerModal = ({ visible, onClose, onSetTime, onResetLevel }) => {
         >
             <View style={styles.centeredView}>
                 <View style={styles.modalView}>
-                    <Text style={styles.modalText}>Adjust Timer</Text>
-                    <View style={styles.inputContainer}>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Minutes"
-                            keyboardType="number-pad"
-                            onChangeText={setMinutes}
-                            value={minutes}
-                        />
-                        <Text style={styles.separator}>:</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Seconds"
-                            keyboardType="number-pad"
-                            onChangeText={setSeconds}
-                            value={seconds}
-                        />
-                    </View>
-                    <View style={styles.buttonContainer}>
-                        <Button title="Set Time" onPress={handleSetTime} />
-                        <Button title="Reset Level" onPress={handleResetLevel} />
-                        <Button title="Cancel" onPress={onClose} color="red" />
-                    </View>
+                    <KeyboardAwareScrollView contentContainerStyle={styles.modalContentContainer}>
+                        <Text style={styles.modalText}>Adjust Timer</Text>
+                        <View style={styles.inputContainer}>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Minutes"
+                                keyboardType="number-pad"
+                                onChangeText={setMinutes}
+                                value={minutes}
+                            />
+                            <Text style={styles.separator}>:</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Seconds"
+                                keyboardType="number-pad"
+                                onChangeText={setSeconds}
+                                value={seconds}
+                            />
+                        </View>
+                        <View style={styles.buttonContainer}>
+                            <View style={styles.buttonWrapper}><Button title="   Set Time   " onPress={handleSetTime} /></View>
+                            <View style={styles.buttonWrapper}><Button title="Reset Level" onPress={handleResetLevel} /></View>
+                        </View>
+                        <View style={styles.singleButtonContainer}>
+                            <View style={styles.buttonWrapper}><Button title="Cancel" onPress={onClose} color="red" /></View>
+                        </View>
+                    </KeyboardAwareScrollView>
                 </View>
             </View>
         </Modal>
@@ -78,6 +83,12 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.25,
         shadowRadius: 4,
         elevation: 5,
+        width: '80%', // Constrain width
+        maxWidth: 400, // Max width for larger screens
+    },
+    modalContentContainer: {
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     modalText: {
         marginBottom: 15,
@@ -105,8 +116,18 @@ const styles = StyleSheet.create({
     },
     buttonContainer: {
         flexDirection: 'row',
-        justifyContent: 'space-around',
+        justifyContent: 'center',
         width: '100%',
+        marginTop: 20,
+    },
+    buttonWrapper: {
+        marginHorizontal: 5,
+        borderRadius: 5,
+    },
+    singleButtonContainer: {
+        width: '100%',
+        alignItems: 'center',
+        marginTop: 10,
     },
 });
 

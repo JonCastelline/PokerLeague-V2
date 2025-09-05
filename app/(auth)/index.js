@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import * as apiActions from '../../src/api';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -24,7 +25,9 @@ export default function LoginPage() {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAwareScrollView
+      contentContainerStyle={styles.container}
+    >
       <Text style={styles.logo}>Login</Text>
       <View style={styles.inputView}>
         <TextInput
@@ -52,7 +55,7 @@ export default function LoginPage() {
       <Link href="/forgot-password" style={styles.forgotPasswordText}>
         Forgot Password?
       </Link>
-    </View>
+    </KeyboardAwareScrollView>
   );
 }
 

@@ -1,7 +1,8 @@
 import { Picker } from '@react-native-picker/picker';
 import { DateTime } from 'luxon';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View, Linking } from 'react-native';
+import { ActivityIndicator, Alert, Modal, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View, Linking } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import PageLayout from '../../components/PageLayout';
@@ -1010,9 +1011,10 @@ const SeasonSettingsPage = () => {
                     style={styles.pickerBounty}
                     onValueChange={(itemValue) => handleSettingChange('bountyOnLeaderAbsenceRule', itemValue)}
                     enabled={isSeasonFinalized ? false : (isAdmin ? true : false)}
+                    itemStyle={{ color: 'black' }}
                 >
-                    <Picker.Item label="No Bounty" value="NO_BOUNTY" />
-                    <Picker.Item label="Next Highest Player" value="NEXT_HIGHEST_PLAYER" />
+                    <Picker.Item label="No Bounty" value="NO_BOUNTY" style={{ color: 'black' }} />
+                    <Picker.Item label="Next Highest Player" value="NEXT_HIGHEST_PLAYER" style={{ color: 'black' }} />
                 </Picker>
             </View>
         </View>
@@ -1137,7 +1139,7 @@ const SeasonSettingsPage = () => {
 
   return (
     <PageLayout>
-      <ScrollView contentContainerStyle={styles.container}>
+      <KeyboardAwareScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>Season Settings</Text>
 
         {loadingSeasons ? (
@@ -1531,7 +1533,7 @@ const SeasonSettingsPage = () => {
         />
 
 
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </PageLayout>
   );
 };
@@ -1650,10 +1652,14 @@ const styles = StyleSheet.create({
   },
   picker: {
     backgroundColor: 'white',
+    color: 'black',
+    dropdownIconColor: 'black',
   },
   pickerBounty: {
     width: 210,
     backgroundColor: 'white',
+    color: 'black',
+    dropdownIconColor: 'black',
   },
   pickerWrapper: {
     justifyContent: 'center',

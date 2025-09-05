@@ -124,9 +124,11 @@ const StandingsPage = () => {
           selectedValue={selectedSeasonId}
           style={styles.picker}
           onValueChange={(itemValue) => setSelectedSeasonId(itemValue)}
+          itemStyle={{ color: 'black' }}
+          dropdownIconColor="black"
         >
           {allSeasons.map(season => (
-            <Picker.Item key={season.id} label={season.seasonName} value={season.id} />
+            <Picker.Item key={season.id} label={season.seasonName} value={season.id} style={{ color: 'black' }} />
           ))}
         </Picker>
       )}

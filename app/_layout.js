@@ -1,6 +1,7 @@
 import { Slot, useRouter, useSegments, useGlobalSearchParams, useRootNavigationState } from "expo-router";
 import { useEffect, useState } from "react";
 import { AuthProvider, useAuth } from "../context/AuthContext";
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { ActivityIndicator, View } from 'react-native';
 import * as Audio from 'expo-audio';
 import * as SplashScreen from 'expo-splash-screen';
@@ -56,9 +57,11 @@ const InitialLayout = () => {
 
 const RootLayout = () => {
   return (
-    <AuthProvider>
-      <InitialLayout />
-    </AuthProvider>
+    <KeyboardProvider>
+      <AuthProvider>
+        <InitialLayout />
+      </AuthProvider>
+    </KeyboardProvider>
   );
 };
 
