@@ -73,10 +73,13 @@ const SecurityQuestionsScreen = () => {
           <Picker
             selectedValue={selectedQuestions[index].questionId}
             onValueChange={(itemValue) => handleQuestionChange(itemValue, index)}
+            itemStyle={{ color: 'black' }}
+            style={styles.picker}
+            dropdownIconColor="black"
           >
-            <Picker.Item label="Select a question..." value={null} />
+            <Picker.Item label="Select a question..." value={null} style={{ color: 'black' }} />
             {questions.map(q => (
-              <Picker.Item key={q.id} label={q.questionText} value={q.id} />
+              <Picker.Item key={q.id} label={q.questionText} value={q.id} style={{ color: 'black' }} />
             ))}
           </Picker>
           <TextInput
@@ -125,6 +128,13 @@ const styles = StyleSheet.create({
         color: 'white',
         fontWeight: 'bold',
         fontSize: 16,
+    },
+    picker: {
+        width: '100%',
+        color: 'black',
+        backgroundColor: 'white',
+        selectionColor: 'white',
+        marginBottom: 10,
     },
 });
 

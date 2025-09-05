@@ -308,6 +308,7 @@ const PlayPage = () => {
                       selectedValue={selectedGameId}
                       onValueChange={(itemValue) => setSelectedGameId(itemValue)}
                       style={styles.picker}
+                      dropdownIconColor="black"
                     >
                       {allGames
                         .filter(game => game.gameStatus !== 'COMPLETED')
@@ -316,6 +317,7 @@ const PlayPage = () => {
                             key={game.id}
                             label={`${game.gameName} (${new Date(game.gameDate).toLocaleDateString()}) - ${game.gameStatus || 'SCHEDULED'}`}
                             value={game.id}
+                            style={{ color: 'black' }}
                           />
                         ))}
                     </Picker>
@@ -425,7 +427,7 @@ const PlayPage = () => {
   if (mode === 'edit') {
     return (
         <PageLayout>
-            <KeyboardAwareScrollView contentContainerStyle={styles.container}>
+            <KeyboardAwareScrollView contentContainerStyle={styles.editScreenContainer} enableOnAndroid={true} style={{ flex: 1 }} extraScrollHeight={20}>
                 <Text style={styles.title}>Edit Results</Text>
                 <View style={styles.playersContainer}>
                     {editableGameState.players.map((player) => (
@@ -763,6 +765,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 5,
+    color: 'black',
   },
   gameOverText: {
     fontSize: 30,
@@ -832,6 +835,10 @@ const styles = StyleSheet.create({
     height: 30,
     borderRadius: 15,
     marginRight: 10,
+  },
+  editScreenContainer: {
+    padding: 20,
+    flex: 1,
   },
 });
 

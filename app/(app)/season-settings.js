@@ -1011,9 +1011,10 @@ const SeasonSettingsPage = () => {
                     style={styles.pickerBounty}
                     onValueChange={(itemValue) => handleSettingChange('bountyOnLeaderAbsenceRule', itemValue)}
                     enabled={isSeasonFinalized ? false : (isAdmin ? true : false)}
+                    itemStyle={{ color: 'black' }}
                 >
-                    <Picker.Item label="No Bounty" value="NO_BOUNTY" />
-                    <Picker.Item label="Next Highest Player" value="NEXT_HIGHEST_PLAYER" />
+                    <Picker.Item label="No Bounty" value="NO_BOUNTY" style={{ color: 'black' }} />
+                    <Picker.Item label="Next Highest Player" value="NEXT_HIGHEST_PLAYER" style={{ color: 'black' }} />
                 </Picker>
             </View>
         </View>
@@ -1651,10 +1652,14 @@ const styles = StyleSheet.create({
   },
   picker: {
     backgroundColor: 'white',
+    color: 'black',
+    dropdownIconColor: 'black',
   },
   pickerBounty: {
     width: 210,
     backgroundColor: 'white',
+    color: 'black',
+    dropdownIconColor: 'black',
   },
   pickerWrapper: {
     justifyContent: 'center',
