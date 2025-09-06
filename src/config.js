@@ -1,1 +1,2 @@
-export const API_BASE_URL = 'http://192.168.0.26:8080';
+export const API_BASE_URL = 'https://pokerleaguebackend.onrender.com';
+//export const API_BASE_URL = 'http://192.168.0.26:8080';
