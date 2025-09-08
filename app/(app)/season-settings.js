@@ -417,7 +417,11 @@ const SeasonSettingsPage = () => {
             try {
               await api(apiActions.finalizeSeason, selectedLeagueId, selectedSeason.id);
               alert('Season finalized successfully!');
-              fetchAllSeasons();
+              const updatedSeasons = await fetchAllSeasons();
+              const updatedSelectedSeason = updatedSeasons.find(s => s.id === selectedSeason.id);
+              if (updatedSelectedSeason) {
+                setSelectedSeason(updatedSelectedSeason);
+              }
               fetchSettings(selectedSeason.id);
             } catch (e) {
               console.error("Failed to finalize season:", e);
