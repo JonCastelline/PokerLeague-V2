@@ -1004,6 +1004,24 @@ const SeasonSettingsPage = () => {
         </View>
 
         <View style={styles.settingItem}>
+            <Text style={styles.settingLabel}>Allow Players to Control Timer</Text>
+            <Switch
+                value={settings.playerTimerControlEnabled}
+                onValueChange={(value) => handleSettingChange('playerTimerControlEnabled', value)}
+                disabled={isSeasonFinalized || !isAdmin}
+            />
+        </View>
+
+        <View style={styles.settingItem}>
+            <Text style={styles.settingLabel}>Allow Players to Handle Eliminations</Text>
+            <Switch
+                value={settings.playerEliminationEnabled}
+                onValueChange={(value) => handleSettingChange('playerEliminationEnabled', value)}
+                disabled={isSeasonFinalized || !isAdmin}
+            />
+        </View>
+
+        <View style={styles.settingItem}>
             <View style={{ flexDirection: 'column', width: '100%' }}>
                 <Text style={styles.settingLabel}>Bounty on Leader Absence</Text>
                 <Picker

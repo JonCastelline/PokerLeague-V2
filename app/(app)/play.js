@@ -12,7 +12,7 @@ import { Picker } from '@react-native-picker/picker';
 
 const PlayPage = () => {
   const { api } = useAuth();
-  const { selectedLeagueId } = useLeague();
+  const { selectedLeagueId, currentUserMembership } = useLeague();
   const { gameState, setGameState, isActionLoading, isTimerFinished, setIsTimerFinished, handleAction, startPolling, stopPolling, fetchGameState } = useGame();
   const [editableGameState, setEditableGameState] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -29,6 +29,8 @@ const PlayPage = () => {
   const [validationErrors, setValidationErrors] = useState({});
   const [noActiveSeason, setNoActiveSeason] = useState(false);
   const [isPlayScreenActive, setIsPlayScreenActive] = useState(true);
+
+  const isAdmin = currentUserMembership?.role === 'ADMIN' || currentUserMembership?.isOwner;
 
   const getOrdinal = (n) => {
     if (n === null || n === undefined) return '';
@@ -338,13 +340,16 @@ const PlayPage = () => {
                                 <Switch
                                     value={selectedPlayerIds.has(player.id)}
                                     onValueChange={() => togglePlayerSelection(player.id)}
+                                    disabled={!isAdmin}
                                 />
                             </View>
                         ))}
                       </View>
-                      <TouchableOpacity style={[styles.button, styles.setupStartButton]} onPress={handleStartGame} disabled={isActionLoading}>
-                          <Text style={styles.buttonText}>Start Game</Text>
-                      </TouchableOpacity>
+                      {isAdmin && (
+                          <TouchableOpacity style={[styles.button, styles.setupStartButton]} onPress={handleStartGame} disabled={isActionLoading}>
+                              <Text style={styles.buttonText}>Start Game</Text>
+                          </TouchableOpacity>
+                      )}
                     </>
                   )}
 
@@ -401,13 +406,13 @@ const PlayPage = () => {
   });
 
   let mainButton = null;
-  if (mode === 'eliminate_select_player' || mode === 'eliminate_select_killer') {
+  if ((isAdmin || activeSeasonSettings?.playerEliminationEnabled) && (mode === 'eliminate_select_player' || mode === 'eliminate_select_killer')) {
       mainButton = (
           <TouchableOpacity style={styles.button} onPress={() => setMode('play')} disabled={isActionLoading}>
               <Text style={styles.buttonText}>Cancel</Text>
           </TouchableOpacity>
       );
-  } else if ((gameState.gameStatus === 'IN_PROGRESS' || gameState.gameStatus === 'PAUSED') && mode === 'play') {
+  } else if ((isAdmin || activeSeasonSettings?.playerEliminationEnabled) && (gameState.gameStatus === 'IN_PROGRESS' || gameState.gameStatus === 'PAUSED') && mode === 'play') {
       mainButton = (
           <TouchableOpacity style={styles.button} onPress={() => setMode('eliminate_select_player')} disabled={isActionLoading}>
               <Text style={styles.buttonText}>Eliminate Player</Text>
@@ -416,7 +421,7 @@ const PlayPage = () => {
   }
 
   let undoButton = null;
-  if (eliminatedPlayersCount > 0 && gameState.gameStatus === 'IN_PROGRESS') {
+  if ((isAdmin || activeSeasonSettings?.playerEliminationEnabled) && eliminatedPlayersCount > 0 && gameState.gameStatus === 'IN_PROGRESS') {
       undoButton = (
           <TouchableOpacity style={styles.button} onPress={() => handleAction(apiActions.undoElimination, selectedGameId)} disabled={isActionLoading}>
               <Text style={styles.buttonText}>Undo Elimination</Text>
@@ -521,28 +526,32 @@ const PlayPage = () => {
 
           {!isActionLoading ? (
             <>
-              <View style={styles.buttonContainer}>
-                <TouchableOpacity style={styles.button} onPress={async () => {
-                    await handleAction(apiActions.finalizeGame, selectedGameId);
-                    setMode(null); // Set mode to null to go to game over screen
-                }}>
-                    <Text style={styles.buttonText}>Finalize & Save</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.buttonContainer}>
-                <TouchableOpacity style={styles.button} onPress={() => {
-                    const newEditableState = JSON.parse(JSON.stringify(gameState));
-                    const winner = newEditableState.players.find(p => !p.isEliminated);
-                    if (winner) {
-                        winner.place = 1;
-                    }
-                    newEditableState.players.sort((a, b) => (a.place || 0) - (b.place || 0));
-                    setEditableGameState(newEditableState);
-                    setMode('edit');
-                }}>
-                    <Text style={styles.buttonText}>Edit</Text>
-                </TouchableOpacity>
-              </View>
+              {isAdmin && (
+                <View style={styles.buttonContainer}>
+                  <TouchableOpacity style={styles.button} onPress={async () => {
+                      await handleAction(apiActions.finalizeGame, selectedGameId);
+                      setMode(null); // Set mode to null to go to game over screen
+                  }}>
+                      <Text style={styles.buttonText}>Finalize & Save</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+              {isAdmin && (
+                <View style={styles.buttonContainer}>
+                  <TouchableOpacity style={styles.button} onPress={() => {
+                      const newEditableState = JSON.parse(JSON.stringify(gameState));
+                      const winner = newEditableState.players.find(p => !p.isEliminated);
+                      if (winner) {
+                          winner.place = 1;
+                      }
+                      newEditableState.players.sort((a, b) => (a.place || 0) - (b.place || 0));
+                      setEditableGameState(newEditableState);
+                      setMode('edit');
+                  }}>
+                      <Text style={styles.buttonText}>Edit</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
               {undoButton && (
                   <View style={styles.buttonContainer}>
                       {undoButton}
@@ -579,7 +588,7 @@ const PlayPage = () => {
           )
         )}
 
-        {gameState.gameStatus !== 'COMPLETED' && (
+        {(isAdmin || activeSeasonSettings?.playerTimerControlEnabled) && gameState.gameStatus !== 'COMPLETED' && (
             <View style={styles.buttonContainer}>
               <TouchableOpacity
                 style={[styles.button, (isActionLoading || gameState.timer.currentLevelIndex <= 0) && styles.disabledButton]}
