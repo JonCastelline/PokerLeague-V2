@@ -80,12 +80,11 @@ const HistoryPage = () => {
                 selectedValue={selectedSeasonId}
                 onValueChange={(itemValue) => setSelectedSeasonId(itemValue)}
                 style={styles.picker}
-                itemStyle={{ color: 'black' }}
                 mode="dialog"
                 dropdownIconColor="black"
             >
                 {seasons.map(s => (
-                    <Picker.Item key={s.id} label={s.seasonName} value={s.id} style={{ color: 'black' }} />
+                    <Picker.Item key={s.id} label={s.seasonName} value={s.id}/>
                 ))}
             </Picker>
         </View>
@@ -145,7 +144,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 8,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: 'white',
+    color: 'black',
   },
   picker: {
     width: '100%',

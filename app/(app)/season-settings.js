@@ -1035,8 +1035,8 @@ const SeasonSettingsPage = () => {
                     enabled={isSeasonFinalized ? false : (isAdmin ? true : false)}
                     itemStyle={{ color: 'black' }}
                 >
-                    <Picker.Item label="No Bounty" value="NO_BOUNTY" style={{ color: 'black' }} />
-                    <Picker.Item label="Next Highest Player" value="NEXT_HIGHEST_PLAYER" style={{ color: 'black' }} />
+                    <Picker.Item label="No Bounty" value="NO_BOUNTY"/>
+                    <Picker.Item label="Next Highest Player" value="NEXT_HIGHEST_PLAYER"/>
                 </Picker>
             </View>
         </View>
@@ -1224,14 +1224,14 @@ const SeasonSettingsPage = () => {
                 )}
               </View>
             )}
-            {(isAdmin ? (!selectedSeason?.isFinalized ? (
+            {isAdmin && (
               <TouchableOpacity
                 style={[styles.button, styles.buttonPrimaryRed, styles.actionButton]}
                 onPress={() => setCreateSeasonModalVisible(true)}
               >
                 <Text style={styles.textStyle}>Create New Season</Text>
               </TouchableOpacity>
-            ) : null) : null)}
+            )}
 
 
             {selectedSeason ? renderSettings() : null}

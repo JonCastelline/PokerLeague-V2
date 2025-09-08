@@ -1,34 +1,62 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, TextInput } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import * as apiActions from '../../src/api';
 import { Picker } from '@react-native-picker/picker';
 
 const SecurityQuestionsScreen = () => {
   const { api } = useAuth();
-  const [questions, setQuestions] = useState([]);
+  const [allQuestions, setAllQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedQuestions, setSelectedQuestions] = useState([
     { questionId: null, answer: '' },
     { questionId: null, answer: '' },
     { questionId: null, answer: '' },
   ]);
+  const [areAnswersVisible, setAreAnswersVisible] = useState([false, false, false]);
+
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [allQuestionsData, myQuestionsData] = await Promise.all([
+        api(apiActions.getAllSecurityQuestions),
+        api(apiActions.getMySecurityQuestions),
+      ]);
+
+      setAllQuestions(allQuestionsData);
+
+      const populatedQuestions = [];
+      for (let i = 0; i < 3; i++) {
+        if (myQuestionsData && myQuestionsData[i]) {
+          populatedQuestions.push({
+            questionId: myQuestionsData[i].id,
+            answer: '********' // Use placeholder for saved answers
+          });
+        } else {
+          populatedQuestions.push({ questionId: null, answer: '' });
+        }
+      }
+      setSelectedQuestions(populatedQuestions);
+
+    } catch (error) {
+      console.error('Error loading security questions data:', error);
+      Alert.alert('Error', 'Failed to load security questions data.');
+    } finally {
+      setLoading(false);
+    }
+  }, [api]);
 
   useEffect(() => {
-    const fetchQuestions = async () => {
-      try {
-        const data = await api(apiActions.getAllSecurityQuestions);
-        setQuestions(data);
-      } catch (error) {
-        console.error('Error fetching security questions:', error);
-        Alert.alert('Error', 'Failed to fetch security questions.');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchQuestions();
-  }, [api]);
+    loadData();
+  }, [loadData]);
+
+  const toggleAnswerVisibility = (index) => {
+    const newAreAnswersVisible = [...areAnswersVisible];
+    newAreAnswersVisible[index] = !newAreAnswersVisible[index];
+    setAreAnswersVisible(newAreAnswersVisible);
+  };
 
   const handleQuestionChange = (itemValue, index) => {
     const newSelectedQuestions = [...selectedQuestions];
@@ -42,10 +70,20 @@ const SecurityQuestionsScreen = () => {
     setSelectedQuestions(newSelectedQuestions);
   };
 
+  const handleAnswerFocus = (index) => {
+    const newSelectedQuestions = [...selectedQuestions];
+    if (newSelectedQuestions[index].answer === '********') {
+      newSelectedQuestions[index].answer = '';
+      setSelectedQuestions(newSelectedQuestions);
+    }
+  };
+
   const handleSave = async () => {
-    const filledQuestions = selectedQuestions.filter(q => q.questionId && q.answer);
+    const filledQuestions = selectedQuestions.filter(
+      q => q.questionId && q.answer && q.answer !== '********'
+    );
     if (filledQuestions.length === 0) {
-      Alert.alert('Error', 'Please select at least one question and provide an answer.');
+      Alert.alert('No Changes to Save', 'Please provide a new answer for any question you wish to update.');
       return;
     }
 
@@ -53,6 +91,7 @@ const SecurityQuestionsScreen = () => {
     try {
       await Promise.all(filledQuestions.map(q => api(apiActions.setSecurityAnswer, q)));
       Alert.alert('Success', 'Security questions saved successfully!');
+      loadData(); // Reload data to show the saved state
     } catch (error) {
       console.error('Error saving security questions:', error);
       Alert.alert('Error', 'Failed to save security questions.');
@@ -73,24 +112,31 @@ const SecurityQuestionsScreen = () => {
           <Picker
             selectedValue={selectedQuestions[index].questionId}
             onValueChange={(itemValue) => handleQuestionChange(itemValue, index)}
-            itemStyle={{ color: 'black' }}
             style={styles.picker}
             dropdownIconColor="black"
           >
-            <Picker.Item label="Select a question..." value={null} style={{ color: 'black' }} />
-            {questions.map(q => (
-              <Picker.Item key={q.id} label={q.questionText} value={q.id} style={{ color: 'black' }} />
+            <Picker.Item label="Select a question..." value={null}/>
+            {allQuestions.map(q => (
+              <Picker.Item key={q.id} label={q.questionText} value={q.id}/>
             ))}
           </Picker>
-          <TextInput
-            style={styles.input}
-            placeholder="Your Answer"
-            onChangeText={(text) => handleAnswerChange(text, index)}
-          />
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="Your Answer"
+              value={selectedQuestions[index].answer}
+              onFocus={() => handleAnswerFocus(index)}
+              onChangeText={(text) => handleAnswerChange(text, index)}
+              secureTextEntry={!areAnswersVisible[index]}
+            />
+            <TouchableOpacity onPress={() => toggleAnswerVisibility(index)} style={styles.icon}>
+              <MaterialCommunityIcons name={areAnswersVisible[index] ? 'eye-off' : 'eye'} size={24} color="grey" />
+            </TouchableOpacity>
+          </View>
         </View>
       ))}
       <TouchableOpacity style={styles.button} onPress={handleSave}>
-        <Text style={styles.buttonText}>Save</Text>
+        <Text style={styles.buttonText}>  Save  </Text>
       </TouchableOpacity>
     </KeyboardAwareScrollView>
   );
@@ -110,19 +156,30 @@ const styles = StyleSheet.create({
     questionContainer: {
         marginBottom: 20,
     },
-    input: {
+    inputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
         borderWidth: 1,
         borderColor: '#ddd',
-        padding: 10,
         borderRadius: 5,
-        fontSize: 16,
         backgroundColor: '#fff',
+    },
+    input: {
+        flex: 1,
+        padding: 10,
+        fontSize: 16,
+        color: 'black',
+    },
+    icon: {
+        padding: 10,
     },
     button: {
         backgroundColor: '#fb5b5a',
-        padding: 15,
-        borderRadius: 25,
+        padding: 10,
+        borderRadius: 5,
         alignItems: 'center',
+        alignSelf: 'center',
+        marginTop: 10,
     },
     buttonText: {
         color: 'white',
@@ -131,10 +188,9 @@ const styles = StyleSheet.create({
     },
     picker: {
         width: '100%',
-        color: 'black',
         backgroundColor: 'white',
-        selectionColor: 'white',
         marginBottom: 10,
+        color: 'black',
     },
 });
 
