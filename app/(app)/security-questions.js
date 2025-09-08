@@ -16,6 +16,7 @@ const SecurityQuestionsScreen = () => {
     { questionId: null, answer: '' },
   ]);
   const [areAnswersVisible, setAreAnswersVisible] = useState([false, false, false]);
+  const PLACEHOLDER_ANSWER = '********';
 
   const loadData = useCallback(async () => {
     try {
@@ -32,7 +33,7 @@ const SecurityQuestionsScreen = () => {
         if (myQuestionsData && myQuestionsData[i]) {
           populatedQuestions.push({
             questionId: myQuestionsData[i].id,
-            answer: '********' // Use placeholder for saved answers
+            answer: PLACEHOLDER_ANSWER // Use placeholder for saved answers
           });
         } else {
           populatedQuestions.push({ questionId: null, answer: '' });
@@ -72,7 +73,7 @@ const SecurityQuestionsScreen = () => {
 
   const handleAnswerFocus = (index) => {
     const newSelectedQuestions = [...selectedQuestions];
-    if (newSelectedQuestions[index].answer === '********') {
+    if (newSelectedQuestions[index].answer === PLACEHOLDER_ANSWER) {
       newSelectedQuestions[index].answer = '';
       setSelectedQuestions(newSelectedQuestions);
     }
@@ -80,7 +81,7 @@ const SecurityQuestionsScreen = () => {
 
   const handleSave = async () => {
     const filledQuestions = selectedQuestions.filter(
-      q => q.questionId && q.answer && q.answer !== '********'
+      q => q.questionId && q.answer && q.answer !== PLACEHOLDER_ANSWER
     );
     if (filledQuestions.length === 0) {
       Alert.alert('No Changes to Save', 'Please provide a new answer for any question you wish to update.');
