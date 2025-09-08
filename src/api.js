@@ -380,6 +380,10 @@ export const getAllSecurityQuestions = (token) => {
   return apiFetch(`/api/security-questions`, { token });
 };
 
+export const getMySecurityQuestions = (token) => {
+  return apiFetch(`/api/player-accounts/me/security-questions`, { token });
+};
+
 export const setSecurityAnswer = (data, token) => {
   return apiFetch(`/api/player-accounts/me/security-answers`, {
     method: 'POST',
@@ -400,5 +404,13 @@ export const updateLeagueMembershipSettings = (leagueId, settings, token) => {
     method: 'PUT',
     token,
     body: JSON.stringify(settings),
+  });
+};
+
+export const changePassword = (passwordChangeDto, token) => {
+  return apiFetch(`/api/player-accounts/me/password`, {
+    method: 'PUT',
+    token,
+    body: JSON.stringify(passwordChangeDto),
   });
 };
