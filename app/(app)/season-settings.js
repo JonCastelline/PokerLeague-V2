@@ -1157,7 +1157,7 @@ const SeasonSettingsPage = () => {
 
   return (
     <PageLayout>
-      <KeyboardAwareScrollView contentContainerStyle={styles.container}>
+      <View style={styles.container}>
         <Text style={styles.title}>Season Settings</Text>
 
         {loadingSeasons ? (
@@ -1551,7 +1551,7 @@ const SeasonSettingsPage = () => {
         />
 
 
-      </KeyboardAwareScrollView>
+      </View>
     </PageLayout>
   );
 };

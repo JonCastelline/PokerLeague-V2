@@ -81,7 +81,7 @@ const PageLayout = ({ children, noScroll }) => {
           {children}
         </View>
       ) : (
-        <KeyboardAwareScrollView contentContainerStyle={styles.content}>
+        <KeyboardAwareScrollView contentContainerStyle={styles.content} extraScrollHeight={40}>
           {children}
         </KeyboardAwareScrollView>
       )}

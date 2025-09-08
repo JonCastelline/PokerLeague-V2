@@ -432,44 +432,48 @@ const PlayPage = () => {
   if (mode === 'edit') {
     return (
         <PageLayout>
-            <KeyboardAwareScrollView contentContainerStyle={styles.editScreenContainer} enableOnAndroid={true} style={{ flex: 1 }} extraScrollHeight={20}>
+            <View style={styles.editScreenContainer}>
                 <Text style={styles.title}>Edit Results</Text>
                 <View style={styles.playersContainer}>
                     {editableGameState.players.map((player) => (
                         <View key={player.id} style={styles.editPlayerItem}>
-                            <View style={{flexDirection: 'row', alignItems: 'center', flex: 1}}>
+                            <View style={{flexDirection: 'row', alignItems: 'center'}}>
                                 {player.iconUrl ? <Image source={{ uri: player.iconUrl }} style={styles.playerIcon} /> : <View style={styles.playerIcon} />}
                                 <Text style={styles.editPlayerName}>{player.displayName}</Text>
                             </View>
                             <View style={styles.editPlayerStatsContainer}>
-                                <Text>Place:</Text>
-                                <TextInput
-                                    style={[styles.input, validationErrors[player.id]?.place && styles.inputError]}
-                                    value={String(player.place || '')}
-                                    onChangeText={(text) => handleEditPlayerState(player.id, 'place', text)}
-                                    keyboardType="numeric"
-                                />
+                                <View style={styles.statGroup}>
+                                    <Text style={styles.statLabel}>Place:</Text>
+                                    <TextInput
+                                        style={[styles.input, validationErrors[player.id]?.place && styles.inputError]}
+                                        value={String(player.place || '')}
+                                        onChangeText={(text) => handleEditPlayerState(player.id, 'place', text)}
+                                        keyboardType="numeric"
+                                    />
+                                </View>
+
                                 {activeSeasonSettings?.trackKills && (
-                                    <>
-                                        <Text>Kills:</Text>
+                                    <View style={styles.statGroup}>
+                                        <Text style={styles.statLabel}>Kills:</Text>
                                         <TextInput
                                             style={[styles.input, validationErrors[player.id]?.kills && styles.inputError]}
                                             value={String(player.kills)}
                                             onChangeText={(text) => handleEditPlayerState(player.id, 'kills', text)}
                                             keyboardType="numeric"
                                         />
-                                    </>
+                                    </View>
                                 )}
+
                                 {activeSeasonSettings?.trackBounties && (
-                                    <>
-                                        <Text>Bounties:</Text>
+                                    <View style={styles.statGroup}>
+                                        <Text style={styles.statLabel}>Bounties:</Text>
                                         <TextInput
                                             style={[styles.input, validationErrors[player.id]?.bounties && styles.inputError]}
                                             value={String(player.bounties)}
                                             onChangeText={(text) => handleEditPlayerState(player.id, 'bounties', text)}
                                             keyboardType="numeric"
                                         />
-                                    </>
+                                    </View>
                                 )}
                             </View>
                         </View>
@@ -491,7 +495,7 @@ const PlayPage = () => {
                         <Text style={styles.buttonText}>Cancel</Text>
                     </TouchableOpacity>
                 </View>
-            </KeyboardAwareScrollView>
+            </View>
         </PageLayout>
     );
   }
@@ -749,6 +753,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fb5b5a',
     padding: 15,
     borderRadius: 5,
+    marginHorizontal: 10,
   },
   buttonText: {
     color: 'white',
@@ -808,26 +813,36 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   editPlayerItem: {
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
+    backgroundColor: '#fff',
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.41,
+    elevation: 2,
   },
   editPlayerName: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 5,
   },
   editPlayerStatsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
+    marginTop: 15,
+  },
+  statGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
     padding: 8,
     borderRadius: 5,
-    width: 60,
+    width: 45,
     textAlign: 'center',
   },
   inputError: {
@@ -847,7 +862,10 @@ const styles = StyleSheet.create({
   },
   editScreenContainer: {
     padding: 20,
-    flex: 1,
+    width: '100%',
+  },
+  statLabel: {
+    marginRight: 5,
   },
 });
 
