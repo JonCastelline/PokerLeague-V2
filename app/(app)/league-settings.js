@@ -494,7 +494,7 @@ const LeagueSettingsPage = () => {
 
   return (
     <PageLayout>
-      <KeyboardAwareScrollView contentContainerStyle={styles.container}>
+      <View style={styles.container}>
         <Text style={styles.title}>League Settings</Text>
 
         {/* League Logo */}
@@ -631,7 +631,7 @@ const LeagueSettingsPage = () => {
           </View>
         )}
 
-      </KeyboardAwareScrollView>
+      </View>
     </PageLayout>
   );
 };
