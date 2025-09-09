@@ -23,6 +23,9 @@
       ],
       "package": "com.anonymous.PokerLeagueV2"
     },
+    "androidNavigationBar": {
+      "visible": "immersive"
+    },
     "web": {
       "bundler": "metro",
       "output": "static",
