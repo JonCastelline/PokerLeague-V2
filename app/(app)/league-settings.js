@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Image } from 'react-native';
 
-import { View, Text, StyleSheet, ActivityIndicator, FlatList, Switch, TextInput, Modal, TouchableOpacity, Alert, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, FlatList, Switch, TextInput, Modal, TouchableOpacity, Dimensions, Alert } from 'react-native';
+import Toast from 'react-native-toast-message';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import PageLayout from '../../components/PageLayout';
 import AddUnregisteredPlayerForm from '../../components/AddUnregisteredPlayerForm';
@@ -60,11 +61,11 @@ const LeagueSettingsPage = () => {
     if (!selectedLeagueId) return;
     try {
       await api(apiActions.updateLeagueSettings, selectedLeagueId, leagueName, nonOwnerAdminsCanManageRoles);
-      alert('League settings saved successfully!');
+      Toast.show({ type: 'success', text1: 'Success', text2: 'League settings saved successfully!' });
       reloadLeagues();
     } catch (e) {
       console.error("Failed to save league settings:", e);
-      alert('Failed to save league settings.');
+      Toast.show({ type: 'error', text1: 'Error', text2: 'Failed to save league settings.' });
     }
   };
 
@@ -90,11 +91,11 @@ const LeagueSettingsPage = () => {
     if (!selectedLeagueId) return;
     try {
       await api(apiActions.updateLeagueHomeContent, selectedLeagueId, homeContent, logoImageUrl);
-      alert('Logo URL saved successfully!');
+      Toast.show({ type: 'success', text1: 'Success', text2: 'Logo URL saved successfully!' });
       reloadHomeContent(); // Refresh to show updated logo across the app
     } catch (e) {
       console.error("Failed to save logo URL:", e);
-      alert(`Failed to save logo URL: ${e.message}`);
+      Toast.show({ type: 'error', text1: 'Error', text2: `Failed to save logo URL: ${e.message}` });
     }
   };
 
@@ -107,7 +108,7 @@ const LeagueSettingsPage = () => {
       setModalVisible(false);
     } catch (e) {
       console.error(e);
-      alert(e.message);
+      Toast.show({ type: 'error', text1: 'Error', text2: e.message });
     }
   };
 
@@ -120,7 +121,7 @@ const LeagueSettingsPage = () => {
       `Are you sure you want to ${action.toLowerCase()} ${member.displayName}?`,
       [
         { text: "Cancel", style: "cancel" },
-        { 
+        {
           text: action,
           onPress: async () => {
             try {
@@ -129,7 +130,7 @@ const LeagueSettingsPage = () => {
               setModalVisible(false);
             } catch (e) {
               console.error(e);
-              alert(e.message);
+              Toast.show({ type: 'error', text1: 'Error', text2: e.message });
             }
           },
           style: isActive ? "default" : "destructive",
@@ -153,10 +154,10 @@ const LeagueSettingsPage = () => {
               await api(apiActions.removePlayerFromLeague, selectedLeagueId, selectedMember.id);
               await fetchLeagueMembers(); // Refresh member list
               setModalVisible(false);
-              alert(`${selectedMember.displayName} has been removed.`);
+              Toast.show({ type: 'success', text1: 'Success', text2: `${selectedMember.displayName} has been removed.` });
             } catch (e) {
               console.error(e);
-              alert(e.message);
+              Toast.show({ type: 'error', text1: 'Error', text2: e.message });
             }
           },
           style: "destructive",
@@ -179,11 +180,11 @@ const LeagueSettingsPage = () => {
               await api(apiActions.transferOwnership, selectedLeagueId, selectedMember.id);
               await fetchLeagueMembers(); // Refresh member list
               setModalVisible(false);
-              alert('Ownership transferred successfully.');
+              Toast.show({ type: 'success', text1: 'Success', text2: 'Ownership transferred successfully.' });
               reloadCurrentUserMembership(); // Reload current user's membership to update roles/ownership
             } catch (e) {
               console.error(e);
-              alert(e.message);
+              Toast.show({ type: 'error', text1: 'Error', text2: e.message });
             }
           },
           style: "destructive",
@@ -197,7 +198,7 @@ const LeagueSettingsPage = () => {
 
     Alert.alert(
       "Reset Display Name",
-      `Are you sure you want to reset ${selectedMember.displayName}'s display name? It will revert to their first and last name.`, 
+      `Are you sure you want to reset ${selectedMember.displayName}'s display name? It will revert to their first and last name.`,
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -207,10 +208,10 @@ const LeagueSettingsPage = () => {
               await api(apiActions.resetPlayerDisplayName, selectedLeagueId, selectedMember.id);
               await fetchLeagueMembers(); // Refresh member list
               setModalVisible(false);
-              alert(`${selectedMember.displayName}'s display name has been reset.`);
+              Toast.show({ type: 'success', text1: 'Success', text2: `${selectedMember.displayName}'s display name has been reset.` });
             } catch (e) {
               console.error(e);
-              alert(e.message);
+              Toast.show({ type: 'error', text1: 'Error', text2: e.message });
             }
           },
           style: "destructive",
@@ -234,10 +235,10 @@ const LeagueSettingsPage = () => {
               await api(apiActions.resetPlayerIconUrl, selectedLeagueId, selectedMember.id);
               await fetchLeagueMembers(); // Refresh member list
               setModalVisible(false);
-              alert(`${selectedMember.displayName}'s icon has been reset.`);
+              Toast.show({ type: 'success', text1: 'Success', text2: `${selectedMember.displayName}'s icon has been reset.` });
             } catch (e) {
               console.error(e);
-              alert(e.message);
+              Toast.show({ type: 'error', text1: 'Error', text2: e.message });
             }
           },
           style: "destructive",
@@ -248,18 +249,18 @@ const LeagueSettingsPage = () => {
 
   const handleInvite = async () => {
     if (!selectedMember || !playerEmail) {
-      Alert.alert("Validation Error", "Please enter an email address.");
+      Toast.show({ type: 'error', text1: 'Validation Error', text2: 'Please enter an email address.' });
       return;
     }
 
     try {
       await api(apiActions.inviteUserToClaim, selectedLeagueId, selectedMember.id, playerEmail);
-      Alert.alert("Invite Sent", "An in-app invite has been sent to the user.");
+      Toast.show({ type: 'success', text1: 'Invite Sent', text2: 'An in-app invite has been sent to the user.' });
       setPlayerEmail(''); // Clear the email input after sending
       setModalVisible(false);
     } catch (e) {
       console.error(e);
-      Alert.alert("Error", e.message);
+      Toast.show({ type: 'error', text1: 'Error', text2: e.message });
     }
   };
 

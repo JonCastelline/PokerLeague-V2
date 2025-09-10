@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import { View, Text, StyleSheet, TextInput, Alert, ActivityIndicator, TouchableOpacity, Image } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import Toast from 'react-native-toast-message';
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
 import axios from 'axios';
@@ -45,7 +46,11 @@ const SettingsScreen = () => {
         setIconUrl(response.iconUrl || '');
       } catch (error) {
         console.error('Error fetching player settings:', error);
-        Alert.alert('Error', 'Failed to fetch player settings.');
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Failed to fetch player settings.'
+        });
       } finally {
         setLoading(false);
       }
@@ -63,18 +68,27 @@ const SettingsScreen = () => {
 
       if (oldEmail === email) { // Email did NOT change
         updateAuthUser(response);
-        Alert.alert('Success', 'Account details updated successfully!');
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: 'Account details updated successfully!'
+        });
       } else { // Email DID change
-        Alert.alert(
-          'Email Changed',
-          'Your email address has been updated. You will be logged out to re-authenticate with your new email.'
-        );
+        Toast.show({
+          type: 'info',
+          text1: 'Email Changed',
+          text2: 'Your email address has been updated. You will be logged out to re-authenticate with your new email.'
+        });
         await signOut();
         router.replace('/(auth)');
       }
     } catch (error) {
       console.error('Error updating account details:', error);
-      Alert.alert('Error', 'Failed to update account details.');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to update account details.'
+      });
     } finally {
       setLoading(false);
     }
@@ -83,19 +97,31 @@ const SettingsScreen = () => {
   const handleChangePassword = async () => {
     if (!user || !token) return;
     if (newPassword !== confirmNewPassword) {
-      Alert.alert('Error', 'New password and confirmation do not match.');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'New password and confirmation do not match.'
+      });
       return;
     }
     setLoading(true);
     try {
       await api(apiActions.changePassword, { currentPassword, newPassword });
-      Alert.alert('Success', 'Password changed successfully!');
+      Toast.show({
+        type: 'success',
+        text1: 'Success',
+        text2: 'Password changed successfully!'
+      });
       setCurrentPassword('');
       setNewPassword('');
       setConfirmNewPassword('');
     } catch (error) {
       console.error('Error changing password:', error);
-      Alert.alert('Error', 'Failed to change password. Please check your current password.');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to change password. Please check your current password.'
+      });
     } finally {
       setLoading(false);
     }
@@ -107,10 +133,18 @@ const SettingsScreen = () => {
     try {
       await api(apiActions.updateLeagueMembershipSettings, selectedLeagueId, { displayName, iconUrl });
       reloadCurrentUserMembership(); // Re-fetch current user's membership to update displayed player name/icon
-      Alert.alert('Success', 'Player settings updated successfully!');
+      Toast.show({
+        type: 'success',
+        text1: 'Success',
+        text2: 'Player settings updated successfully!'
+      });
     } catch (error) {
       console.error('Error updating player settings:', error);
-      Alert.alert('Error', 'Failed to update player settings.');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to update player settings.'
+      });
     } finally {
       setLoading(false);
     }
@@ -129,12 +163,20 @@ const SettingsScreen = () => {
           onPress: async () => {
             try {
               await api(apiActions.leaveLeague, selectedLeagueId);
-              Alert.alert("Success", "You have left the league.");
+              Toast.show({
+                type: 'success',
+                text1: 'Success',
+                text2: 'You have left the league.'
+              });
               reloadLeagues(); // Reload the list of leagues
               router.replace('/(app)/home'); // Redirect to home, which will show create/join options if no other leagues
             } catch (e) {
               console.error(e);
-              Alert.alert("Error", e.message);
+              Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: e.message
+              });
             }
           },
           style: "destructive",

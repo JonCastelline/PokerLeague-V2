@@ -1,6 +1,7 @@
 import { useRouter, Link } from 'expo-router';
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity } from 'react-native';
+import Toast from 'react-native-toast-message';
 import { useAuth } from '../../context/AuthContext';
 import * as apiActions from '../../src/api';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
@@ -20,7 +21,11 @@ export default function LoginPage() {
       router.replace('/(app)/home');
     } catch (error) {
       console.error(error);
-      Alert.alert('Login Error', error.message);
+      Toast.show({
+        type: 'error',
+        text1: 'Login Error',
+        text2: error.message
+      });
     }
   };
 

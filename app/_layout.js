@@ -1,5 +1,6 @@
 import { Slot, useRouter, useSegments, useGlobalSearchParams, useRootNavigationState } from "expo-router";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
+import Toast from 'react-native-toast-message';
 import { AuthProvider, useAuth } from "../context/AuthContext";
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { ActivityIndicator, View } from 'react-native';
@@ -57,11 +58,14 @@ const InitialLayout = () => {
 
 const RootLayout = () => {
   return (
-    <KeyboardProvider>
-      <AuthProvider>
-        <InitialLayout />
-      </AuthProvider>
-    </KeyboardProvider>
+    <React.Fragment>
+      <KeyboardProvider>
+        <AuthProvider>
+          <InitialLayout />
+        </AuthProvider>
+      </KeyboardProvider>
+      <Toast />
+    </React.Fragment>
   );
 };
 

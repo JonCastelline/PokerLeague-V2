@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import Toast from 'react-native-toast-message';
 import * as apiActions from '../src/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -9,18 +10,30 @@ const AddUnregisteredPlayerForm = ({ leagueId, onPlayerAdded }) => {
 
   const handleAddPlayer = async () => {
     if (!playerName.trim()) {
-      Alert.alert('Error', 'Player name cannot be empty.');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Player name cannot be empty.'
+      });
       return;
     }
 
     try {
       const newMember = await api(apiActions.addUnregisteredPlayer, leagueId, playerName);
-      Alert.alert('Success', `Player ${newMember.displayName} added successfully!`);
+      Toast.show({
+        type: 'success',
+        text1: 'Success',
+        text2: `Player ${newMember.displayName} added successfully!`
+      });
       setPlayerName('');
       onPlayerAdded(); // Notify parent component to refresh list
     } catch (error) {
       console.error('Error adding unregistered player:', error);
-      Alert.alert('Error', error.message);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.message
+      });
     }
   };
 

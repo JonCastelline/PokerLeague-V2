@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect, useCallback, useContext, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import * as apiActions from '../src/api';
-import { Alert } from 'react-native';
+import Toast from 'react-native-toast-message';
 
 const GameContext = createContext();
 
@@ -29,7 +29,11 @@ export const GameProvider = ({ children }) => {
       }
     } catch (e) {
       if (e.message !== '401') {
-        Alert.alert('Error', e.message);
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: e.message
+        });
       }
     } finally {
       setIsActionLoading(false);
@@ -55,7 +59,11 @@ export const GameProvider = ({ children }) => {
       if (callback) callback(data);
     } catch (e) {
       if (e.message !== '401') {
-        Alert.alert('Error', e.message);
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: e.message
+        });
       }
     }
   }, [api]);

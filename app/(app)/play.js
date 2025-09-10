@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Switch, TextInput, Image } from 'react-native';
+import Toast from 'react-native-toast-message';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
@@ -145,7 +146,7 @@ const PlayPage = () => {
 
   const handleStartGame = () => {
     if (!selectedGameId) {
-      Alert.alert('Error', 'Please select a game to start.');
+      Toast.show({ type: 'error', text1: 'Error', text2: 'Please select a game to start.' });
       return;
     }
     handleAction(apiActions.startGame, selectedGameId, Array.from(selectedPlayerIds)).then(() => {

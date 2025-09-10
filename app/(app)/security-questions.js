@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, TextInput } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import Toast from 'react-native-toast-message';
 import { useAuth } from '../../context/AuthContext';
 import * as apiActions from '../../src/api';
 import { Picker } from '@react-native-picker/picker';
@@ -43,7 +44,11 @@ const SecurityQuestionsScreen = () => {
 
     } catch (error) {
       console.error('Error loading security questions data:', error);
-      Alert.alert('Error', 'Failed to load security questions data.');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to load security questions data.'
+      });
     } finally {
       setLoading(false);
     }
@@ -84,18 +89,30 @@ const SecurityQuestionsScreen = () => {
       q => q.questionId && q.answer && q.answer !== PLACEHOLDER_ANSWER
     );
     if (filledQuestions.length === 0) {
-      Alert.alert('No Changes to Save', 'Please provide a new answer for any question you wish to update.');
+      Toast.show({
+        type: 'info',
+        text1: 'No Changes to Save',
+        text2: 'Please provide a new answer for any question you wish to update.'
+      });
       return;
     }
 
     setLoading(true);
     try {
       await Promise.all(filledQuestions.map(q => api(apiActions.setSecurityAnswer, q)));
-      Alert.alert('Success', 'Security questions saved successfully!');
+      Toast.show({
+        type: 'success',
+        text1: 'Success',
+        text2: 'Security questions saved successfully!'
+      });
       loadData(); // Reload data to show the saved state
     } catch (error) {
       console.error('Error saving security questions:', error);
-      Alert.alert('Error', 'Failed to save security questions.');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to save security questions.'
+      });
     } finally {
       setLoading(false);
     }

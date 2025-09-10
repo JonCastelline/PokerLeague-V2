@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, TextInput, Alert, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, TextInput, Dimensions } from 'react-native';
+import Toast from 'react-native-toast-message';
 import { Image } from 'expo-image';
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
@@ -140,7 +141,7 @@ import * as Clipboard from 'expo-clipboard';
                setEditMode(false);
              } catch (error) {
                console.error("Failed to save home content:", error);
-               Alert.alert("Error", "Failed to save content.");
+                Toast.show({ type: 'error', text1: 'Error', text2: 'Failed to save content.' });
              }
            };
 
