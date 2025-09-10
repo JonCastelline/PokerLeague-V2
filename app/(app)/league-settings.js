@@ -516,6 +516,7 @@ const LeagueSettingsPage = () => {
             <TextInput
               style={styles.input}
               placeholder="Enter image URL"
+              placeholderTextColor='#888'
               value={logoImageUrl}
               onChangeText={setLogoImageUrl}
             />

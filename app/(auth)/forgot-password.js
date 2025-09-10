@@ -89,10 +89,3 @@ const styles = StyleSheet.create({
     color: 'white',
   },
 });
-    marginTop: 40,
-    marginBottom: 10,
-  },
-  submitText: {
-    color: 'white',
-  },
-});
