@@ -403,7 +403,7 @@ const LeagueSettingsPage = () => {
           >
             <Text style={styles.textStyle}>Send In-App Invite</Text>
           </TouchableOpacity>
-          {isAdmin ? (
+          {canManageRoles ? (
               selectedMember.isActive ? (
                   <TouchableOpacity
                       style={[styles.button, styles.buttonDestructive, { marginTop: 10 }]} 
@@ -451,7 +451,7 @@ const LeagueSettingsPage = () => {
                     <Text style={styles.textStyle}>Transfer Ownership</Text>
                 </TouchableOpacity>
             ) : null}
-            {isAdmin && canAdminsManage && !targetIsOwner ? (
+            {canManageRoles && !targetIsOwner ? (
                 selectedMember.isActive ? (
                     <TouchableOpacity
                         style={[styles.button, styles.buttonDestructive, { marginTop: 10 }]} 
@@ -468,21 +468,21 @@ const LeagueSettingsPage = () => {
                     </TouchableOpacity>
                 )
             ) : null}
-            {isAdmin && canAdminsManage && !targetIsOwner ? (
+            {canManageRoles && !targetIsOwner ? (
                 <TouchableOpacity
                     style={[styles.button, styles.buttonDestructive, { marginTop: 10 }]} 
                     onPress={handleRemovePlayer}>
                     <Text style={styles.textStyle}>Remove Player</Text>
                 </TouchableOpacity>
             ) : null}
-            {isAdmin && canAdminsManage && !targetIsOwner ? (
+            {canManageRoles && !targetIsOwner ? (
                 <TouchableOpacity
                     style={[styles.button, styles.buttonDestructive, { marginTop: 10 }]} 
                     onPress={handleResetDisplayName}>
                     <Text style={styles.textStyle}>Reset Display Name</Text>
                 </TouchableOpacity>
             ) : null}
-            {isAdmin && canAdminsManage && !targetIsOwner ? (
+            {canManageRoles && !targetIsOwner ? (
                 <TouchableOpacity
                     style={[styles.button, styles.buttonDestructive, { marginTop: 10 }]} 
                     onPress={handleResetPlayerIcon}>
