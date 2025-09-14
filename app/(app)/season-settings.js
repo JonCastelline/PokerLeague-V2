@@ -5,6 +5,7 @@ import { ActivityIndicator, Alert, Modal, StyleSheet, Switch, Text, TextInput, T
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import Toast from 'react-native-toast-message';
 import PageLayout from '../../components/PageLayout';
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
@@ -244,14 +245,22 @@ const SeasonSettingsPage = () => {
     const numValue = parseFloat(cleanedValue);
 
     if (isNaN(numValue)) {
-      alert('Please enter a valid number.');
+      Toast.show({
+        type: 'error',
+        text1: 'Invalid Input',
+        text2: 'Please enter a valid number.'
+      });
       setSettings(prev => ({ ...prev, [field]: 0 }));
       return;
     }
 
     const parts = numValue.toString().split('.');
     if (parts.length > 1 && parts[1].length > 2) {
-      alert('Please enter a number with a maximum of 2 decimal places.');
+      Toast.show({
+        type: 'error',
+        text1: 'Invalid Input',
+        text2: 'Please enter a number with a maximum of 2 decimal places.'
+      });
       setSettings(prev => ({ ...prev, [field]: parseFloat(numValue.toFixed(2)) }));
       return;
     }
@@ -261,7 +270,11 @@ const SeasonSettingsPage = () => {
 
   const handleCreateSeason = async () => {
     if (!selectedLeagueId || !newSeasonName || !newSeasonStartDate || !newSeasonEndDate) {
-      alert('Please fill in all season details.');
+      Toast.show({
+        type: 'error',
+        text1: 'Missing Information',
+        text2: 'Please fill in all season details.'
+      });
       return;
     }
 
@@ -276,7 +289,11 @@ const SeasonSettingsPage = () => {
 
       await api(apiActions.createSeason, selectedLeagueId, seasonData);
 
-      alert('Season created successfully!');
+      Toast.show({
+        type: 'success',
+        text1: 'Season Created',
+        text2: 'Season created successfully!'
+      });
       setCreateSeasonModalVisible(false);
       setNewSeasonName('');
       setNewSeasonStartDate(null);
@@ -284,13 +301,21 @@ const SeasonSettingsPage = () => {
       fetchAllSeasons();
     } catch (e) {
       console.error("Failed to create season:", e);
-      alert(e.message);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: e.message
+      });
     }
   };
 
   const handleEditSeason = async () => {
     if (!selectedSeason || !editedSeasonName || !editedSeasonStartDate || !editedSeasonEndDate) {
-      alert('Please fill in all season details.');
+      Toast.show({
+        type: 'error',
+        text1: 'Missing Information',
+        text2: 'Please fill in all season details.'
+      });
       return;
     }
 
@@ -304,7 +329,11 @@ const SeasonSettingsPage = () => {
       };
 
       await api(apiActions.updateSeason, selectedLeagueId, selectedSeason.id, seasonData);
-      alert('Season updated successfully!');
+      Toast.show({
+        type: 'success',
+        text1: 'Season Updated',
+        text2: 'Season updated successfully!'
+      });
       setEditSeasonModalVisible(false);
 
       // Refresh seasons list and then update selectedSeason state
@@ -319,7 +348,11 @@ const SeasonSettingsPage = () => {
       fetchSettings(updatedSeason.id); // Refresh current season settings using the updated selectedSeason state
     } catch (e) {
       console.error("Failed to update season:", e);
-      alert(`Failed to update season: ${e.message}`);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: `Failed to update season: ${e.message}`
+      });
     }
   };
 
@@ -334,14 +367,22 @@ const SeasonSettingsPage = () => {
       };
       await api(apiActions.createGame, selectedSeason.id, gameData);
 
-      alert('Game added successfully!');
+      Toast.show({
+        type: 'success',
+        text1: 'Game Added',
+        text2: 'Game added successfully!'
+      });
       setCreateGameModalVisible(false);
       setNewGameLocation('');
       setNewGameTime(new Date());
       fetchGames(selectedSeason.id);
     } catch (e) {
       console.error("Failed to add game:", e);
-      alert(e.message);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: e.message
+      });
     }
   };
 
@@ -365,7 +406,11 @@ const SeasonSettingsPage = () => {
       };
       await api(apiActions.updateGame, selectedSeason.id, currentEditingGame.id, gameData);
 
-      alert('Game updated successfully!');
+      Toast.show({
+        type: 'success',
+        text1: 'Game Updated',
+        text2: 'Game updated successfully!'
+      });
       setEditGameModalVisible(false);
       setCurrentEditingGame(null);
       setEditedGameName('');
@@ -375,7 +420,11 @@ const SeasonSettingsPage = () => {
       fetchGames(selectedSeason.id);
     } catch (e) {
       console.error("Failed to update game:", e);
-      alert(e.message);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: e.message
+      });
     }
   };
 
@@ -391,11 +440,19 @@ const SeasonSettingsPage = () => {
             if (!selectedSeason) return;
             try {
               await api(apiActions.deleteGame, selectedSeason.id, gameId);
-              alert('Game deleted successfully!');
+              Toast.show({
+                type: 'success',
+                text1: 'Game Deleted',
+                text2: 'Game deleted successfully!'
+              });
               fetchGames(selectedSeason.id);
             } catch (e) {
               console.error("Failed to delete game:", e);
-              alert(e.message);
+              Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: e.message
+              });
             }
           },
           style: "destructive",
@@ -416,7 +473,11 @@ const SeasonSettingsPage = () => {
           onPress: async () => {
             try {
               await api(apiActions.finalizeSeason, selectedLeagueId, selectedSeason.id);
-              alert('Season finalized successfully!');
+              Toast.show({
+                type: 'success',
+                text1: 'Season Finalized',
+                text2: 'Season finalized successfully!'
+              });
               const updatedSeasons = await fetchAllSeasons();
               const updatedSelectedSeason = updatedSeasons.find(s => s.id === selectedSeason.id);
               if (updatedSelectedSeason) {
@@ -425,7 +486,11 @@ const SeasonSettingsPage = () => {
               fetchSettings(selectedSeason.id);
             } catch (e) {
               console.error("Failed to finalize season:", e);
-              alert(e.message);
+              Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: e.message
+              });
             }
           },
           style: "destructive",
@@ -439,7 +504,7 @@ const SeasonSettingsPage = () => {
 
     Alert.alert(
       "Delete Season",
-      `Are you sure you want to delete the season "${selectedSeason.seasonName}"? This action cannot be undone.`,
+      `Are you sure you want to delete the season "${selectedSeason.seasonName}"? This action cannot be undone.`, 
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -447,11 +512,19 @@ const SeasonSettingsPage = () => {
           onPress: async () => {
             try {
               await api(apiActions.deleteSeason, selectedLeagueId, selectedSeason.id);
-              alert('Season deleted successfully!');
+              Toast.show({
+                type: 'success',
+                text1: 'Season Deleted',
+                text2: 'Season deleted successfully!'
+              });
               fetchAllSeasons(); // Refresh seasons list
             } catch (e) {
               console.error("Failed to delete season:", e);
-              alert(`Failed to delete season: ${e.message}`);
+              Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: `Failed to delete season: ${e.message}`
+              });
             }
           },
           style: "destructive",
@@ -476,11 +549,19 @@ const SeasonSettingsPage = () => {
               placePoints: placePoints,
           };
           await api(apiActions.updateSeasonSettings, selectedSeason.id, settingsToSave);
-          alert('Settings saved successfully!');
+          Toast.show({
+            type: 'success',
+            text1: 'Settings Saved',
+            text2: 'Settings saved successfully!'
+          });
       } catch (e) {
           console.error("Failed to save settings:", e);
           setErrorSettings(e.message);
-          alert('Failed to save settings.');
+          Toast.show({
+            type: 'error',
+            text1: 'Error',
+            text2: 'Failed to save settings.'
+          });
       } finally {
           setLoadingSettings(false);
       }
@@ -530,7 +611,11 @@ const SeasonSettingsPage = () => {
 
   const handleAddBlindLevel = () => {
     if (!newBlindLevel.smallBlind || !newBlindLevel.bigBlind) {
-      Alert.alert('Error', 'Please fill all fields for the new blind level.');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please fill all fields for the new blind level.'
+      });
       return;
     }
     const newLevel = blindLevels.length > 0 ? Math.max(...blindLevels.map(b => b.level)) + 1 : 1;
@@ -539,7 +624,11 @@ const SeasonSettingsPage = () => {
     if (blindLevels.length > 0) {
       const last = blindLevels[blindLevels.length - 1];
       if (newSmallBlind <= last.smallBlind || newBigBlind <= last.bigBlind) {
-        Alert.alert('Validation Error', 'New blind level\'s small blind and big blind must be greater than the previous level\'s blinds.');
+        Toast.show({
+            type: 'error',
+            text1: 'Validation Error',
+            text2: 'New blind level\'s small blind and big blind must be greater than the previous level\'s blinds.'
+        });
         return;
       }
     }
@@ -592,7 +681,11 @@ const SeasonSettingsPage = () => {
   const handleAddPlacePoint = () => {
     // Basic validation for new place point
     if (!newPlacePoint.points) {
-      Alert.alert('Error', 'Please fill all fields for the new place point.');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please fill all fields for the new place point.'
+      });
       return;
     }
     const newPlace = placePoints.length > 0 ? Math.max(...placePoints.map(p => p.place)) + 1 : 1;

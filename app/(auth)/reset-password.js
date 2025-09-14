@@ -1,6 +1,7 @@
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity } from 'react-native';
+import Toast from 'react-native-toast-message';
 import * as apiActions from '../../src/api';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
@@ -26,20 +27,36 @@ export default function ResetPasswordPage() {
 
   const handleSubmit = async () => {
     if (newPassword !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match.');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Passwords do not match.'
+      });
       return;
     }
 
     try {
       await apiActions.verifySecurityAnswersAndResetPassword(email, answers, newPassword);
-      Alert.alert('Success', 'Password has been reset successfully.');
+      Toast.show({
+        type: 'success',
+        text1: 'Success',
+        text2: 'Password has been reset successfully.'
+      });
       router.replace('/(auth)');
     } catch (error) {
       console.error(error);
       if (error.message.includes('Security answers verification failed')) {
-        Alert.alert('Error', 'One or more of your answers are incorrect. Please try again.');
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'One or more of your answers are incorrect. Please try again.'
+        });
       } else {
-        Alert.alert('Error', 'An unexpected error occurred. Please try again later.');
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'An unexpected error occurred. Please try again later.'
+        });
       }
     }
   };

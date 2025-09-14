@@ -1,6 +1,7 @@
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity } from 'react-native';
+import Toast from 'react-native-toast-message';
 import * as apiActions from '../../src/api';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
@@ -23,7 +24,11 @@ export default function SignUpPage() {
           setEmail(data.email);
         })
         .catch(error => {
-          Alert.alert('Error', error.message);
+          Toast.show({
+            type: 'error',
+            text1: 'Error',
+            text2: error.message
+          });
         })
         .finally(() => {
           setIsLoading(false);
@@ -51,14 +56,19 @@ export default function SignUpPage() {
 
     try {
       await action(body);
-      Alert.alert(
-        isClaiming ? 'Profile Claimed!' : 'Signup Successful',
-        isClaiming ? 'You have successfully claimed your profile.' : 'You can now log in.',
-      );
+      Toast.show({
+        type: 'success',
+        text1: isClaiming ? 'Profile Claimed!' : 'Signup Successful',
+        text2: isClaiming ? 'You have successfully claimed your profile.' : 'You can now log in.'
+      });
       router.replace('/(auth)'); // Navigate to login
     } catch (error) {
       console.error('Signup/claim request failed:', error);
-      Alert.alert('Sign Up Error', error.message);
+      Toast.show({
+        type: 'error',
+        text1: 'Sign Up Error',
+        text2: error.message
+      });
     }
   };
 

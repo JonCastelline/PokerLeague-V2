@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
+import Toast from 'react-native-toast-message';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
@@ -36,29 +37,32 @@ const JoinLeaguePage = () => {
   const handleAcceptInvite = async (inviteId) => {
     try {
       await api(apiActions.acceptInvite, inviteId);
-      Alert.alert('Success', 'You have successfully claimed the profile and joined the league!');
+      Toast.show({ type: 'success', text1: 'Success', text2: 'You have successfully claimed the profile and joined the league!' });
       fetchInvites(); // Refresh invites list
       reloadLeagues(); // Refresh leagues list
     } catch (error) {
       console.error('Accept invite error:', error);
-      Alert.alert('Error', error.message);
+      Toast.show({ type: 'error', text1: 'Error', text2: error.message });
     }
   };
 
   const handleJoinLeague = async () => {
     if (!inviteCode.trim()) {
-      Alert.alert('Error', 'Please enter an invite code.');
+      Toast.show({ type: 'error', text1: 'Error', text2: 'Please enter an invite code.' });
       return;
     }
     try {
       const data = await api(apiActions.joinLeague, inviteCode);
       reloadLeagues();
-      Alert.alert('Success', `You have joined the league "${data.leagueName}"!`, [
-        { text: 'OK', onPress: () => router.replace('/(app)/home') },
-      ]);
+      Toast.show({
+        type: 'success',
+        text1: 'Success',
+        text2: `You have joined the league "${data.leagueName}"!`
+      });
+      router.replace('/(app)/home');
     } catch (error) {
       console.error(error);
-      Alert.alert('Error', error.message);
+      Toast.show({ type: 'error', text1: 'Error', text2: error.message });
     }
   };
 

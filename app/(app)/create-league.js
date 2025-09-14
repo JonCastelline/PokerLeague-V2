@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
+import Toast from 'react-native-toast-message';
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
 import * as apiActions from '../../src/api';
@@ -14,18 +15,29 @@ const CreateLeaguePage = () => {
 
   const handleCreateLeague = async () => {
     if (!leagueName.trim()) {
-      Alert.alert('Error', 'Please enter a name for your league.');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please enter a name for your league.'
+      });
       return;
     }
     try {
       const data = await api(apiActions.createLeague, leagueName);
       await reloadLeagues();
-      Alert.alert('Success', `League "${data.leagueName}" created!`, [
-        { text: 'OK', onPress: () => router.replace('/(app)/home') },
-      ]);
+      Toast.show({
+        type: 'success',
+        text1: 'Success',
+        text2: `League "${data.leagueName}" created!`
+      });
+      router.replace('/(app)/home');
     } catch (error) {
       console.error(error);
-      Alert.alert('Error', error.message);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.message
+      });
     }
   };
 

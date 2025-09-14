@@ -414,3 +414,11 @@ export const changePassword = (passwordChangeDto, token) => {
     body: JSON.stringify(passwordChangeDto),
   });
 };
+
+export const updatePlayerAccount = (playerAccountDetails, token) => {
+  return apiFetch(`/api/player-accounts/me`, {
+    method: 'PUT',
+    token,
+    body: JSON.stringify(playerAccountDetails),
+  });
+};

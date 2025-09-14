@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity } from 'react-native';
+import Toast from 'react-native-toast-message';
 import * as apiActions from '../../src/api';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
@@ -14,11 +15,19 @@ export default function ForgotPasswordPage() {
       if (questions.length > 0) {
         router.push({ pathname: '/reset-password', params: { email: email, questions: JSON.stringify(questions) } });
       } else {
-        Alert.alert('Error', 'No security questions found for this email.');
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'No security questions found for this email.'
+        });
       }
     } catch (error) {
       console.error(error);
-      Alert.alert('Error', error.message);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.message
+      });
     }
   };
 
