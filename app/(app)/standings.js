@@ -116,32 +116,37 @@ const StandingsPage = () => {
     </View>
   );
 
-  const renderHeader = useCallback(() => (
+  const renderPageHeader = () => (
     <>
       <Text style={styles.title}>Standings</Text>
       {allSeasons.length > 0 && selectedSeasonId !== null && (
-        <Picker
-          selectedValue={selectedSeasonId}
-          style={styles.picker}
-          onValueChange={(itemValue) => setSelectedSeasonId(itemValue)}
-          dropdownIconColor="black"
-        >
-          {allSeasons.map(season => (
-            <Picker.Item key={season.id} label={season.seasonName} value={season.id}/>
-          ))}
-        </Picker>
+        <View style={styles.pickerContainer}>
+          <Picker
+            selectedValue={selectedSeasonId}
+            style={styles.picker}
+            onValueChange={(itemValue) => setSelectedSeasonId(itemValue)}
+            dropdownIconColor="black"
+          >
+            {allSeasons.map(season => (
+              <Picker.Item key={season.id} label={season.seasonName} value={season.id} />
+            ))}
+          </Picker>
+        </View>
       )}
-      <View style={styles.tableHeader}>
-        <Text style={[styles.headerCell, styles.rankCell]}>Rk</Text>
-        <Text style={[styles.headerCell, styles.playerCell]}>Player</Text>
-        {(seasonSettings?.trackKills || seasonSettings?.trackBounties || seasonSettings?.enableAttendancePoints) && <Text style={[styles.headerCell, styles.placePointsCell]}>Place Pts</Text>}
-        {seasonSettings?.trackKills && <Text style={[styles.headerCell, styles.statCell]}>Kills</Text>}
-        {seasonSettings?.trackBounties && <Text style={[styles.headerCell, styles.statCell]}>Bty</Text>}
-        {seasonSettings?.enableAttendancePoints && <Text style={[styles.headerCell, styles.statCell]}>Att</Text>}
-        <Text style={[styles.headerCell, styles.totalCell]}>Total</Text>
-      </View>
     </>
-  ), [allSeasons, selectedSeasonId, seasonSettings]);
+  );
+
+  const renderTableHeader = () => (
+    <View style={styles.tableHeader}>
+      <Text style={[styles.headerCell, styles.rankCell]}>Rk</Text>
+      <Text style={[styles.headerCell, styles.playerCell]}>Player</Text>
+      {(seasonSettings?.trackKills || seasonSettings?.trackBounties || seasonSettings?.enableAttendancePoints) && <Text style={[styles.headerCell, styles.placePointsCell]}>Place Pts</Text>}
+      {seasonSettings?.trackKills && <Text style={[styles.headerCell, styles.statCell]}>Kills</Text>}
+      {seasonSettings?.trackBounties && <Text style={[styles.headerCell, styles.statCell]}>Bty</Text>}
+      {seasonSettings?.enableAttendancePoints && <Text style={[styles.headerCell, styles.statCell]}>Att</Text>}
+      <Text style={[styles.headerCell, styles.totalCell]}>Total</Text>
+    </View>
+  );
 
   if (loading) {
     return (
@@ -167,8 +172,15 @@ const StandingsPage = () => {
   if (standings.length === 0) {
     return (
       <PageLayout>
-        <View style={styles.centered}>
-          <Text>No standings data available for this league and season.</Text>
+        <View style={styles.container}>
+          {renderPageHeader()}
+          <View style={styles.centeredMessage}>
+            <Text>
+              {allSeasons.length > 0
+                ? "No standings data available for this season."
+                : "No seasons have been created for this league yet."}
+            </Text>
+          </View>
         </View>
       </PageLayout>
     );
@@ -180,24 +192,25 @@ const StandingsPage = () => {
         data={standings}
         keyExtractor={item => item.playerId.toString()}
         renderItem={renderItem}
-        ListHeaderComponent={renderHeader}
-        style={styles.flatListStyle}
-        contentContainerStyle={styles.containerContent}
+        ListHeaderComponent={<>{renderPageHeader()}{renderTableHeader()}</>}
+        style={styles.container}
       />
     </PageLayout>
   );
 };
 
 const styles = StyleSheet.create({
-  flatListStyle: {
+  container: {
     flex: 1,
-    width: '100%',
-  },
-  containerContent: {
     padding: 20,
   },
   centered: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  centeredMessage: {
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -279,12 +292,16 @@ const styles = StyleSheet.create({
     color: 'red',
     fontSize: 16,
   },
-  picker: {
-    height: 50,
-    width: '100%',
+  pickerContainer: {
     marginBottom: 10,
     backgroundColor: 'white',
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ccc',
+  },
+  picker: {
+    height: 50,
+    width: '100%',
     color: 'black',
   },
 });
