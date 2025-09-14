@@ -206,13 +206,13 @@ const SeasonSettingsPage = () => {
     }
   }, [selectedLeagueId, api]);
 
-  const handleSeasonChange = (seasonId) => {
+  const handleSeasonChange = useCallback((seasonId) => {
     const newSelectedSeason = seasons.find(s => s.id === seasonId);
     if (newSelectedSeason) {
       setSelectedSeason(newSelectedSeason);
       fetchSettings(newSelectedSeason.id);
     }
-  };
+  }, [seasons, fetchSettings]);
 
   useEffect(() => {
     fetchAllSeasons();
@@ -220,7 +220,19 @@ const SeasonSettingsPage = () => {
 
   useEffect(() => {
     if (!selectedSeason && seasons.length > 0) {
-      fetchSettings();
+      const today = new Date();
+      const activeSeason = seasons.find(season => {
+        const startDate = DateTime.fromISO(season.startDate).toJSDate();
+        const endDate = DateTime.fromISO(season.endDate).toJSDate();
+        return today >= startDate && today <= endDate;
+      });
+
+      if (activeSeason) {
+        handleSeasonChange(activeSeason.id);
+      } else {
+        // Default to the latest season (first in the sorted list)
+        handleSeasonChange(seasons[0].id);
+      }
     } else if (seasons.length === 0 && !loadingSeasons) {
       setSettings(null);
       setSelectedSeason(null);
@@ -228,7 +240,7 @@ const SeasonSettingsPage = () => {
       setPlacePoints([]);
       setGames([]);
     }
-  }, [seasons, selectedSeason, loadingSeasons, fetchSettings]);
+  }, [seasons, selectedSeason, loadingSeasons, handleSeasonChange]);
 
   const handleSettingChange = (field, value) => {
     setSettings(prev => ({ ...prev, [field]: value }));
