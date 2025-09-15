@@ -1,50 +1,67 @@
-# Welcome to your Expo app 👋
+# Poker League Mobile Application (Frontend)
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+This repository contains the React Native frontend for the Poker League mobile application. It provides the user interface for interacting with the backend API, allowing users to manage leagues, seasons, games, and view standings.
 
-## Get started
+## Features
 
-1. Install dependencies
+*   **User Interface:** Intuitive and responsive UI for mobile devices.
+*   **User Authentication:** Login and registration flows.
+*   **League & Season Management:** Create, join, and view details of leagues and seasons.
+*   **Game Play:** Interactive timer for blind levels, player elimination, and game state display.
+*   **Standings:** View player standings within a season.
+*   **Cross-Platform:** Built with React Native for iOS and Android.
 
-   ```bash
-   npm install
-   ```
+## Tech Stack
 
-2. Start the app
+*   **Framework:** React Native
+*   **Development Platform:** Expo
+*   **Language:** JavaScript (with TypeScript support via Expo)
+*   **UI/UX:** Material Design principles (implied by general modern app design)
+*   **API Communication:** Fetch API
 
-   ```bash
-   npx expo start
-   ```
+## Getting Started
 
-In the output, you'll find options to open the app in a
+### Prerequisites
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+Ensure you have the following installed on your system:
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+*   **Node.js:** Version 16 or higher.
+*   **npm (Node Package Manager):** Comes with Node.js.
+*   **Expo CLI:** Install globally: `npm install -g expo-cli`
+*   **Android Studio / Xcode:** For emulators/simulators, or a physical device with the Expo Go app.
 
-## Get a fresh project
+### Installation & Setup
 
-When you're ready, run:
+1.  **Clone the repository:**
+    ```bash
+    git clone <repository-url>
+    cd PokerLeague-V2
+    ```
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
+3.  **Configure Backend API URL:**
+    The application needs to know where your backend API is running. You will need to update the `API_BASE_URL` in `src/config.js`.
+    *   For local development, this will typically be `http://<your-local-ip>:8080` (replace `<your-local-ip>` with your computer's IP address on your local network, as `localhost` won't work from an emulator/device).
+    *   For production, this will be your Render backend service URL.
 
+## Running the Development Server
+
+To start the Expo development server:
 ```bash
-npm run reset-project
+npx expo start
 ```
+This will open a new tab in your browser with the Expo Dev Tools. From there, you can:
+*   Scan the QR code with the Expo Go app on your physical device.
+*   Run on an Android emulator.
+*   Run on an iOS simulator.
+*   Run in a web browser (limited functionality).
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Running Tests
 
-## Learn more
+Currently, automated frontend tests are not configured. Manual testing is performed.
 
-To learn more about developing your project with Expo, look at the following resources:
+## Deployment
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+This application is designed to be deployed using Expo Application Services (EAS). Refer to the Expo documentation for details on building and deploying for production.
