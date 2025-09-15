@@ -377,7 +377,7 @@ export const verifySecurityAnswersAndResetPassword = (email, answers, newPasswor
 };
 
 export const getAllSecurityQuestions = (token) => {
-  return apiFetch(`/api/security-questions`, { token });
+  return apiFetch(`/api/public/all-security-questions`, { token });
 };
 
 export const getMySecurityQuestions = (token) => {
