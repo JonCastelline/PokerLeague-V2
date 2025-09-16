@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-nativ
 import Toast from 'react-native-toast-message';
 import * as apiActions from '../src/api';
 import { useAuth } from '../context/AuthContext';
+import HelpIcon from './HelpIcon';
 
 const AddUnregisteredPlayerForm = ({ leagueId, onPlayerAdded }) => {
   const [playerName, setPlayerName] = useState('');
@@ -39,7 +40,10 @@ const AddUnregisteredPlayerForm = ({ leagueId, onPlayerAdded }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Add Unregistered Player</Text>
+      <View style={{flexDirection: 'row', alignItems: 'center'}}>
+        <Text style={styles.title}>Add Unregistered Player</Text>
+        <HelpIcon topicKey="ADD_UNREGISTERED_PLAYER" />
+      </View>
       <TextInput
         style={styles.input}
         placeholder="Player Name"

@@ -8,6 +8,7 @@ import { useLeague } from '../../context/LeagueContext';
 import axios from 'axios';
 import { API_BASE_URL } from '../../src/config';
 import * as apiActions from '../../src/api';
+import HelpIcon from '../../components/HelpIcon';
 
 const SettingsScreen = () => {
   const { user, updateAuthUser, isLoading, token, signOut, api } = useAuth();
@@ -233,10 +234,16 @@ const SettingsScreen = () => {
       {selectedLeagueId && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Player Settings (Current League)</Text>
-          <Text style={styles.label}>Display Name:</Text>
+          <View style={{flexDirection: 'row', alignItems: 'center'}}>
+            <Text style={styles.label}>Display Name:</Text>
+            <HelpIcon topicKey="LEAGUE_DISPLAY_NAME" />
+          </View>
           <TextInput style={styles.input} value={displayName} onChangeText={setDisplayName} />
 
-          <Text style={styles.label}>Icon URL:</Text>
+          <View style={{flexDirection: 'row', alignItems: 'center'}}>
+            <Text style={styles.label}>Icon URL:</Text>
+            <HelpIcon topicKey="LEAGUE_ICON_URL" />
+          </View>
           <TextInput style={styles.input} value={iconUrl} onChangeText={setIconUrl} keyboardType="url" autoCapitalize="none" />
           {iconUrl ? (
             <Image source={{ uri: iconUrl }} style={styles.iconPreview} />
@@ -311,7 +318,7 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: '#fb5b5a',
     padding: 10,
-    borderRadius: 10,
+    borderRadius: 25,
     alignItems: 'center',
     alignSelf: 'center',
     marginTop: 10,

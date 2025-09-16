@@ -10,6 +10,7 @@ import PageLayout from '../../components/PageLayout';
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
 import * as apiActions from '../../src/api';
+import HelpIcon from '../../components/HelpIcon';
 
 const SeasonSettingsPage = () => {
   const { api } = useAuth();
@@ -978,7 +979,10 @@ const SeasonSettingsPage = () => {
         />
 
         <View style={styles.settingItem}>
-            <Text style={styles.settingLabel}>Track Kills</Text>
+            <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                <Text style={styles.settingLabel}>Track Kills</Text>
+                <HelpIcon topicKey="TRACK_KILLS" />
+            </View>
             <Switch
                 value={settings.trackKills}
                 onValueChange={(value) => handleSettingChange('trackKills', value)}
@@ -1000,7 +1004,10 @@ const SeasonSettingsPage = () => {
         ) : null}
 
         <View style={styles.settingItem}>
-            <Text style={styles.settingLabel}>Track Bounties</Text>
+            <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                <Text style={styles.settingLabel}>Track Bounties</Text>
+                <HelpIcon topicKey="TRACK_BOUNTIES" />
+            </View>
             <Switch
                 value={settings.trackBounties}
                 onValueChange={(value) => handleSettingChange('trackBounties', value)}
@@ -1022,7 +1029,10 @@ const SeasonSettingsPage = () => {
         ) : null}
 
         <View style={styles.settingItem}>
-            <Text style={styles.settingLabel}>Enable Attendance Points</Text>
+            <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                <Text style={styles.settingLabel}>Enable Attendance Points</Text>
+                <HelpIcon topicKey="ATTENDANCE_POINTS" />
+            </View>
             <Switch
                 value={settings.enableAttendancePoints}
                 onValueChange={(value) => handleSettingChange('enableAttendancePoints', value)}
@@ -1068,7 +1078,10 @@ const SeasonSettingsPage = () => {
         </View>
 
         <View style={styles.settingItem}>
-            <Text style={styles.settingLabel}>Warning Sound Enabled</Text>
+            <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                <Text style={styles.settingLabel}>Warning Sound Enabled</Text>
+                <HelpIcon topicKey="TIMER_WARNING_SOUND" />
+            </View>
             <Switch
                 value={settings.warningSoundEnabled}
                 onValueChange={(value) => handleSettingChange('warningSoundEnabled', value)}
@@ -1114,7 +1127,10 @@ const SeasonSettingsPage = () => {
         </View>
 
         <View style={styles.settingItem}>
-            <Text style={styles.settingLabel}>Allow Players to Control Timer</Text>
+            <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                <Text style={styles.settingLabel}>Allow Players to Control Timer</Text>
+                <HelpIcon topicKey="PLAYER_TIMER_CONTROL" />
+            </View>
             <Switch
                 value={settings.playerTimerControlEnabled}
                 onValueChange={(value) => handleSettingChange('playerTimerControlEnabled', value)}
@@ -1123,7 +1139,10 @@ const SeasonSettingsPage = () => {
         </View>
 
         <View style={styles.settingItem}>
-            <Text style={styles.settingLabel}>Allow Players to Handle Eliminations</Text>
+            <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                <Text style={styles.settingLabel}>Allow Players to Handle Eliminations</Text>
+                <HelpIcon topicKey="PLAYER_ELIMINATION_CONTROL" />
+            </View>
             <Switch
                 value={settings.playerEliminationEnabled}
                 onValueChange={(value) => handleSettingChange('playerEliminationEnabled', value)}
@@ -1133,7 +1152,10 @@ const SeasonSettingsPage = () => {
 
         <View style={styles.settingItem}>
             <View style={{ flexDirection: 'column', width: '100%' }}>
-                <Text style={styles.settingLabel}>Bounty on Leader Absence</Text>
+                <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                    <Text style={styles.settingLabel}>Bounty on Leader Absence</Text>
+                    <HelpIcon topicKey="BOUNTY_ON_LEADER_ABSENCE" />
+                </View>
                 <Picker
                     selectedValue={settings.bountyOnLeaderAbsenceRule}
                     style={styles.pickerBounty}
@@ -1148,7 +1170,10 @@ const SeasonSettingsPage = () => {
         </View>
 
         {/* Blind Levels Section */}
-        <Text style={styles.subtitle}>Blind Levels</Text>
+        <View style={{flexDirection: 'row', alignItems: 'center'}}>
+            <Text style={styles.subtitle}>Blind Levels</Text>
+            <HelpIcon topicKey="BLIND_LEVELS" />
+        </View>
         {blindLevels.map((bl, index) => (
           <TouchableOpacity
             key={index}
@@ -1191,7 +1216,10 @@ const SeasonSettingsPage = () => {
         )}
 
         {/* Place Points Section */}
-        <Text style={styles.subtitle}>Place Points</Text>
+        <View style={{flexDirection: 'row', alignItems: 'center'}}>
+            <Text style={styles.subtitle}>Place Points</Text>
+            <HelpIcon topicKey="PLACE_POINTS" />
+        </View>
         {placePoints.map((pp, index) => (
           <TouchableOpacity
             key={index}
@@ -1722,7 +1750,7 @@ const styles = StyleSheet.create({
   },
   settingItem: {
     flexDirection: 'row',
-    justifyContent: 'flex-start', // Align items to the start
+    justifyContent: 'space-between', // Pushes children to opposite ends
     alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: 1,
@@ -1797,7 +1825,7 @@ const styles = StyleSheet.create({
   },
   modalButton: {
     width: '80%',
-    borderRadius: 10, // Rounded edges
+    borderRadius: 25, // Rounded edges
     marginTop: 10,
   },
   memberList: {
@@ -1883,7 +1911,7 @@ const styles = StyleSheet.create({
     width: '80%',
   },
   button: {
-    borderRadius: 10,
+    borderRadius: 25,
     padding: 10,
     elevation: 2,
     marginBottom: 10,

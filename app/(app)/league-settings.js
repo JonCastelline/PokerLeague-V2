@@ -6,6 +6,7 @@ import Toast from 'react-native-toast-message';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import PageLayout from '../../components/PageLayout';
 import AddUnregisteredPlayerForm from '../../components/AddUnregisteredPlayerForm';
+import HelpIcon from '../../components/HelpIcon';
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
 import * as apiActions from '../../src/api';
@@ -549,7 +550,10 @@ const LeagueSettingsPage = () => {
 
           {/* Admins Can Manage Roles */}
           <View style={styles.settingItem}>
-            <Text style={styles.settingLabel}>Admins Can Manage Roles</Text>
+            <View style={{flexDirection: 'row', alignItems: 'center'}}>
+              <Text style={styles.settingLabel}>Admins Can Manage Roles</Text>
+              <HelpIcon topicKey="ADMINS_MANAGE_ROLES" />
+            </View>
             <Switch
                 value={nonOwnerAdminsCanManageRoles}
                 onValueChange={setNonOwnerAdminsCanManageRoles}
@@ -821,7 +825,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   button: {
-    borderRadius: 10,
+    borderRadius: 25,
     padding: 10,
     elevation: 2,
     width: '100%',
