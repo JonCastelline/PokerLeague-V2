@@ -195,9 +195,9 @@ import * as Clipboard from 'expo-clipboard';
                          </TouchableOpacity>
                        </View>
                      ) : (
-                       <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                       <View style={{flexDirection: 'column', alignItems: 'center'}}>
                          <TouchableOpacity style={styles.button} onPress={handleEdit}>
-                           <Text style={styles.buttonText}>Edit Content</Text>
+                           <Text style={styles.buttonText}>     Edit Content     </Text>
                          </TouchableOpacity>
                          <HelpIcon topicKey="HOME_PAGE_CONTENT_EDIT" />
                        </View>
