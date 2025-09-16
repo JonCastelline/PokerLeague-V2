@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
 import PageLayout from '../../components/PageLayout';
 import Markdown from 'react-native-markdown-display';
+import HelpIcon from '../../components/HelpIcon';
 import * as Clipboard from 'expo-clipboard';
          import { updateLeagueHomeContent } from '../../src/api';
 
@@ -194,11 +195,12 @@ import * as Clipboard from 'expo-clipboard';
                          </TouchableOpacity>
                        </View>
                      ) : (
-                       <>
+                       <View style={{flexDirection: 'row', alignItems: 'center'}}>
                          <TouchableOpacity style={styles.button} onPress={handleEdit}>
                            <Text style={styles.buttonText}>Edit Content</Text>
                          </TouchableOpacity>
-                       </>
+                         <HelpIcon topicKey="HOME_PAGE_CONTENT_EDIT" />
+                       </View>
                      )}
                    </View>
                  )}
