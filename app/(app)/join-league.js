@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
 import * as apiActions from '../../src/api';
 import PageLayout from '../../components/PageLayout';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 const JoinLeaguePage = () => {
   const [inviteCode, setInviteCode] = useState('');
@@ -79,49 +80,51 @@ const JoinLeaguePage = () => {
   );
 
   return (
-    <PageLayout noScroll>
-      <View style={styles.contentContainer}>
-        <Text style={styles.title}>Join a League</Text>
+    <View style={{ flex: 1 }}>
+      <PageLayout noScroll>
+        <KeyboardAwareScrollView contentContainerStyle={styles.contentContainer}>
+          <Text style={styles.title}>Join a League</Text>
 
-        <View style={styles.sectionContainer}>
-          <Text style={styles.subtitle}>Your Invitations</Text>
-          {loading ? (
-            <ActivityIndicator size="large" color="#fb5b5a" />
-          ) : invites.length > 0 ? (
-            <FlatList
-              data={invites}
-              renderItem={renderInviteItem}
-              keyExtractor={(item) => item.inviteId.toString()}
-              style={{ width: '100%' }}
+          <View style={styles.sectionContainer}>
+            <Text style={styles.subtitle}>Your Invitations</Text>
+            {loading ? (
+              <ActivityIndicator size="large" color="#fb5b5a" />
+            ) : invites.length > 0 ? (
+              <FlatList
+                scrollEnabled={false}
+                data={invites}
+                renderItem={renderInviteItem}
+                keyExtractor={(item) => item.inviteId.toString()}
+                style={{ width: '100%' }}
+              />
+            ) : (
+              <Text style={styles.noInvitesText}>You have no pending invitations.</Text>
+            )}
+          </View>
+
+          <View style={styles.separator} />
+
+          <View style={styles.sectionContainer}>
+            <Text style={styles.subtitle}>Join with Code</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter Invite Code"
+              value={inviteCode}
+              onChangeText={setInviteCode}
+              autoCapitalize="characters"
             />
-          ) : (
-            <Text style={styles.noInvitesText}>You have no pending invitations.</Text>
-          )}
-        </View>
-
-        <View style={styles.separator} />
-
-        <View style={styles.sectionContainer}>
-          <Text style={styles.subtitle}>Join with Code</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter Invite Code"
-            value={inviteCode}
-            onChangeText={setInviteCode}
-            autoCapitalize="characters"
-          />
-          <TouchableOpacity style={styles.button} onPress={handleJoinLeague}>
-            <Text style={styles.buttonText}>Join League</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </PageLayout>
+            <TouchableOpacity style={styles.button} onPress={handleJoinLeague}>
+              <Text style={styles.buttonText}>Join League</Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAwareScrollView>
+      </PageLayout>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   contentContainer: {
-    flex: 1,
     alignItems: 'center',
     padding: 20,
     width: '100%',
@@ -155,11 +158,11 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: '#fb5b5a',
-    borderRadius: 25,
-    height: 50,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
+        padding: 10,
+        borderRadius: 10,
+        alignItems: 'center',
+        alignSelf: 'center',
+        marginTop: 10,
   },
   buttonText: {
     color: 'white',

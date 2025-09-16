@@ -535,7 +535,7 @@ const PlayPage = () => {
                 <View style={styles.buttonContainer}>
                   <TouchableOpacity style={styles.button} onPress={async () => {
                       await handleAction(apiActions.finalizeGame, selectedGameId);
-                      setMode(null); // Set mode to null to go to game over screen
+                      setMode(null);
                   }}>
                       <Text style={styles.buttonText}>Finalize & Save</Text>
                   </TouchableOpacity>
@@ -780,7 +780,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 5,
-    color: 'black',
   },
   gameOverText: {
     fontSize: 30,

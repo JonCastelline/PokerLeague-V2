@@ -854,6 +854,7 @@ const SeasonSettingsPage = () => {
               <TextInput
                 style={[styles.input, styles.modalInput]}
                 placeholder="Game Location (Optional)"
+                placeholderTextColor="gray"
                 value={newGameLocation}
                 onChangeText={setNewGameLocation}
               />
@@ -1369,6 +1370,7 @@ const SeasonSettingsPage = () => {
               <TextInput
                 style={[styles.input, styles.modalInput]}
                 placeholder="Season Name (e.g., 2025 Season)"
+                placeholderTextColor="gray"
                 value={newSeasonName}
                 onChangeText={setNewSeasonName}
               />

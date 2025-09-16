@@ -142,6 +142,7 @@ const SecurityQuestionsScreen = () => {
             <TextInput
               style={styles.input}
               placeholder="Your Answer"
+              placeholderTextColor="grey"
               value={selectedQuestions[index].answer}
               onFocus={() => handleAnswerFocus(index)}
               onChangeText={(text) => handleAnswerChange(text, index)}
