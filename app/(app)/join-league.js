@@ -158,11 +158,11 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: '#fb5b5a',
-    borderRadius: 25,
-    height: 50,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '40%',
+        padding: 10,
+        borderRadius: 10,
+        alignItems: 'center',
+        alignSelf: 'center',
+        marginTop: 10,
   },
   buttonText: {
     color: 'white',
