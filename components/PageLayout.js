@@ -58,9 +58,11 @@ const PageLayout = ({ children, noScroll }) => {
           <AppMenu />
         </View>
         <View style={styles.logoContainer}>
-          {!!leagueHomeContent?.logoImageUrl && (
-            <Image source={{ uri: leagueHomeContent.logoImageUrl }} style={styles.logo} resizeMode="contain" />
-          )}
+          <Image 
+            source={leagueHomeContent?.logoImageUrl ? { uri: leagueHomeContent.logoImageUrl } : require('../assets/images/logo.png')}
+            style={styles.logo} 
+            resizeMode="contain" 
+          />
         </View>
         <View style={styles.userContainer}>
           {user && (

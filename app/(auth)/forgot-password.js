@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, Image } from 'react-native';
 import Toast from 'react-native-toast-message';
 import * as apiActions from '../../src/api';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
@@ -33,7 +33,11 @@ export default function ForgotPasswordPage() {
 
   return (
     <KeyboardAwareScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.logo}>Forgot Password</Text>
+      <Image
+        source={require('../../assets/images/logo.png')}
+        style={styles.logo}
+      />
+      <Text style={styles.title}>Forgot Password</Text>
       <View style={styles.inputView}>
         <TextInput
           style={styles.inputText}
@@ -57,6 +61,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   logo: {
+    width: 200,
+    height: 200,
+    resizeMode: 'contain',
+    marginBottom: 20,
+  },
+  title: {
     fontWeight: 'bold',
     fontSize: 30,
     color: '#fb5b5a',

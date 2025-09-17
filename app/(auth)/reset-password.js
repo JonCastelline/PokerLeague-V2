@@ -1,6 +1,6 @@
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, Image } from 'react-native';
 import Toast from 'react-native-toast-message';
 import * as apiActions from '../../src/api';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
@@ -63,7 +63,11 @@ export default function ResetPasswordPage() {
 
   return (
     <KeyboardAwareScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.logo}>Reset Password</Text>
+      <Image
+        source={require('../../assets/images/logo.png')}
+        style={styles.logo}
+      />
+      <Text style={styles.title}>Reset Password</Text>
       {questions.map(q => (
         <View key={q.id} style={styles.inputView}>
           <Text style={styles.questionText}>{q.questionText}</Text>
@@ -108,6 +112,12 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
       },
       logo: {
+        width: 200,
+        height: 200,
+        resizeMode: 'contain',
+        marginBottom: 20,
+      },
+      title: {
         fontWeight: 'bold',
         fontSize: 30,
         color: '#fb5b5a',

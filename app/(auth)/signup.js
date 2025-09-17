@@ -1,6 +1,6 @@
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, Image } from 'react-native';
 import Toast from 'react-native-toast-message';
 import * as apiActions from '../../src/api';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
@@ -82,7 +82,11 @@ export default function SignUpPage() {
 
   return (
     <KeyboardAwareScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.logo}>Sign Up</Text>
+      <Image
+        source={require('../../assets/images/logo.png')}
+        style={styles.logo}
+      />
+      <Text style={styles.title}>Sign Up</Text>
       {inviteDetails && (
         <Text style={styles.claimText}>
           You are claiming the profile for "{inviteDetails.displayNameToClaim}" in the "{inviteDetails.leagueName}" league.
@@ -138,6 +142,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   logo: {
+    width: 200,
+    height: 200,
+    resizeMode: 'contain',
+    marginBottom: 20,
+  },
+  title: {
     fontWeight: 'bold',
     fontSize: 50,
     color: '#fb5b5a',
