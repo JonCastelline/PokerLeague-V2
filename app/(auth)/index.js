@@ -1,6 +1,6 @@
 import { useRouter, Link } from 'expo-router';
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, Image } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { useAuth } from '../../context/AuthContext';
 import * as apiActions from '../../src/api';
@@ -33,7 +33,11 @@ export default function LoginPage() {
     <KeyboardAwareScrollView
       contentContainerStyle={styles.container}
     >
-      <Text style={styles.logo}>Login</Text>
+      <Image
+        source={require('../../assets/images/logo.png')}
+        style={styles.logo}
+      />
+      <Text style={styles.title}>Login</Text>
       <View style={styles.inputView}>
         <TextInput
           style={styles.inputText}
@@ -72,6 +76,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   logo: {
+    width: 200,
+    height: 200,
+    resizeMode: 'contain',
+    marginBottom: 20,
+  },
+  title: {
     fontWeight: 'bold',
     fontSize: 50,
     color: '#fb5b5a',
