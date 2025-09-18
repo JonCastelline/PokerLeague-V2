@@ -91,12 +91,13 @@ const LeagueSettingsPage = () => {
     }
   }, [selectedLeagueId, api]);
 
-  const handleSaveLogoImageUrl = async () => {
+  const handleSaveLogoImageUrl = async (newLogoUrl) => {
     if (!selectedLeagueId) return;
     try {
-      await api(apiActions.updateLeagueHomeContent, selectedLeagueId, homeContent, logoImageUrl);
+      await api(apiActions.updateLeagueHomeContent, selectedLeagueId, homeContent, newLogoUrl);
       Toast.show({ type: 'success', text1: 'Success', text2: 'Logo URL saved successfully!' });
       reloadHomeContent(); // Refresh to show updated logo across the app
+      setLogoModalVisible(false);
     } catch (e) {
       console.error("Failed to save logo URL:", e);
       Toast.show({ type: 'error', text1: 'Error', text2: `Failed to save logo URL: ${e.message}` });
@@ -581,6 +582,48 @@ const LeagueSettingsPage = () => {
           <AddUnregisteredPlayerForm leagueId={selectedLeagueId} onPlayerAdded={fetchLeagueMembers} />
         ) : null}
 
+        <Modal
+            animationType="slide"
+            transparent={true}
+            visible={logoModalVisible}
+            onRequestClose={() => setLogoModalVisible(false)}
+        >
+            <View style={styles.centeredView}>
+                <View style={styles.modalView}>
+                    <Text style={styles.modalText}>Update League Logo</Text>
+                    
+                    <View style={styles.logoModalContent}>
+                        <View style={{flexDirection: 'row', alignItems: 'center', marginBottom: 10}}>
+                            <Text style={styles.settingLabel}>Logo Image URL</Text>
+                            <HelpIcon topicKey="LEAGUE_LOGO_URL" />
+                        </View>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Enter image URL"
+                            placeholderTextColor='#888'
+                            value={tempLogoImageUrl}
+                            onChangeText={setTempLogoImageUrl}
+                        />
+                    </View>
+
+                    <View style={styles.modalButtonContainer}>
+                        <TouchableOpacity
+                            style={[styles.button, styles.buttonPrimary, {width: '48%'}]}
+                            onPress={() => handleSaveLogoImageUrl(tempLogoImageUrl)}
+                        >
+                            <Text style={styles.textStyle}>Save</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.button, styles.buttonClose, {width: '48%'}]}
+                            onPress={() => setLogoModalVisible(false)}
+                        >
+                            <Text style={styles.textStyle}>Cancel</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </View>
+        </Modal>
+
         {selectedMember ? (
             <Modal
                 animationType="slide"
@@ -858,104 +901,6 @@ const styles = StyleSheet.create({
     width: '100%',
     marginTop: 20,
   },
-});
-
-export default LeagueSettingsPage;
- fontSize: 12,
-    color: 'red',
-    fontWeight: 'bold',
-  },
-  inactiveTag: {
-    fontSize: 12,
-    color: 'gray',
-    fontWeight: 'bold',
-  },
-  errorText: {
-    color: 'red',
-    textAlign: 'center',
-    marginTop: 10,
-  },
-  manageButton: {
-    backgroundColor: '#007bff',
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: 5,
-  },
-  manageButtonText: {
-    color: '#fff',
-    fontSize: 12,
-  },
-  centeredView: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 22
-  },
-  modalView: {
-    margin: 20,
-    backgroundColor: "white",
-    borderRadius: 20,
-    padding: 35,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-    width: '90%',
-  },
-  modalText: {
-    marginBottom: 15,
-    textAlign: "center",
-    fontWeight: 'bold'
-  },
-  modalSubtitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginTop: 10,
-    marginBottom: 5,
-  },
-  modalSection: {
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  button: {
-    borderRadius: 25,
-    padding: 10,
-    elevation: 2,
-    width: '100%',
-  },
-  buttonClose: {
-    backgroundColor: '#6c757d',
-  },
-  buttonPrimary: {
-    backgroundColor: '#007bff',
-  },
-  buttonSecondary: {
-    backgroundColor: '#6c757d',
-  },
-  buttonPrimaryRed: {
-    backgroundColor: '#fb5b5a',
-  },
-  buttonDestructive: {
-    backgroundColor: '#dc3545',
-  },
-  actionButton: {
-    width: 'auto',
-    alignSelf: 'center',
-    marginTop: 10,
-  },
-  textStyle: {
-    color: "white",
-    fontWeight: "bold",
-    textAlign: "center"
-  },
-  inviteCodeRow: {},
-  inviteCodeTextContent: {},
 });
 
 export default LeagueSettingsPage;
