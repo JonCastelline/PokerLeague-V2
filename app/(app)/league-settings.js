@@ -31,6 +31,9 @@ const LeagueSettingsPage = () => {
   const [logoImageUrl, setLogoImageUrl] = useState('');
   const [homeContent, setHomeContent] = useState(''); // To store the content text if we decide to add it later
 
+  const [logoModalVisible, setLogoModalVisible] = useState(false);
+  const [tempLogoImageUrl, setTempLogoImageUrl] = useState('');
+
   const [selectedMember, setSelectedMember] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [playerEmail, setPlayerEmail] = useState('');
@@ -510,27 +513,15 @@ const LeagueSettingsPage = () => {
           )}
         </View>
 
-        {/* Logo Image URL Input */}
-        {isAdmin ? (
-          <View style={styles.settingItem}>
-            <Text style={styles.settingLabel}>Logo Image URL</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter image URL"
-              placeholderTextColor='#888'
-              value={logoImageUrl}
-              onChangeText={setLogoImageUrl}
-            />
-          </View>
-        ) : null}
-
-        {/* Save Logo Image URL Button */}
         {isAdmin ? (
           <TouchableOpacity
             style={[styles.button, styles.buttonPrimaryRed, styles.actionButton]}
-            onPress={handleSaveLogoImageUrl}
+            onPress={() => {
+              setTempLogoImageUrl(logoImageUrl);
+              setLogoModalVisible(true);
+            }}
           >
-            <Text style={styles.textStyle}>Save Logo</Text>
+            <Text style={styles.textStyle}>Update League Logo</Text>
           </TouchableOpacity>
         ) : null}
 
@@ -540,7 +531,7 @@ const LeagueSettingsPage = () => {
             <View style={styles.settingItem}>
               <Text style={styles.settingLabel}>League Name</Text>
               <TextInput
-                style={[styles.input, {width: '70%'}]}
+                style={[styles.input, {width: '60%'}]}
                 placeholder="Enter league name"
                 value={leagueName}
                 onChangeText={setLeagueName}
@@ -763,6 +754,114 @@ const styles = StyleSheet.create({
   },
   unregisteredTag: {
     fontSize: 12,
+    color: 'red',
+    fontWeight: 'bold',
+  },
+  inactiveTag: {
+    fontSize: 12,
+    color: 'gray',
+    fontWeight: 'bold',
+  },
+  errorText: {
+    color: 'red',
+    textAlign: 'center',
+    marginTop: 10,
+  },
+  manageButton: {
+    backgroundColor: '#007bff',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 5,
+  },
+  manageButtonText: {
+    color: '#fff',
+    fontSize: 12,
+  },
+  centeredView: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 22
+  },
+  modalView: {
+    margin: 20,
+    backgroundColor: "white",
+    borderRadius: 20,
+    padding: 35,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    width: '90%',
+  },
+  modalText: {
+    marginBottom: 15,
+    textAlign: "center",
+    fontWeight: 'bold'
+  },
+  modalSubtitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 10,
+    marginBottom: 5,
+  },
+  modalSection: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  button: {
+    borderRadius: 25,
+    padding: 10,
+    elevation: 2,
+    width: '100%',
+  },
+  buttonClose: {
+    backgroundColor: '#6c757d',
+  },
+  buttonPrimary: {
+    backgroundColor: '#007bff',
+  },
+  buttonSecondary: {
+    backgroundColor: '#6c757d',
+  },
+  buttonPrimaryRed: {
+    backgroundColor: '#fb5b5a',
+  },
+  buttonDestructive: {
+    backgroundColor: '#dc3545',
+  },
+  actionButton: {
+    width: 'auto',
+    alignSelf: 'center',
+    marginTop: 10,
+  },
+  textStyle: {
+    color: "white",
+    fontWeight: "bold",
+    textAlign: "center"
+  },
+  inviteCodeRow: {},
+  inviteCodeTextContent: {},
+  logoModalContent: {
+    width: '100%',
+    marginBottom: 20,
+  },
+  modalButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+    marginTop: 20,
+  },
+});
+
+export default LeagueSettingsPage;
+ fontSize: 12,
     color: 'red',
     fontWeight: 'bold',
   },

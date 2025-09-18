@@ -51,6 +51,10 @@ export const HELP_TOPICS = {
     title: 'Icon URL (League-Specific)',
     content: "This is a custom icon or avatar that will be used for you only within the current league. It will appear next to your display name on various pages. Please provide a direct URL to an image (e.g., a link ending in .png or .jpg)."
   },
+  LEAGUE_LOGO_URL: {
+    title: 'League Logo URL',
+    content: 'This is a custom logo for the entire league. It will appear on various pages, such as the home and settings pages. Please provide a direct URL to an image (e.g., a link ending in .png or .jpg).'
+  },
   HOME_PAGE_CONTENT_EDIT: {
     title: 'Home Page Content',
     content: "This content supports Markdown formatting, allowing you to use rich text features like headings (#), bold (**text**), italics (*text*), lists (- item), and even embed images (![alt text](image_url))."
