@@ -168,13 +168,19 @@ import * as Clipboard from 'expo-clipboard';
                  )}
                  <View style={styles.contentContainer}>
                    {editMode ? (
-                     <TextInput
-                       style={styles.textInput}
-                       value={editedContent}
-                       onChangeText={setEditedContent}
-                       multiline
-                       autoFocus
-                     />
+                     <>
+                       <View style={styles.editHeader}>
+                         <Text style={styles.editHeaderText}>Edit Home Page Content</Text>
+                         <HelpIcon topicKey="HOME_PAGE_CONTENT_EDIT" />
+                       </View>
+                       <TextInput
+                         style={styles.textInput}
+                         value={editedContent}
+                         onChangeText={setEditedContent}
+                         multiline
+                         autoFocus
+                       />
+                     </>
                    ) : (
                      // Pass the component's markdownStyles to the Markdown component
                      <Markdown style={markdownStyles} rules={markdownRules}>
@@ -199,7 +205,6 @@ import * as Clipboard from 'expo-clipboard';
                          <TouchableOpacity style={styles.button} onPress={handleEdit}>
                            <Text style={styles.buttonText}>     Edit Content     </Text>
                          </TouchableOpacity>
-                         <HelpIcon topicKey="HOME_PAGE_CONTENT_EDIT" />
                        </View>
                      )}
                    </View>
@@ -330,6 +335,17 @@ import * as Clipboard from 'expo-clipboard';
              borderWidth: 1,
              borderRadius: 5,
              padding: 10,
+           },
+           editHeader: {
+             flexDirection: 'row',
+             alignItems: 'center',
+             justifyContent: 'center',
+             marginBottom: 10,
+           },
+           editHeaderText: {
+             fontSize: 18,
+             fontWeight: 'bold',
+             marginRight: 5,
            },
          });
 

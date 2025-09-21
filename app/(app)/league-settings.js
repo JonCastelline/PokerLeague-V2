@@ -31,6 +31,9 @@ const LeagueSettingsPage = () => {
   const [logoImageUrl, setLogoImageUrl] = useState('');
   const [homeContent, setHomeContent] = useState(''); // To store the content text if we decide to add it later
 
+  const [logoModalVisible, setLogoModalVisible] = useState(false);
+  const [tempLogoImageUrl, setTempLogoImageUrl] = useState('');
+
   const [selectedMember, setSelectedMember] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [playerEmail, setPlayerEmail] = useState('');
@@ -88,12 +91,13 @@ const LeagueSettingsPage = () => {
     }
   }, [selectedLeagueId, api]);
 
-  const handleSaveLogoImageUrl = async () => {
+  const handleSaveLogoImageUrl = async (newLogoUrl) => {
     if (!selectedLeagueId) return;
     try {
-      await api(apiActions.updateLeagueHomeContent, selectedLeagueId, homeContent, logoImageUrl);
+      await api(apiActions.updateLeagueHomeContent, selectedLeagueId, homeContent, newLogoUrl);
       Toast.show({ type: 'success', text1: 'Success', text2: 'Logo URL saved successfully!' });
       reloadHomeContent(); // Refresh to show updated logo across the app
+      setLogoModalVisible(false);
     } catch (e) {
       console.error("Failed to save logo URL:", e);
       Toast.show({ type: 'error', text1: 'Error', text2: `Failed to save logo URL: ${e.message}` });
@@ -510,27 +514,15 @@ const LeagueSettingsPage = () => {
           )}
         </View>
 
-        {/* Logo Image URL Input */}
-        {isAdmin ? (
-          <View style={styles.settingItem}>
-            <Text style={styles.settingLabel}>Logo Image URL</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter image URL"
-              placeholderTextColor='#888'
-              value={logoImageUrl}
-              onChangeText={setLogoImageUrl}
-            />
-          </View>
-        ) : null}
-
-        {/* Save Logo Image URL Button */}
         {isAdmin ? (
           <TouchableOpacity
             style={[styles.button, styles.buttonPrimaryRed, styles.actionButton]}
-            onPress={handleSaveLogoImageUrl}
+            onPress={() => {
+              setTempLogoImageUrl(logoImageUrl);
+              setLogoModalVisible(true);
+            }}
           >
-            <Text style={styles.textStyle}>Save Logo</Text>
+            <Text style={styles.textStyle}>Update League Logo</Text>
           </TouchableOpacity>
         ) : null}
 
@@ -540,7 +532,7 @@ const LeagueSettingsPage = () => {
             <View style={styles.settingItem}>
               <Text style={styles.settingLabel}>League Name</Text>
               <TextInput
-                style={[styles.input, {width: '70%'}]}
+                style={[styles.input, {width: '60%'}]}
                 placeholder="Enter league name"
                 value={leagueName}
                 onChangeText={setLeagueName}
@@ -589,6 +581,48 @@ const LeagueSettingsPage = () => {
         {isAdmin ? (
           <AddUnregisteredPlayerForm leagueId={selectedLeagueId} onPlayerAdded={fetchLeagueMembers} />
         ) : null}
+
+        <Modal
+            animationType="slide"
+            transparent={true}
+            visible={logoModalVisible}
+            onRequestClose={() => setLogoModalVisible(false)}
+        >
+            <View style={styles.centeredView}>
+                <View style={styles.modalView}>
+                    <Text style={styles.modalText}>Update League Logo</Text>
+                    
+                    <View style={styles.logoModalContent}>
+                        <View style={{flexDirection: 'row', alignItems: 'center', marginBottom: 10}}>
+                            <Text style={styles.settingLabel}>Logo Image URL</Text>
+                            <HelpIcon topicKey="LEAGUE_LOGO_URL" />
+                        </View>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Enter image URL"
+                            placeholderTextColor='#888'
+                            value={tempLogoImageUrl}
+                            onChangeText={setTempLogoImageUrl}
+                        />
+                    </View>
+
+                    <View style={styles.modalButtonContainer}>
+                        <TouchableOpacity
+                            style={[styles.button, styles.buttonPrimary, {width: '48%'}]}
+                            onPress={() => handleSaveLogoImageUrl(tempLogoImageUrl)}
+                        >
+                            <Text style={styles.textStyle}>Save</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.button, styles.buttonClose, {width: '48%'}]}
+                            onPress={() => setLogoModalVisible(false)}
+                        >
+                            <Text style={styles.textStyle}>Cancel</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </View>
+        </Modal>
 
         {selectedMember ? (
             <Modal
@@ -857,6 +891,16 @@ const styles = StyleSheet.create({
   },
   inviteCodeRow: {},
   inviteCodeTextContent: {},
+  logoModalContent: {
+    width: '100%',
+    marginBottom: 20,
+  },
+  modalButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+    marginTop: 20,
+  },
 });
 
 export default LeagueSettingsPage;
