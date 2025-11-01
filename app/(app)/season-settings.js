@@ -95,8 +95,8 @@ const SeasonSettingsPage = () => {
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
   const [datePickerField, setDatePickerField] = useState(null); // 'startDate' or 'endDate'
 
-  const handleAddToCalendar = (gameId) => {
-    const url = `${apiActions.API_BASE_URL}/api/games/${gameId}/calendar.ics`;
+  const handleAddToCalendar = (game) => {
+    const url = `${apiActions.API_BASE_URL}/api/games/calendar/${game.calendarToken}.ics`;
     Linking.openURL(url).catch(err => console.error('An error occurred', err));
   };
 
@@ -775,7 +775,7 @@ const SeasonSettingsPage = () => {
                   </>
                 )}
                 {game.gameStatus !== 'COMPLETED' && (
-                  <TouchableOpacity onPress={() => handleAddToCalendar(game.id)} style={{ marginLeft: 10 }}>
+                  <TouchableOpacity onPress={() => handleAddToCalendar(game)} style={{ marginLeft: 10 }}>
                     <MaterialCommunityIcons name="calendar-plus" size={30} color="#28a745" />
                   </TouchableOpacity>
                 )}
