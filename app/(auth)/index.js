@@ -15,7 +15,7 @@ export default function LoginPage() {
   const handleLogin = async () => {
     try {
       const data = await apiActions.login(email, password);
-      const user = { id: data.id, firstName: data.firstName, lastName: data.lastName, email: data.email };
+      const user = { id: data.id, firstName: data.firstName, lastName: data.lastName, email: data.email, lastLeagueId: data.lastLeagueId };
       signIn(data.accessToken, user);
       console.log(`Login successful for ${user.firstName} ${user.lastName}`);
       router.replace('/(app)/home');
