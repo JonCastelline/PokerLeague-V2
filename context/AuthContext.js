@@ -15,6 +15,7 @@ export function AuthProvider({ children }) {
     authenticated: false,
     isLoading: true,
     user: null,
+    lastLeagueId: null,
   });
 
   useEffect(() => {
@@ -23,15 +24,17 @@ export function AuthProvider({ children }) {
         const token = await AsyncStorage.getItem('token');
         const userString = await AsyncStorage.getItem('user');
         const user = userString ? JSON.parse(userString) : null;
+        const lastLeagueId = await AsyncStorage.getItem('lastLeagueId');
         setAuthState({
           token: token,
           authenticated: !!token,
           isLoading: false,
           user: user,
+          lastLeagueId: lastLeagueId ? parseInt(lastLeagueId, 10) : null,
         });
       } catch (e) {
         console.error('Failed to load token:', e);
-        setAuthState({ token: null, authenticated: false, isLoading: false });
+        setAuthState({ token: null, authenticated: false, isLoading: false, user: null, lastLeagueId: null });
       }
     };
 
@@ -41,11 +44,13 @@ export function AuthProvider({ children }) {
   const signOut = useCallback(async () => {
     await AsyncStorage.removeItem('token');
     await AsyncStorage.removeItem('user');
+    await AsyncStorage.removeItem('lastLeagueId');
     setAuthState({
       token: null,
       authenticated: false,
       isLoading: false,
       user: null,
+      lastLeagueId: null,
     });
   }, []);
 
@@ -64,11 +69,15 @@ export function AuthProvider({ children }) {
   const signIn = async (token, user) => {
     await AsyncStorage.setItem('token', token);
     await AsyncStorage.setItem('user', JSON.stringify(user));
+    if (user.lastLeagueId) {
+        await AsyncStorage.setItem('lastLeagueId', user.lastLeagueId.toString());
+    }
     setAuthState({
       token: token,
       authenticated: true,
       isLoading: false,
       user: user,
+      lastLeagueId: user.lastLeagueId,
     });
     console.log('AuthContext: User signed in with:', user);
   };
@@ -78,6 +87,7 @@ export function AuthProvider({ children }) {
     token: authState.token,
     authenticated: authState.authenticated,
     isLoading: authState.isLoading,
+    lastLeagueId: authState.lastLeagueId,
     signIn,
     signOut,
     api: authenticatedApiCall, // Expose the wrapped api call function

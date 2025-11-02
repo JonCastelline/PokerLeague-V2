@@ -25,7 +25,7 @@ export const LeagueProvider = ({ children }) => {
         setLeagues(data || []);
         if (data && data.length > 0) {
           if (!selectedLeagueId || !data.some(league => league.id === selectedLeagueId)) {
-            setSelectedLeagueId(data[0].id);
+            switchLeague(data[0].id);
           }
         } else {
           setSelectedLeagueId(null);
@@ -40,7 +40,7 @@ export const LeagueProvider = ({ children }) => {
         setLoadingLeagues(false);
       }
     }
-  }, [user, selectedLeagueId, api]);
+  }, [user, selectedLeagueId, api, switchLeague]);
 
   useEffect(() => {
     reloadLeagues();
@@ -121,9 +121,14 @@ export const LeagueProvider = ({ children }) => {
     reloadHomeContent();
   }, [reloadHomeContent]);
 
-  const switchLeague = (leagueId) => {
+  const switchLeague = useCallback(async (leagueId) => {
     setSelectedLeagueId(leagueId);
-  };
+    try {
+      await api(apiActions.updateLastLeague, leagueId);
+    } catch (error) {
+      console.error('Failed to update last league:', error);
+    }
+  }, [api]);
 
   const refreshInviteCode = async (leagueId) => {
     try {
