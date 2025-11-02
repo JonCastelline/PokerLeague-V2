@@ -374,8 +374,8 @@ const SeasonSettingsPage = () => {
 
     try {
       const gameData = {
-        gameDate: DateTime.fromJSDate(newGameDate).toFormat('yyyy-MM-dd'),
-        gameTime: DateTime.fromJSDate(newGameTime).toFormat('HH:mm:ss'),
+        gameDate: DateTime.fromJSDate(newGameDate).toUTC().toFormat('yyyy-MM-dd'),
+        gameTime: DateTime.fromJSDate(newGameTime).toUTC().toFormat('HH:mm:ss'),
         gameLocation: newGameLocation,
       };
       await api(apiActions.createGame, selectedSeason.id, gameData);
@@ -413,8 +413,8 @@ const SeasonSettingsPage = () => {
     try {
       const gameData = {
         gameName: editedGameName,
-        gameDate: DateTime.fromJSDate(editedGameDate).toFormat('yyyy-MM-dd'),
-        gameTime: DateTime.fromJSDate(editedGameTime).toFormat('HH:mm:ss'),
+        gameDate: DateTime.fromJSDate(editedGameDate).toUTC().toFormat('yyyy-MM-dd'),
+        gameTime: DateTime.fromJSDate(editedGameTime).toUTC().toFormat('HH:mm:ss'),
         gameLocation: editedGameLocation,
       };
       await api(apiActions.updateGame, selectedSeason.id, currentEditingGame.id, gameData);
@@ -752,9 +752,8 @@ const SeasonSettingsPage = () => {
           games.map((game, index) => (
             <View key={index} style={styles.gameItem}>
               <View style={styles.gameInfo}>
-                <Text>{game.gameName}</Text>
-                <Text>{DateTime.fromISO(game.gameDate).toFormat('MM/dd/yyyy')}</Text>
-                {game.gameTime && <Text>Time: {DateTime.fromISO(game.gameTime).toFormat('hh:mm a')}</Text>}
+                <Text>{DateTime.fromISO(game.gameDate).toLocal().toFormat('MM/dd/yyyy')}</Text>
+                {game.gameTime && <Text>Time: {DateTime.fromISO(game.gameTime).toLocal().toFormat('hh:mm a')}</Text>}
                 {game.gameLocation && <Text>Location: {game.gameLocation}</Text>}
               </View>
               <View style={styles.gameActions}>
