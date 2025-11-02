@@ -13,7 +13,7 @@ import * as SplashScreen from 'expo-splash-screen';
 SplashScreen.preventAutoHideAsync();
 
 const InitialLayout = () => {
-  const { authenticated, isLoading } = useAuth();
+  const { authenticated, isLoading, lastLeagueId } = useAuth();
   const segments = useSegments();
   const router = useRouter();
   const params = useGlobalSearchParams();
@@ -82,11 +82,15 @@ const InitialLayout = () => {
     }
 
     if (authenticated && inAuthGroup) {
-      router.replace('/(app)/home');
+        if (lastLeagueId) {
+            router.replace(`/(app)/leagues/${lastLeagueId}/home`);
+        } else {
+            router.replace('/(app)/home');
+        }
     } else if (!authenticated && !inAuthGroup) {
       router.replace('/(auth)');
     }
-  }, [authenticated, isLoading, segments, router, params, navigationState]);
+  }, [authenticated, isLoading, segments, router, params, navigationState, lastLeagueId]);
 
   return <Slot />;
 };
