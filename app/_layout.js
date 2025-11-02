@@ -82,11 +82,7 @@ const InitialLayout = () => {
     }
 
     if (authenticated && inAuthGroup) {
-        if (lastLeagueId) {
-            router.replace(`/(app)/leagues/${lastLeagueId}/home`);
-        } else {
-            router.replace('/(app)/home');
-        }
+        router.replace('/(app)/home');
     } else if (!authenticated && !inAuthGroup) {
       router.replace('/(auth)');
     }
