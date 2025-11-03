@@ -80,6 +80,7 @@ const UserMenu = ({ isVisible, onClose, inviteCount }) => {
                         switchLeague(league.id);
                         setIsDropdownOpen(false);
                         closeMenu();
+                        router.replace({ pathname: '(app)/home', params: { leagueId: league.id } });
                       }}
                     >
                       <Text style={styles.dropdownOptionText}>{league.leagueName}</Text>
