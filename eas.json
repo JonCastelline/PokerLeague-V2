@@ -6,9 +6,8 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal",
       "android": {
-        "image": "default"
+        "image": "latest"
       },
       "ios": {
         "image": "latest"
