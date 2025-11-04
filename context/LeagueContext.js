@@ -24,10 +24,12 @@ export const LeagueProvider = ({ children }) => {
           const data = await api(apiActions.getLeagues);
           setLeagues(data || []);
           if (data && data.length > 0) {
-            if (user.lastLeagueId && data.some(league => league.id === user.lastLeagueId)) {
-              setSelectedLeagueId(user.lastLeagueId);
-            } else if (!selectedLeagueId || !data.some(league => league.id === selectedLeagueId)) {
-              setSelectedLeagueId(data[0].id);
+            if (!selectedLeagueId) {
+                if (user.lastLeagueId && data.some(league => league.id === user.lastLeagueId)) {
+                    setSelectedLeagueId(user.lastLeagueId);
+                } else {
+                    setSelectedLeagueId(data[0].id);
+                }
             }
           } else {
             setSelectedLeagueId(null);
@@ -42,7 +44,7 @@ export const LeagueProvider = ({ children }) => {
           setLoadingLeagues(false);
         }
       }
-    }, [user, selectedLeagueId, api]);
+    }, [user, api]);
   
     useEffect(() => {
       reloadLeagues();
