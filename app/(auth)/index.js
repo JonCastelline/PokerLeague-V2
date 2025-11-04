@@ -24,7 +24,7 @@ export default function LoginPage() {
       Toast.show({
         type: 'error',
         text1: 'Login Error',
-        text2: error.message
+        text2: 'Incorrect email or password.'
       });
     }
   };
