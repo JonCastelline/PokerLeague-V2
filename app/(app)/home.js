@@ -21,7 +21,8 @@ import * as Clipboard from 'expo-clipboard';
              currentLeague,
              currentUserMembership,
              leagueHomeContent,
-             reloadHomeContent
+             reloadHomeContent,
+             switchLeague
            } = useLeague();
            const [editMode, setEditMode] = useState(false);
            const [editedContent, setEditedContent] = useState("");
