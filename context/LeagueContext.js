@@ -71,12 +71,14 @@ export const LeagueProvider = ({ children }) => {
     }, [selectedLeagueId, user?.id, api]);
   
     useEffect(() => {
-      fetchCurrentUserMembership();
-    }, [fetchCurrentUserMembership]);
+      if (user) {
+        fetchCurrentUserMembership();
+      }
+    }, [fetchCurrentUserMembership, user]);
   
     useEffect(() => {
       const fetchActiveSeason = async () => {
-        if (selectedLeagueId) {
+        if (selectedLeagueId && user) {
           setLoadingSeason(true);
           try {
             const season = await api(apiActions.getActiveSeason, selectedLeagueId);
@@ -95,7 +97,7 @@ export const LeagueProvider = ({ children }) => {
         }
       };
       fetchActiveSeason();
-    }, [selectedLeagueId, api]);
+    }, [selectedLeagueId, api, user]);
   
     const reloadHomeContent = useCallback(async () => {
       if (!selectedLeagueId) {
@@ -123,8 +125,10 @@ export const LeagueProvider = ({ children }) => {
     }, [selectedLeagueId, api]);
   
     useEffect(() => {
-      reloadHomeContent();
-    }, [reloadHomeContent]);
+      if (user) {
+        reloadHomeContent();
+      }
+    }, [reloadHomeContent, user]);
   
     const switchLeague = useCallback(async (leagueId) => {
       setSelectedLeagueId(leagueId);
