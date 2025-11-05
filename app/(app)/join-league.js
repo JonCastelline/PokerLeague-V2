@@ -38,10 +38,8 @@ const JoinLeaguePage = () => {
   const handleAcceptInvite = async (inviteId) => {
     try {
       const response = await api(apiActions.acceptInvite, inviteId);
-      const newToken = response.token;
-      const newLeagueId = response.leagueId;
-      signIn(newToken, user);
-      Toast.show({ type: 'success', text1: 'Success', text2: 'You have successfully claimed the profile and joined the league!' });
+      const newLeagueId = response;
+      Toast.show({ type: 'success', text1: 'Success', text2: 'You have successfully joined the league!' });
       await fetchInvites(); // Refresh invites list
       await reloadLeagues(); // Refresh leagues list
       await switchLeague(newLeagueId);
@@ -60,13 +58,13 @@ const JoinLeaguePage = () => {
     try {
       const data = await api(apiActions.joinLeague, inviteCode);
       await reloadLeagues();
-      await switchLeague(data.leagueId);
+      await switchLeague(data.id);
       Toast.show({
         type: 'success',
         text1: 'Success',
         text2: `You have joined the league "${data.leagueName}"!`
       });
-      router.replace({ pathname: '/(app)/home', params: { leagueId: data.leagueId } });
+      router.replace({ pathname: '/(app)/home', params: { leagueId: data.id } });
     } catch (error) {
       console.error(error);
       Toast.show({ type: 'error', text1: 'Error', text2: error.message });

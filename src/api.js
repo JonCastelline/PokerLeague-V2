@@ -427,6 +427,6 @@ export const updateLastLeague = (leagueId, token) => {
   return apiFetch(`/api/player-accounts/me/last-league`, {
     method: 'PUT',
     token,
-    body: JSON.stringify(leagueId),
+    body: JSON.stringify({ leagueId: leagueId }),
   });
 };
