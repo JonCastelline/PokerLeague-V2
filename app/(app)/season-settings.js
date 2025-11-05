@@ -769,9 +769,12 @@ const SeasonSettingsPage = () => {
         ) : (
           games.map((game, index) => (
             <View key={index} style={styles.gameItem}>
-              <View style={styles.gameInfo}>
-                <Text>{DateTime.fromISO(game.gameDateTime).toLocal().toFormat('MM/dd/yyyy hh:mm a')}</Text>
-                {game.gameLocation && <Text>Location: {game.gameLocation}</Text>}
+              <View>
+                <Text style={styles.gameNameText}>{game.gameName}</Text>
+                <View style={styles.gameInfo}>
+                  <Text>{DateTime.fromISO(game.gameDateTime).toLocal().toFormat('MM/dd/yyyy hh:mm a')}</Text>
+                  {game.gameLocation && <Text>Location: {game.gameLocation}</Text>}
+                </View>
               </View>
               <View style={styles.gameActions}>
                 {isAdmin && !isSeasonFinalized && game.gameStatus === 'SCHEDULED' && (
@@ -1996,6 +1999,11 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     color: 'white',
     fontSize: 12,
+  },
+  gameNameText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 5,
   },
   gameItem: {
     backgroundColor: '#e0e0e0',
