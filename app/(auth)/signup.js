@@ -1,5 +1,5 @@
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, Image } from 'react-native';
 import Toast from 'react-native-toast-message';
 import * as apiActions from '../../src/api';
@@ -14,6 +14,9 @@ export default function SignUpPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { token } = useLocalSearchParams();
+  const lastNameInputRef = useRef(null);
+  const emailInputRef = useRef(null);
+  const passwordInputRef = useRef(null);
 
   useEffect(() => {
     if (token) {
@@ -64,10 +67,25 @@ export default function SignUpPage() {
       router.replace('/(auth)'); // Navigate to login
     } catch (error) {
       console.error('Signup/claim request failed:', error);
+      let errorMessage = 'An unexpected error occurred.';
+      if (error.message) {
+        try {
+          // Try to parse the error message as JSON
+          const jsonError = JSON.parse(error.message.substring(error.message.indexOf('{')));
+          if (jsonError && jsonError.message) {
+            errorMessage = jsonError.message;
+          } else {
+            errorMessage = error.message;
+          }
+        } catch (e) {
+          // If parsing fails, use the original error message
+          errorMessage = error.message;
+        }
+      }
       Toast.show({
         type: 'error',
         text1: 'Sign Up Error',
-        text2: error.message
+        text2: errorMessage
       });
     }
   };
@@ -98,33 +116,44 @@ export default function SignUpPage() {
           placeholder="First Name"
           placeholderTextColor="#003f5c"
           onChangeText={text => setFirstName(text)}
+          returnKeyType="next"
+          onSubmitEditing={() => lastNameInputRef.current.focus()}
         />
       </View>
       <View style={styles.inputView}>
         <TextInput
+          ref={lastNameInputRef}
           style={styles.inputText}
           placeholder="Last Name"
           placeholderTextColor="#003f5c"
           onChangeText={text => setLastName(text)}
+          returnKeyType="next"
+          onSubmitEditing={() => emailInputRef.current.focus()}
         />
       </View>
       <View style={styles.inputView}>
         <TextInput
+          ref={emailInputRef}
           style={styles.inputText}
           placeholder="Email"
           placeholderTextColor="#003f5c"
           value={email}
           onChangeText={text => setEmail(text)}
           editable={!token}
+          returnKeyType="next"
+          onSubmitEditing={() => passwordInputRef.current.focus()}
         />
       </View>
       <View style={styles.inputView}>
         <TextInput
+          ref={passwordInputRef}
           secureTextEntry
           style={styles.inputText}
           placeholder="Password"
           placeholderTextColor="#003f5c"
           onChangeText={text => setPassword(text)}
+          returnKeyType="done"
+          onSubmitEditing={handleSignUp}
         />
       </View>
       <TouchableOpacity style={styles.signupBtn} onPress={handleSignUp}>
@@ -142,16 +171,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   logo: {
-    width: 200,
-    height: 200,
+    width: 150,
+    height: 150,
     resizeMode: 'contain',
-    marginBottom: 20,
+    marginBottom: 10,
   },
   title: {
     fontWeight: 'bold',
-    fontSize: 50,
+    fontSize: 40,
     color: '#fb5b5a',
-    marginBottom: 40,
+    marginBottom: 20,
   },
   claimText: {
     width: '80%',
@@ -165,7 +194,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 25,
     height: 50,
-    marginBottom: 20,
+    marginBottom: 10,
     justifyContent: 'center',
     padding: 20,
     borderWidth: 1,

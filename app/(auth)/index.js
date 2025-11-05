@@ -1,5 +1,5 @@
 import { useRouter, Link } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, Image } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { useAuth } from '../../context/AuthContext';
@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const router = useRouter();
   const { signIn } = useAuth();
+  const passwordInputRef = useRef(null);
 
   const handleLogin = async () => {
     try {
@@ -44,15 +45,20 @@ export default function LoginPage() {
           placeholder="Email"
           placeholderTextColor="#003f5c"
           onChangeText={text => setEmail(text)}
+          returnKeyType="next"
+          onSubmitEditing={() => passwordInputRef.current.focus()}
         />
       </View>
       <View style={styles.inputView}>
         <TextInput
+          ref={passwordInputRef}
           secureTextEntry
           style={styles.inputText}
           placeholder="Password"
           placeholderTextColor="#003f5c"
           onChangeText={text => setPassword(text)}
+          returnKeyType="done"
+          onSubmitEditing={handleLogin}
         />
       </View>
       <TouchableOpacity style={styles.loginBtn} onPress={handleLogin}>
