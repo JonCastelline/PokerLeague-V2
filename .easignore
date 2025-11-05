@@ -1,0 +1,23 @@
+# Node modules
+node_modules/
+
+# IDE configuration
+.idea/
+.vscode/
+
+# Operating System files
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+build/
+dist/
+.expo/
+
+# Log files
+*.log
+
+# Temporary files
+*.tmp
+
+# Other projects
