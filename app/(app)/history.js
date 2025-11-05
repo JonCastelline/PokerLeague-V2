@@ -51,7 +51,7 @@ const HistoryPage = () => {
         .then(data => {
           const completedGames = data
             .filter(game => game.gameStatus === 'COMPLETED')
-            .sort((a, b) => new Date(a.gameDate) - new Date(b.gameDate));
+            .sort((a, b) => new Date(a.gameDateTime) - new Date(b.gameDateTime));
           setGames(completedGames);
         })
         .catch(err => {
@@ -68,7 +68,7 @@ const HistoryPage = () => {
   const renderGame = ({ item }) => (
     <TouchableOpacity style={styles.gameItem} onPress={() => router.push({ pathname: '/(app)/gameDetails', params: { gameId: item.id } })}>
       <Text style={styles.gameName}>{item.gameName}</Text>
-      <Text style={styles.gameDate}>{new Date(item.gameDate).toLocaleDateString()}</Text>
+      <Text style={styles.gameDate}>{new Date(item.gameDateTime).toLocaleDateString()}</Text>
     </TouchableOpacity>
   );
 

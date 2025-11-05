@@ -373,9 +373,17 @@ const SeasonSettingsPage = () => {
     if (!selectedSeason) return;
 
     try {
+      const combinedDateTime = DateTime.fromJSDate(newGameDate)
+        .set({
+          hour: newGameTime.getHours(),
+          minute: newGameTime.getMinutes(),
+          second: newGameTime.getSeconds(),
+        })
+        .toUTC()
+        .toISO();
+
       const gameData = {
-        gameDate: DateTime.fromJSDate(newGameDate).toUTC().toFormat('yyyy-MM-dd'),
-        gameTime: DateTime.fromJSDate(newGameTime).toUTC().toFormat('HH:mm:ss'),
+        gameDateTime: combinedDateTime,
         gameLocation: newGameLocation,
       };
       await api(apiActions.createGame, selectedSeason.id, gameData);
@@ -402,7 +410,9 @@ const SeasonSettingsPage = () => {
   const handleEditGame = (game) => {
     setCurrentEditingGame(game);
     setEditedGameName(game.gameName);
-    setEditedGameDate(DateTime.fromISO(game.gameDate).toJSDate());
+    const gameDateTime = DateTime.fromISO(game.gameDateTime).toJSDate();
+    setEditedGameDate(gameDateTime);
+    setEditedGameTime(gameDateTime);
     setEditedGameLocation(game.gameLocation || '');
     setEditGameModalVisible(true);
   };
@@ -411,10 +421,18 @@ const SeasonSettingsPage = () => {
     if (!currentEditingGame || !selectedSeason) return;
 
     try {
+      const combinedDateTime = DateTime.fromJSDate(editedGameDate)
+        .set({
+          hour: editedGameTime.getHours(),
+          minute: editedGameTime.getMinutes(),
+          second: editedGameTime.getSeconds(),
+        })
+        .toUTC()
+        .toISO();
+
       const gameData = {
         gameName: editedGameName,
-        gameDate: DateTime.fromJSDate(editedGameDate).toUTC().toFormat('yyyy-MM-dd'),
-        gameTime: DateTime.fromJSDate(editedGameTime).toUTC().toFormat('HH:mm:ss'),
+        gameDateTime: combinedDateTime,
         gameLocation: editedGameLocation,
       };
       await api(apiActions.updateGame, selectedSeason.id, currentEditingGame.id, gameData);
@@ -752,8 +770,7 @@ const SeasonSettingsPage = () => {
           games.map((game, index) => (
             <View key={index} style={styles.gameItem}>
               <View style={styles.gameInfo}>
-                <Text>{DateTime.fromISO(game.gameDate).toLocal().toFormat('MM/dd/yyyy')}</Text>
-                {game.gameTime && <Text>Time: {DateTime.fromISO(game.gameTime).toLocal().toFormat('hh:mm a')}</Text>}
+                <Text>{DateTime.fromISO(game.gameDateTime).toLocal().toFormat('MM/dd/yyyy hh:mm a')}</Text>
                 {game.gameLocation && <Text>Location: {game.gameLocation}</Text>}
               </View>
               <View style={styles.gameActions}>
