@@ -318,7 +318,7 @@ const PlayPage = () => {
                         .map(game => (
                           <Picker.Item
                             key={game.id}
-                            label={`${game.gameName} (${new Date(game.gameDate).toLocaleDateString()}) - ${game.gameStatus || 'SCHEDULED'}`}
+                            label={`${game.gameName} (${new Date(game.gameDateTime).toLocaleDateString()}) - ${game.gameStatus || 'SCHEDULED'}`}
                             value={game.id}
                             style={{ color: 'black' }}
                           />
