@@ -11,7 +11,7 @@ const CreateLeaguePage = () => {
   const [leagueName, setLeagueName] = useState('');
   const router = useRouter();
   const { api } = useAuth();
-  const { reloadLeagues } = useLeague();
+  const { reloadLeagues, switchLeague } = useLeague();
 
   const handleCreateLeague = async () => {
     if (!leagueName.trim()) {
@@ -25,12 +25,13 @@ const CreateLeaguePage = () => {
     try {
       const data = await api(apiActions.createLeague, leagueName);
       await reloadLeagues();
+      await switchLeague(data.id);
       Toast.show({
         type: 'success',
         text1: 'Success',
         text2: `League "${data.leagueName}" created!`
       });
-      router.replace('/(app)/home');
+      router.replace({ pathname: '/(app)/home', params: { leagueId: data.id } });
     } catch (error) {
       console.error(error);
       Toast.show({

@@ -12,8 +12,8 @@ const JoinLeaguePage = () => {
   const [inviteCode, setInviteCode] = useState('');
   const [invites, setInvites] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { api } = useAuth();
-  const { reloadLeagues } = useLeague();
+  const { api, signIn, user } = useAuth();
+  const { reloadLeagues, switchLeague, reloadHomeContent } = useLeague();
   const router = useRouter();
 
   const fetchInvites = useCallback(async () => {
@@ -37,10 +37,13 @@ const JoinLeaguePage = () => {
 
   const handleAcceptInvite = async (inviteId) => {
     try {
-      await api(apiActions.acceptInvite, inviteId);
-      Toast.show({ type: 'success', text1: 'Success', text2: 'You have successfully claimed the profile and joined the league!' });
-      fetchInvites(); // Refresh invites list
-      reloadLeagues(); // Refresh leagues list
+      const response = await api(apiActions.acceptInvite, inviteId);
+      const newLeagueId = response;
+      Toast.show({ type: 'success', text1: 'Success', text2: 'You have successfully joined the league!' });
+      await fetchInvites(); // Refresh invites list
+      await reloadLeagues(); // Refresh leagues list
+      await switchLeague(newLeagueId);
+      router.replace({ pathname: '/(app)/home', params: { leagueId: newLeagueId } });
     } catch (error) {
       console.error('Accept invite error:', error);
       Toast.show({ type: 'error', text1: 'Error', text2: error.message });
@@ -54,13 +57,14 @@ const JoinLeaguePage = () => {
     }
     try {
       const data = await api(apiActions.joinLeague, inviteCode);
-      reloadLeagues();
+      await reloadLeagues();
+      await switchLeague(data.id);
       Toast.show({
         type: 'success',
         text1: 'Success',
         text2: `You have joined the league "${data.leagueName}"!`
       });
-      router.replace('/(app)/home');
+      router.replace({ pathname: '/(app)/home', params: { leagueId: data.id } });
     } catch (error) {
       console.error(error);
       Toast.show({ type: 'error', text1: 'Error', text2: error.message });
