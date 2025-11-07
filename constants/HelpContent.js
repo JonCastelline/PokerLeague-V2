@@ -1,15 +1,15 @@
 export const HELP_TOPICS = {
   ATTENDANCE_POINTS: {
     title: 'Attendance Points',
-    content: "Points awarded for each game a player participates in where they do not earn any points from their finishing place. This rewards players for consistently showing up, even if they don't make it into a point-scoring position."
+    content: "Points awarded for each game a player participates in where they do not earn any points from their finishing place. This rewards players for consistently showing up, even if they don't make it into a point-scoring position. Attendance points are ignored for casual games."
   },
   TRACK_KILLS: {
     title: 'Track Kills',
-    content: 'Enable this to award players points for each opponent they eliminate during a game. The number of points awarded per kill can be configured below.'
+    content: 'Enable this to award players points for each opponent they eliminate during a game. The number of points awarded per kill can be configured below. Kills are ignored for casual games.'
   },
   TRACK_BOUNTIES: {
     title: 'Track Bounties',
-    content: 'Enable this to award players points for collecting bounties. A bounty is a special prize placed on the player(s) with the most total points for the season heading into the game. If multiple players are tied for the lead, they each have a bounty. The number of points awarded per bounty can be configured below.'
+    content: 'Enable this to award players points for collecting bounties. A bounty is a special prize placed on the player(s) with the most total points for the season heading into the game. If multiple players are tied for the lead, they each have a bounty. The number of points awarded per bounty can be configured below. Bounties are ignored for casual games.'
   },
   TIMER_WARNING_SOUND: {
     title: 'Timer Warning Sound',
@@ -25,7 +25,7 @@ export const HELP_TOPICS = {
   },
   BOUNTY_ON_LEADER_ABSENCE: {
     title: 'Bounty on Leader Absence',
-    content: "Determines what happens to the bounty if the season points leader is absent. 'No Bounty' means no bounty is in play for the game. 'Next Highest Player' will move the bounty to the next highest-ranked player from the season standings who is present."
+    content: "Determines what happens to the bounty if the season points leader is absent. 'No Bounty' means no bounty is in play for the game. 'Next Highest Player' will move the bounty to the next highest-ranked player from the season standings who is present. Bounties are ignored for casual games."
   },
   BLIND_LEVELS: {
     title: 'Blind Levels',
@@ -33,7 +33,7 @@ export const HELP_TOPICS = {
   },
   PLACE_POINTS: {
     title: 'Place Points',
-    content: 'Points awarded based on a player\'s finishing position in a game. You can define how many points are awarded for each place (e.g., 10 for 1st, 6 for 2nd, etc.).'
+    content: 'Points awarded based on a player\'s finishing position in a game. You can define how many points are awarded for each place (e.g., 10 for 1st, 6 for 2nd, etc.). Place points are ignored for casual games.'
   },
   ADMINS_MANAGE_ROLES: {
     title: 'Admins Can Manage Roles',
@@ -58,5 +58,9 @@ export const HELP_TOPICS = {
   HOME_PAGE_CONTENT_EDIT: {
     title: 'Home Page Content',
     content: "This content supports Markdown formatting, allowing you to use rich text features like headings (#), bold (**text**), italics (*text*), lists (- item), and even embed images (![alt text](image_url))."
+  },
+  CASUAL_GAME: {
+    title: 'Casual Game Mode',
+    content: "Casual games are for fun and practice. They do not affect league standings, player statistics, or season points. All game actions (like eliminating players, adjusting the timer) are handled locally on your device and are not saved to the server. This mode is perfect for impromptu games or when you don't want to impact your league's official records."
   },
 };

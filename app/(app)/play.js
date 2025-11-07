@@ -5,16 +5,17 @@ import Toast from 'react-native-toast-message';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
-import { useGame } from '../../context/GameContext';
+import { GameProvider, useGame } from '../../context/GameContext';
 import * as apiActions from '../../src/api';
 import PageLayout from '../../components/PageLayout';
+import HelpIcon from '../../components/HelpIcon';
 import Timer from '../../components/Timer';
 import { Picker } from '@react-native-picker/picker';
 
-const PlayPage = () => {
+const PlayPage = ({ selectedGameId, setSelectedGameId }) => {
   const { api } = useAuth();
   const { selectedLeagueId, currentUserMembership } = useLeague();
-  const { gameState, setGameState, isActionLoading, isTimerFinished, setIsTimerFinished, handleAction, startPolling, stopPolling, fetchGameState } = useGame();
+  const { gameState, setGameState, isActionLoading, isTimerFinished, setIsTimerFinished, handleAction, startPolling, stopPolling, fetchGameState, isCasualGame } = useGame();
   const [editableGameState, setEditableGameState] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -23,7 +24,6 @@ const PlayPage = () => {
   const [playersInEditOrder, setPlayersInEditOrder] = useState([]);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState(new Set());
   const [selectedPlayerToEliminate, setSelectedPlayerToEliminate] = useState(null);
-  const [selectedGameId, setSelectedGameId] = useState(null);
   const [activeSeason, setActiveSeason] = useState(null);
   const [activeSeasonSettings, setActiveSeasonSettings] = useState(null);
   const [allGames, setAllGames] = useState([]);
@@ -47,10 +47,6 @@ const PlayPage = () => {
   };
 
   const fetchInitialData = useCallback(async () => {
-    if (!selectedLeagueId) return;
-    setLoading(true);
-    setError(null);
-    setNoActiveSeason(false);
 
     try {
       const members = await api(apiActions.getLeagueMembers, selectedLeagueId);
@@ -73,16 +69,31 @@ const PlayPage = () => {
       const seasonSettings = await api(apiActions.getSeasonSettings, season.id);
       setActiveSeasonSettings(seasonSettings);
 
-      const games = await api(apiActions.getGameHistory, season.id);
+      const games = await api(apiActions.getAllGamesBySeason, season.id);
       setAllGames(games);
 
       if (games.length > 0) {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const defaultGame = games.find(game => game.gameStatus !== 'COMPLETED' && new Date(game.gameDate).getTime() === today.getTime()) ||
-                              games.find(game => game.gameStatus !== 'COMPLETED' && new Date(game.gameDate).getTime() >= today.getTime()) ||
-                              games.find(game => game.gameStatus !== 'COMPLETED') ||
-                              games[0];
+        const nonCompletedGames = games.filter(game => game.gameStatus !== 'COMPLETED');
+
+        let defaultGame = null;
+
+        // Prioritize games that are IN_PROGRESS or PAUSED
+        defaultGame = nonCompletedGames.find(game => game.gameStatus === 'IN_PROGRESS' || game.gameStatus === 'PAUSED');
+
+        // If no IN_PROGRESS or PAUSED game, default to the most recently created non-completed game
+        // Assuming 'games' array is already sorted by creation date (or gameDateTime) descending,
+        // the first non-completed game would be the most recent.
+        if (!defaultGame && nonCompletedGames.length > 0) {
+            defaultGame = nonCompletedGames[0];
+        }
+
+        // Fallback: if no non-completed games, or if nonCompletedGames is empty,
+        // and there are games in the original list, pick the first one.
+        // This case should ideally not be hit if nonCompletedGames is handled correctly.
+        if (!defaultGame && games.length > 0) {
+            defaultGame = games[0];
+        }
+
         setSelectedGameId(defaultGame?.id || null);
       }
 
@@ -100,7 +111,7 @@ const PlayPage = () => {
   }, [mode, fetchInitialData]);
 
   useEffect(() => {
-    if (mode === 'setup' && selectedGameId) {
+    if (mode === 'setup' && selectedGameId && !isCasualGame) {
         const game = allGames.find(g => g.id === selectedGameId);
         if (game && (game.gameStatus === 'IN_PROGRESS' || game.gameStatus === 'PAUSED')) {
             fetchGameState(selectedGameId);
@@ -108,15 +119,15 @@ const PlayPage = () => {
             setGameState(null);
         }
     }
-  }, [selectedGameId, allGames, mode, fetchGameState, setGameState]);
+  }, [selectedGameId, allGames, mode, fetchGameState, setGameState, isCasualGame]);
 
   useEffect(() => {
-    if (isPlayScreenActive && gameState?.gameStatus === 'IN_PROGRESS') {
+    if (isPlayScreenActive && gameState?.gameStatus === 'IN_PROGRESS' && !isCasualGame) {
       startPolling(selectedGameId);
     } else {
       stopPolling();
     }
-  }, [isPlayScreenActive, gameState?.gameStatus, selectedGameId, startPolling, stopPolling]);
+  }, [isPlayScreenActive, gameState?.gameStatus, selectedGameId, startPolling, stopPolling, isCasualGame]);
 
     useFocusEffect(
     React.useCallback(() => {
@@ -139,9 +150,13 @@ const PlayPage = () => {
 
     const remaining = gameState.players.filter(p => !p.isEliminated).length;
     if (remaining <= 1 && mode === 'play') {
+      if (isCasualGame) {
+        // For casual games, mark as completed and transition to review
+        setGameState(prevGameState => ({ ...prevGameState, gameStatus: 'COMPLETED' }));
+      }
       setMode('review');
     }
-  }, [gameState, mode]);
+  }, [gameState, mode, setGameState, isCasualGame]);
 
 
   const handleStartGame = () => {
@@ -153,6 +168,58 @@ const PlayPage = () => {
         setMode('play');
     });
   }
+
+  const handleStartCasualGame = async () => {
+    if (!selectedLeagueId) return;
+
+    try {
+      // Find the casual season
+      const allSeasons = await api(apiActions.getSeasons, selectedLeagueId);
+      const casualSeason = allSeasons.find(s => s.seasonName === "Casual Games");
+
+      if (!casualSeason) {
+        Toast.show({ type: 'error', text1: 'Error', text2: 'Casual Games season not found.' });
+        return;
+      }
+
+      // Fetch settings for the casual season
+      const casualSeasonSettings = await api(apiActions.getSeasonSettings, casualSeason.id);
+
+      // Initialize local game state
+      const initialGameState = {
+        gameId: null, // No backend game ID for casual games
+        gameStatus: 'IN_PROGRESS',
+        players: Array.from(selectedPlayerIds).map(playerId => {
+          const player = allPlayers.find(p => p.id === playerId);
+          return {
+            id: playerId,
+            displayName: player?.displayName || 'Unknown Player',
+            iconUrl: player?.iconUrl || null,
+            isEliminated: false,
+            place: null,
+            kills: 0,
+            bounties: 0,
+            hasBounty: false, // Casual games start without bounties
+            rank: null,
+          };
+        }),
+        timer: {
+          currentLevelIndex: 0,
+          timeRemainingSeconds: casualSeasonSettings.durationSeconds,
+          blindLevels: casualSeasonSettings.blindLevels,
+        },
+        settings: casualSeasonSettings,
+      };
+
+      setGameState(initialGameState);
+      setMode('play');
+      Toast.show({ type: 'success', text1: 'Casual Game Started', text2: 'Enjoy your game!' });
+
+    } catch (e) {
+      Toast.show({ type: 'error', text1: 'Error', text2: `Failed to start casual game: ${e.message}` });
+      console.error("Failed to start casual game:", e);
+    }
+  };
 
   const togglePlayerSelection = (playerId) => {
     const newSelection = new Set(selectedPlayerIds);
@@ -287,7 +354,7 @@ const PlayPage = () => {
     return <PageLayout><Text style={styles.errorText}>Error: {error}</Text></PageLayout>;
   }
 
-  if (noActiveSeason) {
+  if (noActiveSeason && selectedGameId !== 'casual') {
     return (
       <PageLayout>
         <View style={styles.noSeasonContainer}>
@@ -306,55 +373,26 @@ const PlayPage = () => {
           <PageLayout>
               <KeyboardAwareScrollView contentContainerStyle={styles.setupContainer}>
                   <Text style={styles.title}>Select Game</Text>
-                  {hasActiveGames ? (
-                    <Picker
-                      selectedValue={selectedGameId}
-                      onValueChange={(itemValue) => setSelectedGameId(itemValue)}
-                      style={styles.picker}
-                      dropdownIconColor="black"
-                    >
-                      {allGames
-                        .filter(game => game.gameStatus !== 'COMPLETED')
-                        .map(game => (
-                          <Picker.Item
-                            key={game.id}
-                            label={`${game.gameName} (${new Date(game.gameDateTime).toLocaleDateString()}) - ${game.gameStatus || 'SCHEDULED'}`}
-                            value={game.id}
-                            style={{ color: 'black' }}
-                          />
-                        ))}
-                    </Picker>
-                  ) : (
-                    <Text>No upcoming or active games found for this season.</Text>
-                  )}
+                  <Picker
+                    selectedValue={selectedGameId}
+                    onValueChange={(itemValue) => setSelectedGameId(itemValue)}
+                    style={styles.picker}
+                    dropdownIconColor="black"
+                  >
+                    {allGames
+                      .filter(game => game.gameStatus !== 'COMPLETED')
+                      .map(game => (
+                        <Picker.Item
+                          key={game.id}
+                          label={`${game.gameName} (${new Date(game.gameDateTime).toLocaleDateString()}) - ${game.gameStatus || 'SCHEDULED'}`}
+                          value={game.id}
+                          style={{ color: 'black' }}
+                        />
+                      ))}
+                    <Picker.Item label="Casual Game" value="casual" />
+                  </Picker>
 
-                  {selectedGame?.gameStatus === 'SCHEDULED' && (
-                    <>
-                      <Text style={styles.title}>Select Players</Text>
-                      <View style={{width: '100%'}}>
-                        {allPlayers.map(player => (
-                            <View key={player.id} style={styles.playerSetupItem}>
-                                <View style={{flexDirection: 'row', alignItems: 'center', flex: 1}}>
-                                    {player.iconUrl ? <Image source={{ uri: player.iconUrl }} style={styles.playerIcon} /> : <View style={styles.playerIcon} />}
-                                    <Text>{player.displayName}</Text>
-                                </View>
-                                <Switch
-                                    value={selectedPlayerIds.has(player.id)}
-                                    onValueChange={() => togglePlayerSelection(player.id)}
-                                    disabled={!isAdmin}
-                                />
-                            </View>
-                        ))}
-                      </View>
-                      {isAdmin && (
-                          <TouchableOpacity style={[styles.button, styles.setupStartButton]} onPress={handleStartGame} disabled={isActionLoading}>
-                              <Text style={styles.buttonText}>Start Game</Text>
-                          </TouchableOpacity>
-                      )}
-                    </>
-                  )}
-
-                  {(selectedGame?.gameStatus === 'IN_PROGRESS' || selectedGame?.gameStatus === 'PAUSED') && (
+                  {selectedGame && (selectedGame.gameStatus === 'IN_PROGRESS' || selectedGame.gameStatus === 'PAUSED') ? (
                     <>
                         {loading && !gameState ? (
                             <ActivityIndicator size="large" color="#fb5b5a" />
@@ -376,6 +414,36 @@ const PlayPage = () => {
                                 </TouchableOpacity>
                             </>
                         )}
+                    </>
+                  ) : (
+                    <>
+                      {isAdmin && (
+                        <>
+                          <Text style={styles.title}>Select Players</Text>
+                          <View style={{width: '100%'}}>
+                            {allPlayers.map(player => (
+                                <View key={player.id} style={styles.playerSetupItem}>
+                                    <View style={{flexDirection: 'row', alignItems: 'center', flex: 1}}>
+                                        {player.iconUrl ? <Image source={{ uri: player.iconUrl }} style={styles.playerIcon} /> : <View style={styles.playerIcon} />}
+                                        <Text>{player.displayName}</Text>
+                                    </View>
+                                    <Switch
+                                        value={selectedPlayerIds.has(player.id)}
+                                        onValueChange={() => togglePlayerSelection(player.id)}
+                                        disabled={!isAdmin}
+                                    />
+                                </View>
+                            ))}
+                          </View>
+                          {selectedGameId && (
+                            <View style={styles.centeredButtonContainer}>
+                              <TouchableOpacity style={[styles.button, styles.setupStartButton]} onPress={isCasualGame ? handleStartCasualGame : handleStartGame} disabled={isActionLoading}>
+                                  <Text style={styles.buttonText}>{isCasualGame ? 'Start Casual Game' : 'Start Game'}</Text>
+                              </TouchableOpacity>
+                            </View>
+                          )}
+                        </>
+                      )}
                     </>
                   )}
               </KeyboardAwareScrollView>
@@ -424,7 +492,11 @@ const PlayPage = () => {
   let undoButton = null;
   if ((isAdmin || activeSeasonSettings?.playerEliminationEnabled) && eliminatedPlayersCount > 0 && gameState.gameStatus === 'IN_PROGRESS') {
       undoButton = (
-          <TouchableOpacity style={styles.button} onPress={() => handleAction(apiActions.undoElimination, selectedGameId)} disabled={isActionLoading}>
+          <TouchableOpacity style={styles.button} onPress={() => {
+              handleAction(apiActions.undoElimination, selectedGameId).then(() => {
+                  setMode('play');
+              });
+          }} disabled={isActionLoading}>
               <Text style={styles.buttonText}>Undo Elimination</Text>
           </TouchableOpacity>
       );
@@ -453,7 +525,7 @@ const PlayPage = () => {
                                     />
                                 </View>
 
-                                {activeSeasonSettings?.trackKills && (
+                                {!isCasualGame && activeSeasonSettings?.trackKills && (
                                     <View style={styles.statGroup}>
                                         <Text style={styles.statLabel}>Kills:</Text>
                                         <TextInput
@@ -508,7 +580,7 @@ const PlayPage = () => {
           <Text style={styles.title}>Final Results</Text>
           <View style={styles.playersContainer}>
             {sortedPlayers.map((player) => {
-              const place = player.isEliminated ? getOrdinal(player.place) : '1st';
+              const place = player.place ? getOrdinal(player.place) : '1st';
               return (
                 <View key={player.id} style={styles.reviewPlayerItem}>
                     <View style={{flexDirection: 'row', alignItems: 'center', flex: 1}}>
@@ -517,7 +589,7 @@ const PlayPage = () => {
                     </View>
                   <View style={styles.reviewPlayerStatsContainer}>
                     <Text style={styles.reviewPlayerStat}>Place: {place}</Text>
-                    {activeSeasonSettings?.trackKills && (
+                    {!isCasualGame && activeSeasonSettings?.trackKills && (
                         <Text style={styles.reviewPlayerStat}>Kills: {player.kills}</Text>
                     )}
                     {activeSeasonSettings?.trackBounties && (
@@ -531,7 +603,7 @@ const PlayPage = () => {
 
           {!isActionLoading ? (
             <>
-              {isAdmin && (
+              {isAdmin && !isCasualGame && ( // Only show Finalize & Save for non-casual games
                 <View style={styles.buttonContainer}>
                   <TouchableOpacity style={styles.button} onPress={async () => {
                       await handleAction(apiActions.finalizeGame, selectedGameId);
@@ -541,7 +613,7 @@ const PlayPage = () => {
                   </TouchableOpacity>
                 </View>
               )}
-              {isAdmin && (
+              {isAdmin && !isCasualGame && ( // Only show Edit for non-casual games
                 <View style={styles.buttonContainer}>
                   <TouchableOpacity style={styles.button} onPress={() => {
                       const newEditableState = JSON.parse(JSON.stringify(gameState));
@@ -584,11 +656,11 @@ const PlayPage = () => {
                   gameId={gameState.gameId}
                   timerState={gameState.timer}
                   blindLevels={gameState.timer.blindLevels}
+                  settings={gameState.settings} // Pass settings prop
                   isPlaying={gameState.gameStatus === 'IN_PROGRESS' && isPlayScreenActive}
                   onTimerEnd={() => setIsTimerFinished(true)}
-                  warningSoundEnabled={gameState.settings.warningSoundEnabled}
-                  warningSoundTimeSeconds={gameState.settings.warningSoundTimeSeconds}
                   handleAction={handleAction}
+                  isCasualGame={isCasualGame} // Pass isCasualGame prop
               />
           )
         )}
@@ -649,7 +721,7 @@ const PlayPage = () => {
                     </View>
                     <View style={styles.playerStatsContainer}>
                         {player.isEliminated && <Text style={styles.playerStatLine}>Place: {getOrdinal(player.place)}</Text>}
-                        {(activeSeasonSettings?.trackKills || activeSeasonSettings?.trackBounties) && (
+                        {(!isCasualGame && (activeSeasonSettings?.trackKills || activeSeasonSettings?.trackBounties)) && (
                             <Text style={styles.playerStatLine}>
                                 {activeSeasonSettings?.trackKills && `Kills: ${player.kills}`}
                                 {activeSeasonSettings?.trackKills && activeSeasonSettings?.trackBounties && ` | `}
@@ -812,6 +884,14 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 20,
   },
+  casualGameHelpIcon: {
+    marginLeft: 10, // Space between button and icon
+  },
+  centeredButtonContainer: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   editPlayerItem: {
     backgroundColor: '#fff',
     padding: 15,
@@ -867,6 +947,28 @@ const styles = StyleSheet.create({
   statLabel: {
     marginRight: 5,
   },
+  casualGameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center', // Center the entire row
+
+    marginTop: 10, // Match actionButton's marginTop
+    marginBottom: 15, // Match actionButton's marginBottom
+  },
+  casualGameHelpIcon: {
+    marginLeft: 10, // Space between button and icon
+  },
 });
 
-export default PlayPage;
+const PlayPageWrapper = () => {
+  const [selectedGameId, setSelectedGameId] = useState(null);
+  const isCasualGame = selectedGameId === 'casual';
+
+  return (
+    <GameProvider isCasualGame={isCasualGame}>
+      <PlayPage selectedGameId={selectedGameId} setSelectedGameId={setSelectedGameId} />
+    </GameProvider>
+  );
+};
+
+export default PlayPageWrapper;

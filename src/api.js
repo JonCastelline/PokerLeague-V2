@@ -105,6 +105,10 @@ export const getGameHistory = (seasonId, token) => {
   return apiFetch(`/api/seasons/${seasonId}/games`, { token });
 };
 
+export const getAllGamesBySeason = (seasonId, token) => {
+  return apiFetch(`/api/seasons/${seasonId}/all-games`, { token });
+};
+
 export const getGameResults = (gameId, token) => {
   return apiFetch(`/api/games/${gameId}/results`, { token });
 };

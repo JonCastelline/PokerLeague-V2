@@ -29,14 +29,15 @@ const StandingsPage = () => {
       try {
         // 1. Fetch all seasons
         const seasonsData = await api(apiActions.getSeasons, currentLeague.id);
-        const sortedSeasonsData = [...seasonsData].sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
+        const filteredSeasonsData = seasonsData.filter(season => season.seasonName !== "Casual Games");
+        const sortedSeasonsData = [...filteredSeasonsData].sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
         setAllSeasons(sortedSeasonsData);
 
         let defaultSeasonId = null;
         const today = new Date();
 
         // Determine default season: active season first, then latest
-        const activeSeason = seasonsData.find(season => {
+        const activeSeason = filteredSeasonsData.find(season => {
           const startDate = new Date(season.startDate);
           const endDate = new Date(season.endDate);
           return today >= startDate && today <= endDate;
@@ -44,9 +45,9 @@ const StandingsPage = () => {
 
         if (activeSeason) {
           defaultSeasonId = activeSeason.id;
-        } else if (seasonsData.length > 0) {
+        } else if (filteredSeasonsData.length > 0) {
           // Sort by endDate descending to get the latest season
-          const sortedSeasons = [...seasonsData].sort((a, b) => new Date(b.endDate) - new Date(a.endDate));
+          const sortedSeasons = [...filteredSeasonsData].sort((a, b) => new Date(b.endDate) - new Date(a.endDate));
           defaultSeasonId = sortedSeasons[0].id;
         }
 

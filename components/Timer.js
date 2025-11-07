@@ -7,9 +7,9 @@ import { useGame } from '../context/GameContext';
 import * as apiActions from '../src/api';
 import TimerModal from './TimerModal';
 
-const Timer = ({ gameId, timerState, blindLevels, isPlaying, onTimerEnd, warningSoundEnabled, warningSoundTimeSeconds }) => {
+const Timer = ({ gameId, timerState, blindLevels, settings, isPlaying, onTimerEnd, warningSoundEnabled, warningSoundTimeSeconds, isCasualGame }) => {
   const { currentUserMembership } = useLeague();
-  const { handleAction, fireAndForgetAction } = useGame();
+  const { handleAction, fireAndForgetAction, setGameState } = useGame();
   const isAdmin = currentUserMembership?.role === 'ADMIN' || currentUserMembership?.role === 'OWNER';
   const prevRemainingTimeRef = useRef(0);
   const remainingTimeRef = useRef(0);
@@ -38,13 +38,21 @@ const Timer = ({ gameId, timerState, blindLevels, isPlaying, onTimerEnd, warning
   }, []);
 
   useEffect(() => {
-    if (timerState && timerState.timeRemainingInMillis) {
+    if (timerState) {
+      if (isCasualGame) {
+        // For casual games, the CountdownCircleTimer will manage its own internal state
+        // We just need to ensure initialRemainingTime is set correctly
+        setInitialRemainingTime(timerState.timeRemainingSeconds);
+        remainingTimeRef.current = timerState.timeRemainingSeconds;
+        setTimerKey(prevKey => prevKey + 1); // Force re-render of CountdownCircleTimer
+      } else if (timerState.timeRemainingInMillis) {
         const serverRemainingTimeSec = timerState.timeRemainingInMillis / 1000;
         setInitialRemainingTime(serverRemainingTimeSec);
         remainingTimeRef.current = serverRemainingTimeSec;
         setTimerKey(prevKey => prevKey + 1); // Force re-render of CountdownCircleTimer
+      }
     }
-  }, [timerState.currentLevelIndex, timerState.timeRemainingInMillis]);
+  }, [timerState.currentLevelIndex, timerState.timeRemainingInMillis, timerState.timeRemainingSeconds, isCasualGame]);
 
   
 
@@ -71,27 +79,63 @@ const Timer = ({ gameId, timerState, blindLevels, isPlaying, onTimerEnd, warning
   };
 
   const handleOpenModal = async () => {
-    if (!isAdmin) return;
+    const canControlTimer = isAdmin || settings.playerTimerControlEnabled;
+    if (!canControlTimer) return;
+
     if (isPlaying) {
-      await handleAction(apiActions.pauseGame, gameId);
+      // For non-casual games, pause via API. For casual, just update local state.
+      if (!isCasualGame) {
+        await handleAction(apiActions.pauseGame, gameId);
+      } else {
+        setGameState(prevGameState => ({ ...prevGameState, gameStatus: 'PAUSED' }));
+      }
     }
     setModalVisible(true);
   };
 
   const handleSetTime = async (timeInMillis) => {
-    const newGameState = await handleAction(apiActions.setTime, gameId, timeInMillis);
-    if (newGameState) {
-      setInitialRemainingTime(newGameState.timer.timeRemainingInMillis / 1000);
+    const canControlTimer = isAdmin || settings.playerTimerControlEnabled;
+    if (!canControlTimer) return;
+
+    if (isCasualGame) {
+      setGameState(prevGameState => ({
+        ...prevGameState,
+        timer: {
+          ...prevGameState.timer,
+          timeRemainingSeconds: timeInMillis / 1000,
+        },
+      }));
       setTimerKey(prevKey => prevKey + 1);
+    } else {
+      const newGameState = await handleAction(apiActions.setTime, gameId, timeInMillis);
+      if (newGameState) {
+        setInitialRemainingTime(newGameState.timer.timeRemainingInMillis / 1000);
+        setTimerKey(prevKey => prevKey + 1);
+      }
     }
     setModalVisible(false);
   };
 
   const handleResetLevel = async () => {
-    const newGameState = await handleAction(apiActions.resetLevel, gameId);
-    if (newGameState) {
-      setInitialRemainingTime(newGameState.timer.timeRemainingInMillis / 1000);
+    const canControlTimer = isAdmin || settings.playerTimerControlEnabled;
+    if (!canControlTimer) return;
+
+    if (isCasualGame) {
+      setGameState(prevGameState => ({
+        ...prevGameState,
+        timer: {
+          ...prevGameState.timer,
+          currentLevelIndex: 0, // Reset to first level
+          timeRemainingSeconds: settings.durationSeconds,
+        },
+      }));
       setTimerKey(prevKey => prevKey + 1);
+    } else {
+      const newGameState = await handleAction(apiActions.resetLevel, gameId);
+      if (newGameState) {
+        setInitialRemainingTime(newGameState.timer.timeRemainingInMillis / 1000);
+        setTimerKey(prevKey => prevKey + 1);
+      }
     }
     setModalVisible(false);
   };
@@ -100,7 +144,7 @@ const Timer = ({ gameId, timerState, blindLevels, isPlaying, onTimerEnd, warning
     remainingTimeRef.current = remainingTime;
     const displayTime = Math.max(0, remainingTime);
 
-    if (warningSoundEnabled && displayTime === warningSoundTimeSeconds && displayTime !== prevRemainingTimeRef.current) {
+    if (settings.warningSoundEnabled && displayTime === settings.warningSoundTimeSeconds && displayTime !== prevRemainingTimeRef.current) {
       warningSoundPlayer.seekTo(0);
       warningSoundPlayer.play();
     }

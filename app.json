@@ -7,7 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "pokerleaguev2",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "ios": {
       "supportsTablet": true
     },
