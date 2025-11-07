@@ -128,7 +128,7 @@ const SeasonSettingsPage = () => {
     if (!seasonId) return;
     setLoadingGames(true);
     try {
-      const gamesData = await api(apiActions.getAllGamesBySeason, seasonId); // Changed to getAllGamesBySeason
+      const gamesData = await api(apiActions.getAllGamesBySeason, seasonId);
       setGames(gamesData.sort((a, b) => new Date(a.gameDateTime) - new Date(b.gameDateTime)));
       return gamesData; // Return gamesData
     } catch (e) {
