@@ -128,8 +128,8 @@ const SeasonSettingsPage = () => {
     if (!seasonId) return;
     setLoadingGames(true);
     try {
-      const gamesData = await api(apiActions.getGameHistory, seasonId);
-      setGames(gamesData.sort((a, b) => new Date(a.gameDate) - new Date(b.gameDate)));
+      const gamesData = await api(apiActions.getAllGamesBySeason, seasonId);
+      setGames(gamesData.sort((a, b) => new Date(a.gameDateTime) - new Date(b.gameDateTime)));
       return gamesData; // Return gamesData
     } catch (e) {
       console.error("Failed to fetch games:", e);
@@ -222,17 +222,40 @@ const SeasonSettingsPage = () => {
   useEffect(() => {
     if (!selectedSeason && seasons.length > 0) {
       const today = new Date();
-      const activeSeason = seasons.find(season => {
+      let defaultSeason = null;
+
+      // 1. Try to find an active non-casual season
+      const activeNonCasualSeason = seasons.find(season => {
+        if (season.isCasual) return false; // Skip casual seasons
         const startDate = DateTime.fromISO(season.startDate).toJSDate();
         const endDate = DateTime.fromISO(season.endDate).toJSDate();
         return today >= startDate && today <= endDate;
       });
 
-      if (activeSeason) {
-        handleSeasonChange(activeSeason.id);
+      if (activeNonCasualSeason) {
+        defaultSeason = activeNonCasualSeason;
       } else {
-        // Default to the latest season (first in the sorted list)
-        handleSeasonChange(seasons[0].id);
+        // 2. If no active non-casual, try to find the most recently started non-casual season
+        const nonCasualSeasons = seasons.filter(s => !s.isCasual);
+        if (nonCasualSeasons.length > 0) {
+          // Seasons are already sorted by startDate descending, so nonCasualSeasons[0] is the latest
+          defaultSeason = nonCasualSeasons[0];
+        } else {
+          // 3. If only casual seasons exist, default to the most recently started casual season
+          // Seasons are already sorted by startDate descending, so seasons[0] is the latest (which would be casual here)
+          defaultSeason = seasons[0];
+        }
+      }
+
+      if (defaultSeason) {
+        handleSeasonChange(defaultSeason.id);
+      } else {
+        // No seasons found at all (should be caught by seasons.length === 0 check, but for safety)
+        setSettings(null);
+        setSelectedSeason(null);
+        setBlindLevels([]);
+        setPlacePoints([]);
+        setGames([]);
       }
     } else if (seasons.length === 0 && !loadingSeasons) {
       setSettings(null);
@@ -291,6 +314,15 @@ const SeasonSettingsPage = () => {
       return;
     }
 
+    if (newSeasonName === "Casual Games") {
+      Toast.show({
+        type: 'error',
+        text1: 'Invalid Season Name',
+        text2: 'The name "Casual Games" is reserved.'
+      });
+      return;
+    }
+
     try {
       const formattedStartDate = DateTime.fromJSDate(newSeasonStartDate).startOf('day').toUTC().toISO();
       const formattedEndDate = DateTime.fromJSDate(newSeasonEndDate).endOf('day').toUTC().toISO();
@@ -323,6 +355,15 @@ const SeasonSettingsPage = () => {
   };
 
   const handleEditSeason = async () => {
+    if (selectedSeason?.isCasual) {
+      Toast.show({
+        type: 'error',
+        text1: 'Cannot Edit Casual Season',
+        text2: 'The "Casual Games" season cannot be edited.'
+      });
+      return;
+    }
+
     if (!selectedSeason || !editedSeasonName || !editedSeasonStartDate || !editedSeasonEndDate) {
       Toast.show({
         type: 'error',
@@ -760,243 +801,246 @@ const SeasonSettingsPage = () => {
           <Text style={styles.finalizedMessage}>This season has been finalized and is now read-only.</Text>
         ) : null}
 
-        {/* Games Section */}
-        <Text style={styles.subtitle}>Games</Text>
-        {loadingGames ? (
-          <ActivityIndicator size="small" color="#fb5b5a" />
-        ) : games.length === 0 ? (
-          <Text>No games have been added to this season yet.</Text>
-        ) : (
-          games.map((game, index) => (
-            <View key={index} style={styles.gameItem}>
-              <View>
-                <Text style={styles.gameNameText}>{game.gameName}</Text>
-                <View style={styles.gameInfo}>
-                  <Text>{DateTime.fromISO(game.gameDateTime).toLocal().toFormat('MM/dd/yyyy hh:mm a')}</Text>
-                  {game.gameLocation && <Text>Location: {game.gameLocation}</Text>}
-                </View>
-              </View>
-              <View style={styles.gameActions}>
-                {isAdmin && !isSeasonFinalized && game.gameStatus === 'SCHEDULED' && (
+                {!selectedSeason?.isCasual && (
                   <>
-                    <TouchableOpacity
-                      style={[styles.button, styles.buttonPrimary, styles.smallButton]}
-                      onPress={() => handleEditGame(game)}
-                    >
-                      <Text style={styles.textStyle}>Edit</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.button, styles.buttonDestructive, styles.smallButton, { marginLeft: 10 }]}
-                      onPress={() => handleDeleteGame(game.id)}
-                    >
-                      <Text style={styles.textStyle}>Delete</Text>
-                    </TouchableOpacity>
+                    {/* Games Section */}
+                    <Text style={styles.subtitle}>Games</Text>
+                    {loadingGames ? (
+                      <ActivityIndicator size="small" color="#fb5b5a" />
+                    ) : games.length === 0 ? (
+                      <Text>No games have been added to this season yet.</Text>
+                    ) : (
+                      games.map((game, index) => (
+                        <View key={index} style={styles.gameItem}>
+                          <View>
+                            <Text style={styles.gameNameText}>{game.gameName}</Text>
+                            <View style={styles.gameInfo}>
+                              <Text>{DateTime.fromISO(game.gameDateTime).toLocal().toFormat('MM/dd/yyyy hh:mm a')}</Text>
+                              {game.gameLocation && <Text>Location: {game.gameLocation}</Text>}
+                            </View>
+                          </View>
+                          <View style={styles.gameActions}>
+                            {isAdmin && !isSeasonFinalized && game.gameStatus === 'SCHEDULED' && (
+                              <>
+                                <TouchableOpacity
+                                  style={[styles.button, styles.buttonPrimary, styles.smallButton]}
+                                  onPress={() => handleEditGame(game)}
+                                >
+                                  <Text style={styles.textStyle}>Edit</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                  style={[styles.button, styles.buttonDestructive, styles.smallButton, { marginLeft: 10 }]}
+                                  onPress={() => handleDeleteGame(game.id)}
+                                >
+                                  <Text style={styles.textStyle}>Delete</Text>
+                                </TouchableOpacity>
+                              </>
+                            )}
+                            {game.gameStatus !== 'COMPLETED' && (
+                              <TouchableOpacity onPress={() => handleAddToCalendar(game)} style={{ marginLeft: 10 }}>
+                                <MaterialCommunityIcons name="calendar-plus" size={30} color="#28a745" />
+                              </TouchableOpacity>
+                            )}
+                          </View>
+                        </View>
+                      ))
+                    )}
+                    {isAdmin && !isSeasonFinalized && (
+                      <TouchableOpacity
+                        style={[styles.button, styles.buttonPrimaryRed, styles.actionButton]}
+                        onPress={() => {
+                          // Calculate the correct default date for the modal and picker (local time, no timezone offset)
+                          const today = new Date();
+                          let defaultDate = today;
+                          if (selectedSeason?.startDate && selectedSeason?.endDate) {
+                            // Manually parse the date components to avoid timezone issues during initial parsing
+                            const [startDatePart] = selectedSeason.startDate.split('T');
+                            const [startYear, startMonth, startDay] = startDatePart.split('-').map(Number);
+        
+                            const [endDatePart] = selectedSeason.endDate.split('T');
+                            const [endYear, endMonth, endDay] = endDatePart.split('-').map(Number);
+        
+                            const seasonStartLuxon = DateTime.local(startYear, startMonth, startDay);
+                            const seasonEndLuxon = DateTime.local(endYear, endMonth, endDay);
+        
+                            const seasonStartLuxonYear = seasonStartLuxon.year;
+                            const seasonStartLuxonMonth = seasonStartLuxon.month;
+                            const seasonStartLuxonDay = seasonStartLuxon.day;
+        
+                            const seasonEndLuxonYear = seasonEndLuxon.year;
+                            const seasonEndLuxonMonth = seasonEndLuxon.month;
+                            const seasonEndLuxonDay = seasonEndLuxon.day;
+        
+                            const seasonStart = new Date(seasonStartLuxonYear, seasonStartLuxonMonth - 1, seasonStartLuxonDay, 0, 0, 0, 0);
+                            const seasonEnd = new Date(seasonEndLuxonYear, seasonEndLuxonMonth - 1, endDay, 0, 0, 0, 0);
+        
+                            if (today >= seasonStart && today <= seasonEnd) {
+                              defaultDate = today;
+                            } else if (today < seasonStart) {
+                              defaultDate = seasonStart;
+                            } else if (today > seasonEnd) {
+                              defaultDate = seasonEnd;
+                            }
+                          }
+                          setNewGameDate(defaultDate);
+                          setCreateGameModalVisible(true);
+                        }}
+                      >
+                        <Text style={styles.textStyle}>Add New Game</Text>
+                      </TouchableOpacity>
+                    )}
+                    {/* Create Game Modal */}
+                    <Modal
+                      animationType="slide"
+                      transparent={true}
+                      visible={createGameModalVisible}
+                      onRequestClose={() => setCreateGameModalVisible(false)}>
+                      <View style={styles.centeredView}>
+                        <View style={styles.modalView}>
+                          <Text style={styles.modalText}>Create New Game</Text>
+                          <TouchableOpacity
+                            onPress={() => setGameDatePickerVisible(true)}
+                            style={styles.dateInputButton}
+                          >
+                            <Text style={styles.dateInputText}>
+                              Game Date: {DateTime.fromJSDate(newGameDate).toFormat('MM/dd/yyyy')}
+                            </Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => setGameTimePickerVisible(true)}
+                            style={styles.dateInputButton}
+                          >
+                            <Text style={styles.dateInputText}>
+                              Game Time: {DateTime.fromJSDate(newGameTime).toFormat('hh:mm a')}
+                            </Text>
+                          </TouchableOpacity>
+                          <TextInput
+                            style={[styles.input, styles.modalInput]}
+                            placeholder="Game Location (Optional)"
+                            placeholderTextColor="gray"
+                            value={newGameLocation}
+                            onChangeText={setNewGameLocation}
+                          />
+                          <TouchableOpacity
+                            style={[styles.button, styles.buttonPrimaryRed, styles.modalButton]}
+                            onPress={handleAddNewGame}
+                          >
+                            <Text style={styles.textStyle}>Create Game</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.button, styles.buttonClose, styles.modalButton]}
+                            onPress={() => setCreateGameModalVisible(false)}>
+                            <Text style={styles.textStyle}>Cancel</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    </Modal>
+        
+                    {/* Game Date Picker Modal */}
+                    <DateTimePickerModal
+                      isVisible={isGameDatePickerVisible}
+                      mode="date"
+                      onConfirm={(date) => {
+                        setNewGameDate(date);
+                        setGameDatePickerVisible(false);
+                      }}
+                      onCancel={() => setGameDatePickerVisible(false)}
+                      date={newGameDate}
+                      minimumDate={selectedSeason?.startDate ? DateTime.fromISO(selectedSeason.startDate).toJSDate() : undefined}
+                      maximumDate={selectedSeason?.endDate ? DateTime.fromISO(selectedSeason.endDate).toJSDate() : undefined}
+                    />
+        
+                    {/* Game Time Picker Modal */}
+                    <DateTimePickerModal
+                      isVisible={isGameTimePickerVisible}
+                      mode="time"
+                      onConfirm={(time) => {
+                        setNewGameTime(time);
+                        setGameTimePickerVisible(false);
+                      }}
+                      onCancel={() => setGameTimePickerVisible(false)}
+                      date={newGameTime}
+                    />
+        
+                    {/* Edit Game Modal */}
+                    <Modal
+                      animationType="slide"
+                      transparent={true}
+                      visible={editGameModalVisible}
+                      onRequestClose={() => setEditGameModalVisible(false)}>
+                      <View style={styles.centeredView}>
+                        <View style={styles.modalView}>
+                          <Text style={styles.modalText}>Edit Game</Text>
+                          <TextInput
+                            style={[styles.input, styles.modalInput]}
+                            placeholder="Game Name"
+                            value={editedGameName}
+                            onChangeText={setEditedGameName}
+                          />
+                          <TouchableOpacity
+                            onPress={() => setEditGameDatePickerVisible(true)}
+                            style={styles.dateInputButton}
+                          >
+                            <Text style={styles.dateInputText}>
+                              Game Date: {DateTime.fromJSDate(editedGameDate).toFormat('MM/dd/yyyy')}
+                            </Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => setEditGameTimePickerVisible(true)}
+                            style={styles.dateInputButton}
+                          >
+                            <Text style={styles.dateInputText}>
+                              Game Time: {DateTime.fromJSDate(editedGameTime).toFormat('hh:mm a')}
+                            </Text>
+                          </TouchableOpacity>
+                          <TextInput
+                            style={[styles.input, styles.modalInput]}
+                            placeholder="Game Location (Optional)"
+                            value={editedGameLocation}
+                            onChangeText={setEditedGameLocation}
+                          />
+                          <TouchableOpacity
+                            style={[styles.button, styles.buttonPrimaryRed, styles.modalButton]}
+                            onPress={handleUpdateGame}
+                          >
+                            <Text style={styles.textStyle}>Save Changes</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.button, styles.buttonClose, styles.modalButton]}
+                            onPress={() => setEditGameModalVisible(false)}>
+                            <Text style={styles.textStyle}>Cancel</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    </Modal>
+        
+                    {/* Edit Game Date Picker Modal */}
+                    <DateTimePickerModal
+                      isVisible={isEditGameDatePickerVisible}
+                      mode="date"
+                      onConfirm={(date) => {
+                        setEditedGameDate(date);
+                        setEditGameDatePickerVisible(false);
+                      }}
+                      onCancel={() => setEditGameDatePickerVisible(false)}
+                      date={editedGameDate}
+                      minimumDate={selectedSeason?.startDate ? DateTime.fromISO(selectedSeason.startDate).toJSDate() : undefined}
+                      maximumDate={selectedSeason?.endDate ? DateTime.fromISO(selectedSeason.endDate).toJSDate() : undefined}
+                    />
+        
+                    {/* Edit Game Time Picker Modal */}
+                    <DateTimePickerModal
+                      isVisible={isEditGameTimePickerVisible}
+                      mode="time"
+                      onConfirm={(time) => {
+                        setEditedGameTime(time);
+                        setEditGameTimePickerVisible(false);
+                      }}
+                      onCancel={() => setEditGameTimePickerVisible(false)}
+                      date={editedGameTime}
+                    />
                   </>
                 )}
-                {game.gameStatus !== 'COMPLETED' && (
-                  <TouchableOpacity onPress={() => handleAddToCalendar(game)} style={{ marginLeft: 10 }}>
-                    <MaterialCommunityIcons name="calendar-plus" size={30} color="#28a745" />
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-          ))
-        )}
-        {isAdmin && !isSeasonFinalized && (
-          <TouchableOpacity
-            style={[styles.button, styles.buttonPrimaryRed, styles.actionButton]}
-            onPress={() => {
-              // Calculate the correct default date for the modal and picker (local time, no timezone offset)
-              const today = new Date();
-              let defaultDate = today;
-              if (selectedSeason?.startDate && selectedSeason?.endDate) {
-                // Manually parse the date components to avoid timezone issues during initial parsing
-                const [startDatePart] = selectedSeason.startDate.split('T');
-                const [startYear, startMonth, startDay] = startDatePart.split('-').map(Number);
-
-                const [endDatePart] = selectedSeason.endDate.split('T');
-                const [endYear, endMonth, endDay] = endDatePart.split('-').map(Number);
-
-                const seasonStartLuxon = DateTime.local(startYear, startMonth, startDay);
-                const seasonEndLuxon = DateTime.local(endYear, endMonth, endDay);
-
-                const seasonStartLuxonYear = seasonStartLuxon.year;
-                const seasonStartLuxonMonth = seasonStartLuxon.month;
-                const seasonStartLuxonDay = seasonStartLuxon.day;
-
-                const seasonEndLuxonYear = seasonEndLuxon.year;
-                const seasonEndLuxonMonth = seasonEndLuxon.month;
-                const seasonEndLuxonDay = seasonEndLuxon.day;
-
-                const seasonStart = new Date(seasonStartLuxonYear, seasonStartLuxonMonth - 1, seasonStartLuxonDay, 0, 0, 0, 0);
-                const seasonEnd = new Date(seasonEndLuxonYear, seasonEndLuxonMonth - 1, endDay, 0, 0, 0, 0);
-
-                if (today >= seasonStart && today <= seasonEnd) {
-                  defaultDate = today;
-                } else if (today < seasonStart) {
-                  defaultDate = seasonStart;
-                } else if (today > seasonEnd) {
-                  defaultDate = seasonEnd;
-                }
-              }
-              setNewGameDate(defaultDate);
-              setCreateGameModalVisible(true);
-            }}
-          >
-            <Text style={styles.textStyle}>Add New Game</Text>
-          </TouchableOpacity>
-        )}
-        {/* Create Game Modal */}
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={createGameModalVisible}
-          onRequestClose={() => setCreateGameModalVisible(false)}>
-          <View style={styles.centeredView}>
-            <View style={styles.modalView}>
-              <Text style={styles.modalText}>Create New Game</Text>
-              <TouchableOpacity
-                onPress={() => setGameDatePickerVisible(true)}
-                style={styles.dateInputButton}
-              >
-                <Text style={styles.dateInputText}>
-                  Game Date: {DateTime.fromJSDate(newGameDate).toFormat('MM/dd/yyyy')}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setGameTimePickerVisible(true)}
-                style={styles.dateInputButton}
-              >
-                <Text style={styles.dateInputText}>
-                  Game Time: {DateTime.fromJSDate(newGameTime).toFormat('hh:mm a')}
-                </Text>
-              </TouchableOpacity>
-              <TextInput
-                style={[styles.input, styles.modalInput]}
-                placeholder="Game Location (Optional)"
-                placeholderTextColor="gray"
-                value={newGameLocation}
-                onChangeText={setNewGameLocation}
-              />
-              <TouchableOpacity
-                style={[styles.button, styles.buttonPrimaryRed, styles.modalButton]}
-                onPress={handleAddNewGame}
-              >
-                <Text style={styles.textStyle}>Create Game</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.button, styles.buttonClose, styles.modalButton]}
-                onPress={() => setCreateGameModalVisible(false)}>
-                <Text style={styles.textStyle}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-
-        {/* Game Date Picker Modal */}
-        <DateTimePickerModal
-          isVisible={isGameDatePickerVisible}
-          mode="date"
-          onConfirm={(date) => {
-            setNewGameDate(date);
-            setGameDatePickerVisible(false);
-          }}
-          onCancel={() => setGameDatePickerVisible(false)}
-          date={newGameDate}
-          minimumDate={selectedSeason?.startDate ? DateTime.fromISO(selectedSeason.startDate).toJSDate() : undefined}
-          maximumDate={selectedSeason?.endDate ? DateTime.fromISO(selectedSeason.endDate).toJSDate() : undefined}
-        />
-
-        {/* Game Time Picker Modal */}
-        <DateTimePickerModal
-          isVisible={isGameTimePickerVisible}
-          mode="time"
-          onConfirm={(time) => {
-            setNewGameTime(time);
-            setGameTimePickerVisible(false);
-          }}
-          onCancel={() => setGameTimePickerVisible(false)}
-          date={newGameTime}
-        />
-
-        {/* Edit Game Modal */}
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={editGameModalVisible}
-          onRequestClose={() => setEditGameModalVisible(false)}>
-          <View style={styles.centeredView}>
-            <View style={styles.modalView}>
-              <Text style={styles.modalText}>Edit Game</Text>
-              <TextInput
-                style={[styles.input, styles.modalInput]}
-                placeholder="Game Name"
-                value={editedGameName}
-                onChangeText={setEditedGameName}
-              />
-              <TouchableOpacity
-                onPress={() => setEditGameDatePickerVisible(true)}
-                style={styles.dateInputButton}
-              >
-                <Text style={styles.dateInputText}>
-                  Game Date: {DateTime.fromJSDate(editedGameDate).toFormat('MM/dd/yyyy')}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setEditGameTimePickerVisible(true)}
-                style={styles.dateInputButton}
-              >
-                <Text style={styles.dateInputText}>
-                  Game Time: {DateTime.fromJSDate(editedGameTime).toFormat('hh:mm a')}
-                </Text>
-              </TouchableOpacity>
-              <TextInput
-                style={[styles.input, styles.modalInput]}
-                placeholder="Game Location (Optional)"
-                value={editedGameLocation}
-                onChangeText={setEditedGameLocation}
-              />
-              <TouchableOpacity
-                style={[styles.button, styles.buttonPrimaryRed, styles.modalButton]}
-                onPress={handleUpdateGame}
-              >
-                <Text style={styles.textStyle}>Save Changes</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.button, styles.buttonClose, styles.modalButton]}
-                onPress={() => setEditGameModalVisible(false)}>
-                <Text style={styles.textStyle}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-
-        {/* Edit Game Date Picker Modal */}
-        <DateTimePickerModal
-          isVisible={isEditGameDatePickerVisible}
-          mode="date"
-          onConfirm={(date) => {
-            setEditedGameDate(date);
-            setEditGameDatePickerVisible(false);
-          }}
-          onCancel={() => setEditGameDatePickerVisible(false)}
-          date={editedGameDate}
-          minimumDate={selectedSeason?.startDate ? DateTime.fromISO(selectedSeason.startDate).toJSDate() : undefined}
-          maximumDate={selectedSeason?.endDate ? DateTime.fromISO(selectedSeason.endDate).toJSDate() : undefined}
-        />
-
-        {/* Edit Game Time Picker Modal */}
-        <DateTimePickerModal
-          isVisible={isEditGameTimePickerVisible}
-          mode="time"
-          onConfirm={(time) => {
-            setEditedGameTime(time);
-            setEditGameTimePickerVisible(false);
-          }}
-          onCancel={() => setEditGameTimePickerVisible(false)}
-          date={editedGameTime}
-        />
-
         <View style={styles.settingItem}>
             <View style={{flexDirection: 'row', alignItems: 'center'}}>
                 <Text style={styles.settingLabel}>Track Kills</Text>
@@ -1354,7 +1398,7 @@ const SeasonSettingsPage = () => {
                 </Picker>
               </View>
             </View>
-            {isAdmin && selectedSeason && !selectedSeason.isFinalized && (
+            {isAdmin && selectedSeason && !selectedSeason.isFinalized && !selectedSeason.isCasual && (
               <View style={styles.seasonActionButtonsContainer}>
                 <TouchableOpacity
                   style={[styles.button, styles.buttonPrimary, styles.actionButton]}
@@ -1367,7 +1411,7 @@ const SeasonSettingsPage = () => {
                 >
                   <Text style={styles.textStyle}>Edit Season</Text>
                 </TouchableOpacity>
-                {!hasGamesInSelectedSeason && ( // Conditional render
+                {!hasGamesInSelectedSeason && !selectedSeason.isCasual && ( // Conditional render
                   <TouchableOpacity
                     style={[styles.button, styles.buttonDestructive, styles.actionButton]}
                     onPress={handleDeleteSeason}
@@ -1389,7 +1433,7 @@ const SeasonSettingsPage = () => {
 
             {selectedSeason ? renderSettings() : null}
 
-            {selectedSeason
+            {selectedSeason && !selectedSeason.isCasual
               ? (isAdmin
                   ? (!selectedSeason.isFinalized
                       ? (

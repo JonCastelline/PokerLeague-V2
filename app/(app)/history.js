@@ -25,12 +25,14 @@ const HistoryPage = () => {
       setError(null);
       api(getSeasons, currentLeague.id)
         .then(data => {
-          const sortedData = [...data].sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
+          const nonCasualSeasons = data.filter(s => !s.isCasual);
+          const sortedData = [...nonCasualSeasons].sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
           setSeasons(sortedData);
           if (sortedData.length > 0) {
             const activeSeasonInList = sortedData.find(s => s.id === activeSeason?.id);
             setSelectedSeasonId(activeSeasonInList ? activeSeason.id : sortedData[0].id);
           } else {
+            setSelectedSeasonId(null); // No non-casual seasons available
             setLoadingSeasons(false);
           }
         })
