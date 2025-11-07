@@ -1,4 +1,4 @@
-import { Picker } from '@react-native-picker/picker';
+import SafePicker from '../../components/SafePicker';
 import { DateTime } from 'luxon';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View, Linking } from 'react-native';
@@ -1219,16 +1219,16 @@ const SeasonSettingsPage = () => {
                     <Text style={styles.settingLabel}>Bounty on Leader Absence</Text>
                     <HelpIcon topicKey="BOUNTY_ON_LEADER_ABSENCE" />
                 </View>
-                <Picker
+                <SafePicker
                     selectedValue={settings.bountyOnLeaderAbsenceRule}
                     style={styles.pickerBounty}
                     onValueChange={(itemValue) => handleSettingChange('bountyOnLeaderAbsenceRule', itemValue)}
                     enabled={isSeasonFinalized ? false : (isAdmin ? true : false)}
                     itemStyle={{ color: 'black' }}
                 >
-                    <Picker.Item label="No Bounty" value="NO_BOUNTY"/>
-                    <Picker.Item label="Next Highest Player" value="NEXT_HIGHEST_PLAYER"/>
-                </Picker>
+                    <SafePicker.Item label="No Bounty" value="NO_BOUNTY"/>
+                    <SafePicker.Item label="Next Highest Player" value="NEXT_HIGHEST_PLAYER"/>
+                </SafePicker>
             </View>
         </View>
 
@@ -1384,7 +1384,7 @@ const SeasonSettingsPage = () => {
             <View style={styles.seasonSelectorContainer}>
               <View style={{ flexDirection: 'column', width: '100%' }}>
                 <Text style={styles.subtitle}>Current Season:</Text>
-                <Picker
+                <SafePicker
                   selectedValue={String(selectedSeason?.id)}
                   style={styles.picker}
                   onValueChange={(itemValue) => handleSeasonChange(Number(itemValue))}>
@@ -1392,10 +1392,10 @@ const SeasonSettingsPage = () => {
                     const label = typeof s.seasonName === 'string' ? s.seasonName : String(s.seasonName ?? 'Unnamed');
                     const value = String(s.id);
                     return (
-                      <Picker.Item key={value} label={label} value={value} />
+                      <SafePicker.Item key={value} label={label} value={value} />
                     );
                   })}
-                </Picker>
+                </SafePicker>
               </View>
             </View>
             {isAdmin && selectedSeason && !selectedSeason.isFinalized && !selectedSeason.isCasual && (

@@ -5,7 +5,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { useAuth } from '../../context/AuthContext';
 import * as apiActions from '../../src/api';
-import { Picker } from '@react-native-picker/picker';
+import SafePicker from '../../components/SafePicker';
 
 const SecurityQuestionsScreen = () => {
   const { api } = useAuth();
@@ -127,17 +127,17 @@ const SecurityQuestionsScreen = () => {
       <Text style={styles.title}>Set Security Questions</Text>
       {selectedQuestions.map((_, index) => (
         <View key={index} style={styles.questionContainer}>
-          <Picker
+          <SafePicker
             selectedValue={selectedQuestions[index].questionId}
             onValueChange={(itemValue) => handleQuestionChange(itemValue, index)}
             style={styles.picker}
             dropdownIconColor="black"
           >
-            <Picker.Item label="Select a question..." value={null}/>
+            <SafePicker.Item label="Select a question..." value={null}/>
             {allQuestions.map(q => (
-              <Picker.Item key={q.id} label={q.questionText} value={q.id}/>
+              <SafePicker.Item key={q.id} label={q.questionText} value={q.id}/>
             ))}
-          </Picker>
+          </SafePicker>
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}

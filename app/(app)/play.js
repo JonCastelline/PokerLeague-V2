@@ -10,7 +10,7 @@ import * as apiActions from '../../src/api';
 import PageLayout from '../../components/PageLayout';
 import HelpIcon from '../../components/HelpIcon';
 import Timer from '../../components/Timer';
-import { Picker } from '@react-native-picker/picker';
+import SafePicker from '../../components/SafePicker';
 
 const PlayPage = ({ selectedGameId, setSelectedGameId }) => {
   const { api } = useAuth();
@@ -94,7 +94,7 @@ const PlayPage = ({ selectedGameId, setSelectedGameId }) => {
             defaultGame = games[0];
         }
 
-        setSelectedGameId(defaultGame?.id || null);
+        setSelectedGameId(defaultGame?.id ?? 'casual');
       }
 
     } catch (e) {
@@ -373,8 +373,8 @@ const PlayPage = ({ selectedGameId, setSelectedGameId }) => {
           <PageLayout>
               <KeyboardAwareScrollView contentContainerStyle={styles.setupContainer}>
                   <Text style={styles.title}>Select Game</Text>
-                  <Picker
-                    selectedValue={selectedGameId}
+                  <SafePicker
+                    selectedValue={selectedGameId ?? 'casual'}
                     onValueChange={(itemValue) => setSelectedGameId(itemValue)}
                     style={styles.picker}
                     dropdownIconColor="black"
@@ -390,7 +390,7 @@ const PlayPage = ({ selectedGameId, setSelectedGameId }) => {
                         />
                       ))}
                     <Picker.Item label="Casual Game" value="casual" />
-                  </Picker>
+                  </SafePicker>
 
                   {selectedGame && (selectedGame.gameStatus === 'IN_PROGRESS' || selectedGame.gameStatus === 'PAUSED') ? (
                     <>

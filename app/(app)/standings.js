@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Picker } from '@react-native-picker/picker';
+import SafePicker from '../../components/SafePicker';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, Image } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import PageLayout from '../../components/PageLayout';
@@ -122,16 +122,16 @@ const StandingsPage = () => {
       <Text style={styles.title}>Standings</Text>
       {allSeasons.length > 0 && selectedSeasonId !== null && (
         <View style={styles.pickerContainer}>
-          <Picker
+          <SafePicker
             selectedValue={selectedSeasonId}
             style={styles.picker}
             onValueChange={(itemValue) => setSelectedSeasonId(itemValue)}
             dropdownIconColor="black"
           >
             {allSeasons.map(season => (
-              <Picker.Item key={season.id} label={season.seasonName} value={season.id} />
+              <SafePicker.Item key={season.id} label={season.seasonName} value={season.id} />
             ))}
-          </Picker>
+          </SafePicker>
         </View>
       )}
     </>

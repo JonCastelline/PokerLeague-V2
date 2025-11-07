@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Picker } from '@react-native-picker/picker';
+import SafePicker from '../../components/SafePicker';
 import PageLayout from '../../components/PageLayout';
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
@@ -78,7 +78,7 @@ const HistoryPage = () => {
     <>
         <Text style={styles.title}>Game History</Text>
         <View style={styles.pickerContainer}>
-            <Picker
+            <SafePicker
                 selectedValue={selectedSeasonId}
                 onValueChange={(itemValue) => setSelectedSeasonId(itemValue)}
                 style={styles.picker}
@@ -86,9 +86,9 @@ const HistoryPage = () => {
                 dropdownIconColor="black"
             >
                 {seasons.map(s => (
-                    <Picker.Item key={s.id} label={s.seasonName} value={s.id}/>
+                    <SafePicker.Item key={s.id} label={s.seasonName} value={s.id}/>
                 ))}
-            </Picker>
+            </SafePicker>
         </View>
         {loadingGames && <ActivityIndicator size="large" color="#0000ff" />}
     </>
