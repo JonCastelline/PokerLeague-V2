@@ -382,14 +382,14 @@ const PlayPage = ({ selectedGameId, setSelectedGameId }) => {
                     {allGames
                       .filter(game => game.gameStatus !== 'COMPLETED')
                       .map(game => (
-                        <Picker.Item
+                        <SafePicker.Item
                           key={game.id}
                           label={`${game.gameName} (${new Date(game.gameDateTime).toLocaleDateString()}) - ${game.gameStatus || 'SCHEDULED'}`}
                           value={game.id}
                           style={{ color: 'black' }}
                         />
                       ))}
-                    <Picker.Item label="Casual Game" value="casual" />
+                    <SafePicker.Item label="Casual Game" value="casual" />
                   </SafePicker>
 
                   {selectedGame && (selectedGame.gameStatus === 'IN_PROGRESS' || selectedGame.gameStatus === 'PAUSED') ? (
