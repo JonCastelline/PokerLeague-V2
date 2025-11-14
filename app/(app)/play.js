@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Switch, TextInput, Image } from 'react-native';
 import Toast from 'react-native-toast-message';
@@ -8,30 +8,61 @@ import { useLeague } from '../../context/LeagueContext';
 import { GameProvider, useGame } from '../../context/GameContext';
 import * as apiActions from '../../src/api';
 import PageLayout from '../../components/PageLayout';
-import HelpIcon from '../../components/HelpIcon';
 import Timer from '../../components/Timer';
 import SafePicker from '../../components/SafePicker';
 
-const PlayPage = ({ selectedGameId, setSelectedGameId }) => {
-  const { api } = useAuth();
-  const { selectedLeagueId, currentUserMembership } = useLeague();
+
+const PlayPage = (props) => {
+  const {
+    selectedGameId,
+    setSelectedGameId,
+    setupData,
+    setSetupData,
+    error,
+    fetchInitialData,
+    handleStartCasualGame,
+  } = props;
+
+  const { currentUserMembership } = useLeague();
   const { gameState, setGameState, isActionLoading, isTimerFinished, setIsTimerFinished, handleAction, startPolling, stopPolling, fetchGameState, isCasualGame } = useGame();
+
   const [editableGameState, setEditableGameState] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [mode, setMode] = useState('setup'); // 'setup', 'play', 'review', 'eliminate_select_player', 'eliminate_select_killer', 'edit'
-  const [allPlayers, setAllPlayers] = useState([]);
-  const [playersInEditOrder, setPlayersInEditOrder] = useState([]);
-  const [selectedPlayerIds, setSelectedPlayerIds] = useState(new Set());
-  const [selectedPlayerToEliminate, setSelectedPlayerToEliminate] = useState(null);
-  const [activeSeason, setActiveSeason] = useState(null);
-  const [activeSeasonSettings, setActiveSeasonSettings] = useState(null);
-  const [allGames, setAllGames] = useState([]);
   const [validationErrors, setValidationErrors] = useState({});
-  const [noActiveSeason, setNoActiveSeason] = useState(false);
   const [isPlayScreenActive, setIsPlayScreenActive] = useState(true);
 
+  const { loading, allPlayers, selectedPlayerIds, activeSeason, activeSeasonSettings, allGames, noActiveSeason, selectedPlayerToEliminate } = setupData;
+
   const isAdmin = currentUserMembership?.role === 'ADMIN' || currentUserMembership?.isOwner;
+
+  const handlePickerValueChange = useCallback((itemValue) => {
+    setSelectedGameId(itemValue);
+  }, [setSelectedGameId]);
+
+  const pickerItems = useMemo(() => {
+    const items = allGames
+      .filter(game => game.gameStatus !== 'COMPLETED')
+      .map(game => (
+        <SafePicker.Item
+          key={game.id}
+          label={`${game.gameName} (${new Date(game.gameDateTime).toLocaleDateString()}) - ${game.gameStatus || 'SCHEDULED'}`}
+          value={game.id}
+          style={{ color: 'black' }}
+        />
+      ));
+    items.push(<SafePicker.Item key="casual" label="Casual Game" value="casual" />);
+    return items;
+  }, [allGames]);
+
+  useEffect(() => {
+    if (mode === 'setup') {
+      fetchInitialData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
+
+  const nonCompletedGames = allGames.filter(game => game.gameStatus !== 'COMPLETED');
+  const onlyCasualGameAvailable = nonCompletedGames.length === 0;
 
   const getOrdinal = (n) => {
     if (n === null || n === undefined) return '';
@@ -39,76 +70,6 @@ const PlayPage = ({ selectedGameId, setSelectedGameId }) => {
     const v = n % 100;
     return n + (s[(v - 20) % 10] || s[v] || s[0]);
   };
-
-  const handleApiError = (e) => {
-    if (e.message !== '401') {
-      setError(e.message);
-    }
-  };
-
-  const fetchInitialData = useCallback(async () => {
-
-    try {
-      const members = await api(apiActions.getLeagueMembers, selectedLeagueId);
-      setAllPlayers(members);
-      const activePlayerIds = new Set(members.filter(m => m.isActive).map(m => m.id));
-      setSelectedPlayerIds(activePlayerIds);
-
-      let season = null;
-      try {
-        season = await api(apiActions.getActiveSeason, selectedLeagueId);
-        setActiveSeason(season);
-      } catch (e) {
-        if (e.message.includes('404')) {
-          setNoActiveSeason(true);
-          return;
-        }
-        throw e;
-      }
-
-      const seasonSettings = await api(apiActions.getSeasonSettings, season.id);
-      setActiveSeasonSettings(seasonSettings);
-
-      const games = await api(apiActions.getAllGamesBySeason, season.id);
-      setAllGames(games);
-
-      if (games.length > 0) {
-        const nonCompletedGames = games.filter(game => game.gameStatus !== 'COMPLETED');
-
-        let defaultGame = null;
-
-        // Prioritize games that are IN_PROGRESS or PAUSED
-        defaultGame = nonCompletedGames.find(game => game.gameStatus === 'IN_PROGRESS' || game.gameStatus === 'PAUSED');
-
-        // If no IN_PROGRESS or PAUSED game, default to the most recently created non-completed game
-        // Assuming 'games' array is already sorted by creation date (or gameDateTime) descending,
-        // the first non-completed game would be the most recent.
-        if (!defaultGame && nonCompletedGames.length > 0) {
-            defaultGame = nonCompletedGames[0];
-        }
-
-        // Fallback: if no non-completed games, or if nonCompletedGames is empty,
-        // and there are games in the original list, pick the first one.
-        // This case should ideally not be hit if nonCompletedGames is handled correctly.
-        if (!defaultGame && games.length > 0) {
-            defaultGame = games[0];
-        }
-
-        setSelectedGameId(defaultGame?.id ?? 'casual');
-      }
-
-    } catch (e) {
-      handleApiError(e); // Only handle non-404 errors here
-    } finally {
-      setLoading(false); // Ensure loading is set to false in all cases
-    }
-  }, [selectedLeagueId, api]);
-
-  useEffect(() => {
-    if (mode === 'setup') {
-      fetchInitialData();
-    }
-  }, [mode, fetchInitialData]);
 
   useEffect(() => {
     if (mode === 'setup' && selectedGameId && !isCasualGame) {
@@ -151,7 +112,6 @@ const PlayPage = ({ selectedGameId, setSelectedGameId }) => {
     const remaining = gameState.players.filter(p => !p.isEliminated).length;
     if (remaining <= 1 && mode === 'play') {
       if (isCasualGame) {
-        // For casual games, mark as completed and transition to review
         setGameState(prevGameState => ({ ...prevGameState, gameStatus: 'COMPLETED' }));
       }
       setMode('review');
@@ -169,76 +129,35 @@ const PlayPage = ({ selectedGameId, setSelectedGameId }) => {
     });
   }
 
-  const handleStartCasualGame = async () => {
-    if (!selectedLeagueId) return;
-
-    try {
-      // Find the casual season
-      const allSeasons = await api(apiActions.getSeasons, selectedLeagueId);
-      const casualSeason = allSeasons.find(s => s.seasonName === "Casual Games");
-
-      if (!casualSeason) {
-        Toast.show({ type: 'error', text1: 'Error', text2: 'Casual Games season not found.' });
-        return;
-      }
-
-      // Fetch settings for the casual season
-      const casualSeasonSettings = await api(apiActions.getSeasonSettings, casualSeason.id);
-
-      // Initialize local game state
-      const initialGameState = {
-        gameId: null, // No backend game ID for casual games
-        gameStatus: 'IN_PROGRESS',
-        players: Array.from(selectedPlayerIds).map(playerId => {
-          const player = allPlayers.find(p => p.id === playerId);
-          return {
-            id: playerId,
-            displayName: player?.displayName || 'Unknown Player',
-            iconUrl: player?.iconUrl || null,
-            isEliminated: false,
-            place: null,
-            kills: 0,
-            bounties: 0,
-            hasBounty: false, // Casual games start without bounties
-            rank: null,
-          };
-        }),
-        timer: {
-          currentLevelIndex: 0,
-          timeRemainingSeconds: casualSeasonSettings.durationSeconds,
-          blindLevels: casualSeasonSettings.blindLevels,
-        },
-        settings: casualSeasonSettings,
-      };
-
-      setGameState(initialGameState);
-      setMode('play');
-      Toast.show({ type: 'success', text1: 'Casual Game Started', text2: 'Enjoy your game!' });
-
-    } catch (e) {
-      Toast.show({ type: 'error', text1: 'Error', text2: `Failed to start casual game: ${e.message}` });
-      console.error("Failed to start casual game:", e);
-    }
+  const onStartCasualGame = () => {
+    handleStartCasualGame(allPlayers, selectedPlayerIds).then(initialGameState => {
+        if (initialGameState) {
+            setGameState(initialGameState);
+            setMode('play');
+        }
+    });
   };
 
   const togglePlayerSelection = (playerId) => {
-    const newSelection = new Set(selectedPlayerIds);
-    if (newSelection.has(playerId)) {
-      newSelection.delete(playerId);
-    } else {
-      newSelection.add(playerId);
-    }
-    setSelectedPlayerIds(newSelection);
+    setSetupData(prevData => {
+        const newSelection = new Set(prevData.selectedPlayerIds);
+        if (newSelection.has(playerId)) {
+          newSelection.delete(playerId);
+        } else {
+          newSelection.add(playerId);
+        }
+        return { ...prevData, selectedPlayerIds: newSelection };
+    });
   };
 
   const handlePlayerPress = (player) => {
     if (mode === 'eliminate_select_player') {
-        setSelectedPlayerToEliminate(player);
+        setSetupData(prevData => ({ ...prevData, selectedPlayerToEliminate: player }));
         setMode('eliminate_select_killer');
     } else if (mode === 'eliminate_select_killer') {
         handleAction(apiActions.eliminatePlayer, selectedGameId, selectedPlayerToEliminate.id, player.id);
         setMode('play');
-        setSelectedPlayerToEliminate(null);
+        setSetupData(prevData => ({ ...prevData, selectedPlayerToEliminate: null }));
     }
   }
 
@@ -250,27 +169,23 @@ const PlayPage = ({ selectedGameId, setSelectedGameId }) => {
     const numPlayers = players.length;
     const errors = {};
 
-    // Validation 1: Total Kills
     const totalKills = players.reduce((sum, p) => sum + (parseInt(p.kills, 10) || 0), 0);
     if (totalKills > numPlayers - 1) {
       errors.general = `Total kills (${totalKills}) cannot exceed the number of players minus one (${numPlayers - 1}).`;
     }
 
-    // Validation 2: Total Bounties
     const availableBounties = gameState.players.filter(p => p.hasBounty).length;
     const totalBounties = players.reduce((sum, p) => sum + (parseInt(p.bounties, 10) || 0), 0);
     if (totalBounties > availableBounties) {
       errors.general = (errors.general || '') + `\nTotal bounties (${totalBounties}) cannot exceed the number of available bounties (${availableBounties}).`;
     }
 
-    // Validation 3: Unique Places
     const places = players.map(p => parseInt(p.place, 10) || 0).filter(p => p > 0);
     const uniquePlaces = new Set(places);
     if (places.length !== uniquePlaces.size) {
         errors.general = (errors.general || '') + '\nEach player must have a unique place. No ties are allowed.';
     }
 
-    // Validation 4: Valid Places
     for (const player of players) {
         const place = parseInt(player.place, 10);
         if (isNaN(place) || place < 1 || place > numPlayers) {
@@ -278,13 +193,11 @@ const PlayPage = ({ selectedGameId, setSelectedGameId }) => {
         }
     }
 
-    // Validation 5: First place kills
     const firstPlacePlayer = players.find(p => (parseInt(p.place, 10) || 0) === 1);
     if (firstPlacePlayer && (parseInt(firstPlacePlayer.kills, 10) || 0) === 0) {
         errors[firstPlacePlayer.id] = { ...errors[firstPlacePlayer.id], kills: '1st place must have > 0 kills.' };
     }
 
-    // Validation 6: Kills >= Bounties
     for (const player of players) {
         const kills = parseInt(player.kills, 10) || 0;
         const bounties = parseInt(player.bounties, 10) || 0;
@@ -365,91 +278,83 @@ const PlayPage = ({ selectedGameId, setSelectedGameId }) => {
     );
   }
 
-  if (mode === 'setup') {
-      const hasActiveGames = allGames.filter(game => game.gameStatus !== 'COMPLETED').length > 0;
-      const selectedGame = allGames.find(g => g.id === selectedGameId);
+    if (mode === 'setup') {
+        const selectedGame = allGames.find(g => g.id === selectedGameId);
 
-      return (
-          <PageLayout>
-              <KeyboardAwareScrollView contentContainerStyle={styles.setupContainer}>
-                  <Text style={styles.title}>Select Game</Text>
-                  <SafePicker
-                    selectedValue={selectedGameId ?? 'casual'}
-                    onValueChange={(itemValue) => setSelectedGameId(itemValue)}
-                    style={styles.picker}
-                    dropdownIconColor="black"
-                  >
-                    {allGames
-                      .filter(game => game.gameStatus !== 'COMPLETED')
-                      .map(game => (
-                        <SafePicker.Item
-                          key={game.id}
-                          label={`${game.gameName} (${new Date(game.gameDateTime).toLocaleDateString()}) - ${game.gameStatus || 'SCHEDULED'}`}
-                          value={game.id}
-                          style={{ color: 'black' }}
-                        />
-                      ))}
-                    <SafePicker.Item label="Casual Game" value="casual" />
-                  </SafePicker>
-
-                  {selectedGame && (selectedGame.gameStatus === 'IN_PROGRESS' || selectedGame.gameStatus === 'PAUSED') ? (
-                    <>
-                        {loading && !gameState ? (
-                            <ActivityIndicator size="large" color="#fb5b5a" />
-                        ) : (
-                            <>
-                                <Text style={styles.title}>Players in Game</Text>
-                                <View style={{width: '100%'}}>
-                                    {gameState?.players.map(player => (
-                                        <View key={player.id} style={styles.playerSetupItem}>
-                                            <View style={{flexDirection: 'row', alignItems: 'center', flex: 1}}>
-                                                {player.iconUrl ? <Image source={{ uri: player.iconUrl }} style={styles.playerIcon} /> : <View style={styles.playerIcon} />}
-                                                <Text>{player.displayName}</Text>
-                                            </View>
-                                        </View>
-                                    ))}
-                                </View>
-                                <TouchableOpacity style={[styles.button, styles.setupStartButton]} onPress={() => setMode('play')} disabled={isActionLoading}>
-                                    <Text style={styles.buttonText}>Join Game</Text>
-                                </TouchableOpacity>
-                            </>
-                        )}
-                    </>
-                  ) : (
-                    <>
-                      {isAdmin && (
+        return (
+            <PageLayout>
+                <KeyboardAwareScrollView contentContainerStyle={styles.setupContainer}>
+                    <Text style={styles.title}>Select Game</Text>
+                    <SafePicker
+                      selectedValue={selectedGameId ?? 'casual'}
+                      onValueChange={handlePickerValueChange}
+                      style={styles.picker}
+                      dropdownIconColor="black"
+                    >
+                      {pickerItems}
+                    </SafePicker>
+              {selectedGame && (selectedGame.gameStatus === 'IN_PROGRESS' || selectedGame.gameStatus === 'PAUSED') ? (
+                <>
+                    {loading && !gameState ? (
+                        <ActivityIndicator size="large" color="#fb5b5a" />
+                    ) : (
                         <>
-                          <Text style={styles.title}>Select Players</Text>
-                          <View style={{width: '100%'}}>
-                            {allPlayers.map(player => (
-                                <View key={player.id} style={styles.playerSetupItem}>
-                                    <View style={{flexDirection: 'row', alignItems: 'center', flex: 1}}>
-                                        {player.iconUrl ? <Image source={{ uri: player.iconUrl }} style={styles.playerIcon} /> : <View style={styles.playerIcon} />}
-                                        <Text>{player.displayName}</Text>
+                            <Text style={styles.title}>Players in Game</Text>
+                            <View style={{width: '100%'}}>
+                                {gameState?.players.map(player => (
+                                    <View key={player.id} style={styles.playerSetupItem}>
+                                        <View style={{flexDirection: 'row', alignItems: 'center', flex: 1}}>
+                                            {player.iconUrl ? <Image source={{ uri: player.iconUrl }} style={styles.playerIcon} /> : <View style={styles.playerIcon} />}
+                                            <Text>{player.displayName}</Text>
+                                        </View>
                                     </View>
-                                    <Switch
-                                        value={selectedPlayerIds.has(player.id)}
-                                        onValueChange={() => togglePlayerSelection(player.id)}
-                                        disabled={!isAdmin}
-                                    />
-                                </View>
-                            ))}
-                          </View>
-                          {selectedGameId && (
-                            <View style={styles.centeredButtonContainer}>
-                              <TouchableOpacity style={[styles.button, styles.setupStartButton]} onPress={isCasualGame ? handleStartCasualGame : handleStartGame} disabled={isActionLoading}>
-                                  <Text style={styles.buttonText}>{isCasualGame ? 'Start Casual Game' : 'Start Game'}</Text>
-                              </TouchableOpacity>
+                                ))}
                             </View>
-                          )}
+                            <TouchableOpacity style={[styles.button, styles.setupStartButton]} onPress={() => setMode('play')} disabled={isActionLoading}>
+                                <Text style={styles.buttonText}>Join Game</Text>
+                            </TouchableOpacity>
                         </>
+                    )}
+                </>
+              ) : (
+                <>
+                  {isAdmin && (
+                    <>
+                      <Text style={styles.title}>Select Players</Text>
+                      <View style={{width: '100%'}}>
+                        {allPlayers.map(player => (
+                            <View key={player.id} style={styles.playerSetupItem}>
+                                <View style={{flexDirection: 'row', alignItems: 'center', flex: 1}}>
+                                    {player.iconUrl ? <Image source={{ uri: player.iconUrl }} style={styles.playerIcon} /> : <View style={styles.playerIcon} />}
+                                    <Text>{player.displayName}</Text>
+                                </View>
+                                <Switch
+                                    value={selectedPlayerIds.has(player.id)}
+                                    onValueChange={() => togglePlayerSelection(player.id)}
+                                    disabled={!isAdmin}
+                                />
+                            </View>
+                        ))}
+                      </View>
+                      {(selectedGameId || onlyCasualGameAvailable) && (
+                        <View style={styles.centeredButtonContainer}>
+                          <TouchableOpacity
+                            style={[styles.button, styles.setupStartButton]}
+                            onPress={onlyCasualGameAvailable ? onStartCasualGame : (isCasualGame ? onStartCasualGame : handleStartGame)}
+                            disabled={isActionLoading}
+                          >
+                              <Text style={styles.buttonText}>{onlyCasualGameAvailable || isCasualGame ? 'Start Casual Game' : 'Start Game'}</Text>
+                          </TouchableOpacity>
+                        </View>
                       )}
                     </>
                   )}
-              </KeyboardAwareScrollView>
-          </PageLayout>
-      );
-   }
+                </>
+              )}
+          </KeyboardAwareScrollView>
+      </PageLayout>
+  );
+}
 
 
   if (!gameState) {
@@ -688,7 +593,7 @@ const PlayPage = ({ selectedGameId, setSelectedGameId }) => {
                 <TouchableOpacity
                     style={[styles.button, isActionLoading && styles.disabledButton]}
                     onPress={() => handleAction(apiActions.resumeGame, selectedGameId)}
-                    disabled={isActionLoading}>
+                    disabled={isActionLoading}> 
                   <Text style={styles.buttonText}>Resume</Text>
                 </TouchableOpacity>
               )}
@@ -847,11 +752,10 @@ const styles = StyleSheet.create({
   },
   picker: {
     width: 225,
-    height: 50,
     marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
+    backgroundColor: 'white',
+    color: 'black',
+    dropdownIconColor: 'black',
   },
   gameOverText: {
     fontSize: 30,
@@ -960,13 +864,167 @@ const styles = StyleSheet.create({
   },
 });
 
-const PlayPageWrapper = () => {
+const PlayPageWrapper = (props) => {
+  useWhyDidYouUpdate('PlayPageWrapper', props);
+  const { api } = useAuth();
+  const { selectedLeagueId } = useLeague();
   const [selectedGameId, setSelectedGameId] = useState(null);
+  const [error, setError] = useState(null);
+  const [setupData, setSetupData] = useState({
+    loading: true,
+    allPlayers: [],
+    selectedPlayerIds: new Set(),
+    activeSeason: null,
+    activeSeasonSettings: null,
+    allGames: [],
+    noActiveSeason: false,
+    selectedPlayerToEliminate: null,
+  });
+
   const isCasualGame = selectedGameId === 'casual';
+
+  const handleApiError = (e) => {
+    if (e.message !== '401') {
+      setError(e.message);
+    }
+  };
+
+  const fetchInitialData = useCallback(async () => {
+    
+    const newSetupData = {
+        loading: true,
+        allPlayers: [],
+        selectedPlayerIds: new Set(),
+        activeSeason: null,
+        activeSeasonSettings: null,
+        allGames: [],
+        noActiveSeason: false,
+        selectedPlayerToEliminate: null,
+    };
+
+    try {
+      const members = await api(apiActions.getLeagueMembers, selectedLeagueId);
+      newSetupData.allPlayers = members;
+      newSetupData.selectedPlayerIds = new Set(members.filter(m => m.isActive).map(m => m.id));
+
+      try {
+        const season = await api(apiActions.getActiveSeason, selectedLeagueId);
+        newSetupData.activeSeason = season;
+        const seasonSettings = await api(apiActions.getSeasonSettings, season.id);
+        newSetupData.activeSeasonSettings = seasonSettings;
+        const games = await api(apiActions.getAllGamesBySeason, season.id);
+        newSetupData.allGames = games;
+
+        const nonCompletedGames = games.filter(game => game.gameStatus !== 'COMPLETED');
+        let defaultGame = nonCompletedGames.find(game => game.gameStatus === 'IN_PROGRESS' || game.gameStatus === 'PAUSED');
+        if (!defaultGame && nonCompletedGames.length > 0) {
+            defaultGame = nonCompletedGames[0];
+        }
+        
+        let determinedSelectedGameId = 'casual';
+        if (defaultGame) {
+            determinedSelectedGameId = defaultGame.id;
+        } else if (nonCompletedGames.length === 0 && games.length > 0) {
+            determinedSelectedGameId = 'casual';
+        }
+        
+        setSelectedGameId(determinedSelectedGameId);
+
+      } catch (e) {
+        if (e.message.includes('404')) {
+          newSetupData.noActiveSeason = true;
+          setSelectedGameId('casual'); // Always set to casual if no active season
+        } else {
+            throw e;
+        }
+      }
+    } catch (e) {
+      handleApiError(e);
+    } finally {
+        newSetupData.loading = false;
+        setSetupData(newSetupData);
+    }
+  }, [selectedLeagueId, api, setSelectedGameId]);
+
+  const handleStartCasualGame = useCallback(async (allPlayers, selectedPlayerIds) => {
+    if (!selectedLeagueId) return null;
+
+    try {
+      const allSeasons = await api(apiActions.getSeasons, selectedLeagueId);
+      const casualSeason = allSeasons.find(s => s.seasonName === "Casual Games");
+
+      if (!casualSeason) {
+        Toast.show({ type: 'error', text1: 'Error', text2: 'Casual Games season not found.' });
+        return null;
+      }
+
+      const casualSeasonSettings = await api(apiActions.getSeasonSettings, casualSeason.id);
+
+      const initialGameState = {
+        gameId: null,
+        gameStatus: 'IN_PROGRESS',
+        players: Array.from(selectedPlayerIds).map(playerId => {
+          const player = allPlayers.find(p => p.id === playerId);
+          return {
+            id: playerId,
+            displayName: player?.displayName || 'Unknown Player',
+            iconUrl: player?.iconUrl || null,
+            isEliminated: false,
+            place: null,
+            kills: 0,
+            bounties: 0,
+            hasBounty: false,
+            rank: null,
+          };
+        }),
+        timer: {
+          currentLevelIndex: 0,
+          timeRemainingSeconds: casualSeasonSettings.durationSeconds,
+          blindLevels: casualSeasonSettings.blindLevels,
+        },
+        settings: casualSeasonSettings,
+      };
+
+      Toast.show({ type: 'success', text1: 'Casual Game Started', text2: 'Enjoy your game!' });
+      return initialGameState;
+
+    } catch (e) {
+      Toast.show({ type: 'error', text1: 'Error', text2: `Failed to start casual game: ${e.message}` });
+      console.error("Failed to start casual game:", e);
+      return null;
+    }
+  }, [api, selectedLeagueId]);
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        setError(null);
+        setSetupData({
+            loading: true,
+            allPlayers: [],
+            selectedPlayerIds: new Set(),
+            activeSeason: null,
+            activeSeasonSettings: null,
+            allGames: [],
+            noActiveSeason: false,
+            selectedPlayerToEliminate: null,
+        });
+        setSelectedGameId(null);
+      };
+    }, [setSelectedGameId])
+  );
 
   return (
     <GameProvider isCasualGame={isCasualGame}>
-      <PlayPage selectedGameId={selectedGameId} setSelectedGameId={setSelectedGameId} />
+      <PlayPage
+        selectedGameId={selectedGameId}
+        setSelectedGameId={setSelectedGameId}
+        setupData={setupData}
+        setSetupData={setSetupData}
+        error={error}
+        fetchInitialData={fetchInitialData}
+        handleStartCasualGame={handleStartCasualGame}
+      />
     </GameProvider>
   );
 };

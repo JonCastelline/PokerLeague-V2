@@ -1,5 +1,5 @@
 
-import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as api from '../src/api'; // Import all api functions
 
@@ -59,7 +59,6 @@ export function AuthProvider({ children }) {
       return await apiFunc(...args, authState.token);
     } catch (error) {
       if (error.message === '401') {
-        console.log('Caught 401 error, signing out...');
         await signOut();
       }
       throw error; // Re-throw the error to be handled by the calling component if needed
@@ -79,10 +78,17 @@ export function AuthProvider({ children }) {
       user: user,
       lastLeagueId: user.lastLeagueId,
     });
-    console.log('AuthContext: User signed in with:', user);
   };
 
-  const value = {
+  const updateAuthUser = useCallback(async (newUser) => {
+    await AsyncStorage.setItem('user', JSON.stringify(newUser));
+    setAuthState(prevState => ({
+      ...prevState,
+      user: newUser,
+    }));
+  }, []);
+
+  const value = useMemo(() => ({
     user: authState.user,
     token: authState.token,
     authenticated: authState.authenticated,
@@ -90,15 +96,9 @@ export function AuthProvider({ children }) {
     lastLeagueId: authState.lastLeagueId,
     signIn,
     signOut,
-    api: authenticatedApiCall, // Expose the wrapped api call function
-    updateAuthUser: async (newUser) => {
-      await AsyncStorage.setItem('user', JSON.stringify(newUser));
-      setAuthState(prevState => ({
-        ...prevState,
-        user: newUser,
-      }));
-    },
-  };
+    api: authenticatedApiCall,
+    updateAuthUser,
+  }), [authState, signOut, authenticatedApiCall, updateAuthUser]);
 
   return (
     <AuthContext.Provider value={value}>

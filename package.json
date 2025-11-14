@@ -41,7 +41,7 @@
     "react": "19.1.0",
     "react-bootstrap": "^2.10.10",
     "react-dom": "19.1.0",
-    "react-native": "0.81.5",
+    "react-native": "^0.81.5",
     "react-native-animatable": "^1.4.0",
     "react-native-countdown-circle-timer": "^3.2.1",
     "react-native-countdown-component": "^2.7.1",
