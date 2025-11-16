@@ -35,20 +35,36 @@ const StandingsPage = () => {
 
         let defaultSeasonId = null;
         const today = new Date();
+        const todayUTC = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
 
-        // Determine default season: active season first, then latest
-        const activeSeason = filteredSeasonsData.find(season => {
-          const startDate = new Date(season.startDate);
-          const endDate = new Date(season.endDate);
-          return today >= startDate && today <= endDate;
-        });
+        const nonCasualSeasons = filteredSeasonsData;
 
-        if (activeSeason) {
-          defaultSeasonId = activeSeason.id;
-        } else if (filteredSeasonsData.length > 0) {
-          // Sort by endDate descending to get the latest season
-          const sortedSeasons = [...filteredSeasonsData].sort((a, b) => new Date(b.endDate) - new Date(a.endDate));
-          defaultSeasonId = sortedSeasons[0].id;
+        // 1. Find currently active season (today between start and end)
+        const currentlyActiveSeasons = nonCasualSeasons.filter(season => {
+            const startDate = new Date(season.startDate);
+            const endDate = new Date(season.endDate);
+            const startUTC = Date.UTC(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+            const endUTC = Date.UTC(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+            return todayUTC >= startUTC && todayUTC <= endUTC;
+        }).sort((a, b) => new Date(b.startDate) - new Date(a.startDate)); // Sort by newest startDate
+
+        if (currentlyActiveSeasons.length > 0) {
+            defaultSeasonId = currentlyActiveSeasons[0].id;
+        } else {
+            // 2. If no season is currently active, look for the next upcoming season
+            const upcomingSeasons = nonCasualSeasons.filter(season => {
+                const endDate = new Date(season.endDate);
+                const endUTC = Date.UTC(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+                return todayUTC < endUTC; // Season has not ended yet
+            }).sort((a, b) => new Date(a.startDate) - new Date(b.startDate)); // Sort by oldest startDate (next to start)
+
+            if (upcomingSeasons.length > 0) {
+                defaultSeasonId = upcomingSecoming[0].id;
+            } else if (nonCasualSeasons.length > 0) {
+                // 3. If no active or upcoming, default to the latest season by end date
+                const sortedByEndDate = [...nonCasualSeasons].sort((a, b) => new Date(b.endDate) - new Date(a.endDate));
+                defaultSeasonId = sortedByEndDate[0].id;
+            }
         }
 
         setSelectedSeasonId(defaultSeasonId);

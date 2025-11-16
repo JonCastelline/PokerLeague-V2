@@ -99,22 +99,39 @@ export const LeagueProvider = React.memo(({ children }) => {
             }));
     
             try {
-                const [membership, season, content] = await Promise.all([
+                const [membership, allSeasons, content] = await Promise.all([
                     api(apiActions.getCurrentUserMembership, selectedLeagueId),
-                    api(apiActions.getActiveSeason, selectedLeagueId).catch(e => {
-                        if (e.message.includes('404')) return null;
-                        throw e;
-                    }),
+                    api(apiActions.getSeasons, selectedLeagueId),
                     api(apiActions.getLeagueHomeContent, selectedLeagueId).catch(e => {
                         if (e.message.startsWith('API Error: 404')) return null;
                         throw e;
                     }),
                 ]);
+
+                const today = new Date();
+
+                const activeSeasons = allSeasons
+                    .filter(s => {
+                        if (s.isFinalized) {
+                            return false;
+                        }
+                        const startDate = new Date(s.startDate);
+                        const endDate = new Date(s.endDate);
+                        
+                        const startUTC = Date.UTC(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+                        const endUTC = Date.UTC(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+                        const todayUTC = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+
+                        return todayUTC >= startUTC && todayUTC <= endUTC;
+                    })
+                    .sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
+
+                const activeSeason = activeSeasons.length > 0 ? activeSeasons[0] : null;
     
                 setLeagueState(prev => ({
                     ...prev,
                     currentUserMembership: membership,
-                    activeSeason: season,
+                    activeSeason: activeSeason,
                     leagueHomeContent: content,
                     loadingContent: false,
                     loadingCurrentUserMembership: false,

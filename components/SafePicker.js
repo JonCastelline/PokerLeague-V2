@@ -2,7 +2,6 @@ import React from 'react';
 import { SelectList } from 'react-native-dropdown-select-list';
 
 const SafePicker = React.memo(({ selectedValue, onValueChange, children, style, dropdownListStyle, ...rest }) => {
-  console.log('SafePicker rendered. Value:', selectedValue);
 
   const data = React.Children.map(children, child => {
     if (child && child.props) {

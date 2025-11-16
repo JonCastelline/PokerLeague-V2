@@ -197,6 +197,10 @@ export const getLeagueHomeContent = (leagueId, token) => {
   return apiFetch(`/api/leagues/${leagueId}/home-content`, { token });
 };
 
+export const getPlayPageData = (leagueId, token) => {
+  return apiFetch(`/api/leagues/${leagueId}/play-page-data`, { token });
+};
+
 export const updateLeagueHomeContent = (leagueId, content, logoImageUrl, token) => {
   return apiFetch(`/api/leagues/${leagueId}/home-content`, {
     method: 'PUT',

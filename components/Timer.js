@@ -32,7 +32,8 @@ const Timer = ({ gameId, timerState, blindLevels, settings, isPlaying, onTimerEn
         if (alarmPlayer) { alarmPlayer.pause(); alarmPlayer.remove(); }
         if (warningSoundPlayer) { warningSoundPlayer.pause(); warningSoundPlayer.remove(); }
       } catch (e) {
-        console.warn("Error cleaning up audio players, but continuing.", e);
+        // console.warn("Error cleaning up audio players, but continuing.", e);
+        // This always fails with call to AudioPlayer.pause on an object already released, but we'll ignore it
       }
     };
   }, []);

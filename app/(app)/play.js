@@ -625,7 +625,11 @@ const PlayPage = (props) => {
                         <Text style={styles.playerDisplayName}>{String(player.displayName)} {activeSeasonSettings?.trackBounties && player.hasBounty ? <Text style={styles.bountyIndicator}>⭐️</Text> : null}</Text>
                     </View>
                     <View style={styles.playerStatsContainer}>
-                        {player.isEliminated && <Text style={styles.playerStatLine}>Place: {getOrdinal(player.place)}</Text>}
+                        {gameState.gameStatus === 'COMPLETED' ? (
+                            <Text style={styles.playerStatLine}>Place: {player.isEliminated ? getOrdinal(player.place) : '1st'}</Text>
+                        ) : (
+                            player.isEliminated && <Text style={styles.playerStatLine}>Place: {getOrdinal(player.place)}</Text>
+                        )}
                         {(!isCasualGame && (activeSeasonSettings?.trackKills || activeSeasonSettings?.trackBounties)) && (
                             <Text style={styles.playerStatLine}>
                                 {activeSeasonSettings?.trackKills && `Kills: ${player.kills}`}
@@ -865,8 +869,7 @@ const styles = StyleSheet.create({
 });
 
 const PlayPageWrapper = (props) => {
-  useWhyDidYouUpdate('PlayPageWrapper', props);
-  const { api } = useAuth();
+  const { api, token } = useAuth();
   const { selectedLeagueId } = useLeague();
   const [selectedGameId, setSelectedGameId] = useState(null);
   const [error, setError] = useState(null);
@@ -890,7 +893,8 @@ const PlayPageWrapper = (props) => {
   };
 
   const fetchInitialData = useCallback(async () => {
-    
+    if (!selectedLeagueId) return;
+
     const newSetupData = {
         loading: true,
         allPlayers: [],
@@ -900,46 +904,38 @@ const PlayPageWrapper = (props) => {
         allGames: [],
         noActiveSeason: false,
         selectedPlayerToEliminate: null,
+        casualSeasonSettings: null,
     };
 
-    try {
-      const members = await api(apiActions.getLeagueMembers, selectedLeagueId);
-      newSetupData.allPlayers = members;
-      newSetupData.selectedPlayerIds = new Set(members.filter(m => m.isActive).map(m => m.id));
-
-      try {
-        const season = await api(apiActions.getActiveSeason, selectedLeagueId);
-        newSetupData.activeSeason = season;
-        const seasonSettings = await api(apiActions.getSeasonSettings, season.id);
-        newSetupData.activeSeasonSettings = seasonSettings;
-        const games = await api(apiActions.getAllGamesBySeason, season.id);
-        newSetupData.allGames = games;
-
-        const nonCompletedGames = games.filter(game => game.gameStatus !== 'COMPLETED');
-        let defaultGame = nonCompletedGames.find(game => game.gameStatus === 'IN_PROGRESS' || game.gameStatus === 'PAUSED');
-        if (!defaultGame && nonCompletedGames.length > 0) {
-            defaultGame = nonCompletedGames[0];
-        }
-        
-        let determinedSelectedGameId = 'casual';
-        if (defaultGame) {
-            determinedSelectedGameId = defaultGame.id;
-        } else if (nonCompletedGames.length === 0 && games.length > 0) {
-            determinedSelectedGameId = 'casual';
-        }
-        
-        setSelectedGameId(determinedSelectedGameId);
-
-      } catch (e) {
-        if (e.message.includes('404')) {
-          newSetupData.noActiveSeason = true;
-          setSelectedGameId('casual'); // Always set to casual if no active season
+        try {
+            const playPageData = await api(apiActions.getPlayPageData, selectedLeagueId);
+    
+            const members = playPageData.members;
+            newSetupData.allPlayers = members;
+            newSetupData.selectedPlayerIds = new Set(members.filter(m => m.isActive).map(m => m.id));
+    
+            if (playPageData && playPageData.activeSeason) {
+                newSetupData.activeSeason = playPageData.activeSeason;
+                newSetupData.activeSeasonSettings = playPageData.activeSeasonSettings;
+                newSetupData.allGames = playPageData.activeSeasonGames;
+                newSetupData.casualSeasonSettings = playPageData.casualSeasonSettings;
+            const nonCompletedGames = playPageData.activeSeasonGames.filter(game => game.gameStatus !== 'COMPLETED');
+            let defaultGame = nonCompletedGames.find(game => game.gameStatus === 'IN_PROGRESS' || game.gameStatus === 'PAUSED');
+            if (!defaultGame && nonCompletedGames.length > 0) {
+                defaultGame = nonCompletedGames[0];
+            }
+            
+            if (defaultGame) {
+                setSelectedGameId(defaultGame.id);
+            } else {
+                setSelectedGameId('casual');
+            }
         } else {
-            throw e;
+            newSetupData.noActiveSeason = true;
+            setSelectedGameId('casual');
         }
-      }
     } catch (e) {
-      handleApiError(e);
+        handleApiError(e);
     } finally {
         newSetupData.loading = false;
         setSetupData(newSetupData);
@@ -949,17 +945,14 @@ const PlayPageWrapper = (props) => {
   const handleStartCasualGame = useCallback(async (allPlayers, selectedPlayerIds) => {
     if (!selectedLeagueId) return null;
 
-    try {
-      const allSeasons = await api(apiActions.getSeasons, selectedLeagueId);
-      const casualSeason = allSeasons.find(s => s.seasonName === "Casual Games");
+    const casualSeasonSettings = setupData.casualSeasonSettings;
 
-      if (!casualSeason) {
-        Toast.show({ type: 'error', text1: 'Error', text2: 'Casual Games season not found.' });
+    if (!casualSeasonSettings) {
+        Toast.show({ type: 'error', text1: 'Error', text2: 'Casual game settings not found.' });
         return null;
-      }
+    }
 
-      const casualSeasonSettings = await api(apiActions.getSeasonSettings, casualSeason.id);
-
+    try {
       const initialGameState = {
         gameId: null,
         gameStatus: 'IN_PROGRESS',
@@ -993,7 +986,7 @@ const PlayPageWrapper = (props) => {
       console.error("Failed to start casual game:", e);
       return null;
     }
-  }, [api, selectedLeagueId]);
+  }, [selectedLeagueId, setupData.casualSeasonSettings]);
 
   useFocusEffect(
     useCallback(() => {

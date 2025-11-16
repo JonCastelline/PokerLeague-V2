@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import SafePicker from '../../components/SafePicker';
 import PageLayout from '../../components/PageLayout';
 import { useAuth } from '../../context/AuthContext';
@@ -8,73 +8,92 @@ import { useLeague } from '../../context/LeagueContext';
 import { getGameHistory, getSeasons } from '../../src/api';
 
 const HistoryPage = () => {
-  const { authData, api } = useAuth();
+  const { api } = useAuth();
   const { currentLeague, activeSeason } = useLeague();
   const router = useRouter();
 
   const [seasons, setSeasons] = useState([]);
   const [selectedSeasonId, setSelectedSeasonId] = useState(null);
   const [games, setGames] = useState([]);
-  const [loadingSeasons, setLoadingSeasons] = useState(true);
-  const [loadingGames, setLoadingGames] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    if (currentLeague?.id) {
-      setLoadingSeasons(true);
-      setError(null);
-      api(getSeasons, currentLeague.id)
-        .then(data => {
-          const nonCasualSeasons = data.filter(s => !s.isCasual);
-          const sortedData = [...nonCasualSeasons].sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
-          setSeasons(sortedData);
-          if (sortedData.length > 0) {
-            const activeSeasonInList = sortedData.find(s => s.id === activeSeason?.id);
-            setSelectedSeasonId(activeSeasonInList ? activeSeason.id : sortedData[0].id);
-          } else {
-            setSelectedSeasonId(null); // No non-casual seasons available
-            setLoadingSeasons(false);
+  const fetchGames = useCallback(async (seasonId) => {
+    if (!seasonId) {
+      setGames([]);
+      return;
+    }
+    setIsLoading(true);
+    setGames([]);
+    setError(null);
+    try {
+      const data = await api(getGameHistory, seasonId);
+      const completedGames = data
+        .filter(game => game.gameStatus === 'COMPLETED')
+        .sort((a, b) => new Date(a.gameDateTime) - new Date(b.gameDateTime));
+      setGames(completedGames);
+    } catch (err) {
+      console.error("Failed to fetch game history:", err);
+      setError("Failed to load game history. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [api]);
+
+  const isInitialMount = useRef(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      isInitialMount.current = true; // Reset on focus
+      const loadInitialData = async () => {
+        if (currentLeague?.id) {
+          setIsLoading(true);
+          setError(null);
+          try {
+            const seasonsData = await api(getSeasons, currentLeague.id);
+            const nonCasualSeasons = seasonsData.filter(s => !s.isCasual);
+            const sortedData = [...nonCasualSeasons].sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
+            setSeasons(sortedData);
+
+            if (sortedData.length > 0) {
+              const activeSeasonInList = sortedData.find(s => s.id === activeSeason?.id);
+              const initialSeasonId = activeSeasonInList ? activeSeason.id : sortedData[0].id;
+              setSelectedSeasonId(initialSeasonId);
+              await fetchGames(initialSeasonId); // Fetch games for the initial season
+            } else {
+              setSelectedSeasonId(null);
+              setGames([]);
+              setIsLoading(false);
+            }
+          } catch (err) {
+            console.error("Failed to fetch seasons:", err);
+            setError("Failed to load seasons.");
+            setIsLoading(false);
           }
-        })
-        .catch(err => {
-          console.error("Failed to fetch seasons:", err);
-          setError("Failed to load seasons.");
-          setLoadingSeasons(false);
-        });
-    }
-  }, [currentLeague?.id, activeSeason?.id, api]);
+        }
+      };
+
+      loadInitialData();
+    }, [currentLeague?.id, activeSeason?.id, api, fetchGames])
+  );
 
   useEffect(() => {
-    if (selectedSeasonId) {
-      setLoadingGames(true);
-      setGames([]); // Clear previous games
-      setError(null);
-      api(getGameHistory, selectedSeasonId)
-        .then(data => {
-          const completedGames = data
-            .filter(game => game.gameStatus === 'COMPLETED')
-            .sort((a, b) => new Date(a.gameDateTime) - new Date(b.gameDateTime));
-          setGames(completedGames);
-        })
-        .catch(err => {
-          console.error("Failed to fetch game history:", err);
-          setError("Failed to load game history. Please try again.");
-        })
-        .finally(() => {
-          setLoadingGames(false);
-          setLoadingSeasons(false); // Stop season loading indicator once games are loaded/failed
-        });
+    // This effect runs only when the user manually changes the season in the picker
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+    } else if (selectedSeasonId) {
+      fetchGames(selectedSeasonId);
     }
-  }, [selectedSeasonId, api]);
+  }, [selectedSeasonId, fetchGames]);
 
-  const renderGame = ({ item }) => (
+  const renderGame = useCallback(({ item }) => (
     <TouchableOpacity style={styles.gameItem} onPress={() => router.push({ pathname: '/(app)/gameDetails', params: { gameId: item.id } })}>
       <Text style={styles.gameName}>{item.gameName}</Text>
       <Text style={styles.gameDate}>{new Date(item.gameDateTime).toLocaleDateString()}</Text>
     </TouchableOpacity>
-  );
+  ), [router]);
 
-  const ListHeader = () => (
+  const ListHeader = useCallback(() => (
     <>
         <Text style={styles.title}>Game History</Text>
         <View style={styles.pickerContainer}>
@@ -90,25 +109,21 @@ const HistoryPage = () => {
                 ))}
             </SafePicker>
         </View>
-        {loadingGames && <ActivityIndicator size="large" color="#0000ff" />}
+        {isLoading && <ActivityIndicator size="large" color="#0000ff" />}
     </>
-  );
+  ), [selectedSeasonId, seasons, isLoading]);
 
-  const ListEmpty = () => (
+  const ListEmpty = useCallback(() => (
     <View style={styles.emptyContainer}>
-        { !loadingGames && <Text style={styles.emptyText}>No completed games found for this season.</Text> }
+        { !isLoading && <Text style={styles.emptyText}>No completed games found for this season.</Text> }
     </View>
-  );
+  ), [isLoading]);
 
-  if (loadingSeasons) {
-    return <PageLayout><ActivityIndicator size="large" color="#0000ff" /></PageLayout>;
-  }
-
-  if (error) {
+  if (error && !games.length) {
       return <PageLayout><Text style={styles.errorText}>{error}</Text></PageLayout>;
   }
 
-  if (seasons.length === 0) {
+  if (!seasons.length && !isLoading) {
       return <PageLayout><Text style={styles.emptyText}>No seasons found for this league.</Text></PageLayout>;
   }
 
@@ -189,4 +204,3 @@ const styles = StyleSheet.create({
 });
 
 export default HistoryPage;
-
