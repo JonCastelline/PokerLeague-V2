@@ -20,7 +20,7 @@ const AppMenu = () => {
 
   const navigateTo = (path) => {
     closeMenu();
-    router.push({ pathname: path, params: { leagueId: selectedLeagueId } });
+    router.replace({ pathname: path, params: { leagueId: selectedLeagueId } });
   };
 
   

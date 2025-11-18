@@ -1,6 +1,7 @@
-import { Picker } from '@react-native-picker/picker';
+import SafePicker from '../../components/SafePicker';
 import { DateTime } from 'luxon';
-import { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { ActivityIndicator, Alert, Modal, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View, Linking } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -15,6 +16,15 @@ import HelpIcon from '../../components/HelpIcon';
 const SeasonSettingsPage = () => {
   const { api } = useAuth();
   const { selectedLeagueId, currentUserMembership, loadingCurrentUserMembership } = useLeague();
+
+  // Helper function to parse date strings robustly
+  const parseDateStringAsLocal = (dateString) => {
+    if (!dateString) return null;
+    const datePart = dateString.split('T')[0];
+    const [year, month, day] = datePart.split('-').map(Number);
+    // Create a new Date object using local timezone midnight
+    return new Date(year, month - 1, day);
+  };
 
   // State for all seasons
   const [seasons, setSeasons] = useState([]);
@@ -95,6 +105,66 @@ const SeasonSettingsPage = () => {
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
   const [datePickerField, setDatePickerField] = useState(null); // 'startDate' or 'endDate'
 
+  useFocusEffect(
+    useCallback(() => {
+      // When the screen is focused, do nothing special for now.
+      // The important part is the cleanup function when it blurs.
+      return () => {
+        // Reset all state variables to their initial values when the screen blurs
+        setSeasons([]);
+        setLoadingSeasons(true);
+        setErrorSeasons(null);
+        setSelectedSeason(null);
+        setSettings(null);
+        setLoadingSettings(true);
+        setErrorSettings(null);
+        setDurationMinutes('');
+        setDurationSecondsInput('');
+        setWarningMinutes('');
+        setWarningSecondsInput('');
+        setGames([]);
+        setLoadingGames(false);
+        setHasGamesInSelectedSeason(false);
+        setBlindLevels([]);
+        setPlacePoints([]);
+        setAddBlindLevelModalVisible(false);
+        setNewBlindLevel({ level: '', smallBlind: '', bigBlind: '' });
+        setAddPlacePointModalVisible(false);
+        setNewPlacePoint({ place: '', points: '' });
+        setEditBlindLevelModalVisible(false);
+        setCurrentEditingBlindLevel(null);
+        setCurrentEditingBlindLevelIndex(null);
+        setEditPlacePointModalVisible(false);
+        setCurrentEditingPlacePoint(null);
+        setCurrentEditingPlacePointIndex(null);
+        setCreateSeasonModalVisible(false);
+        setNewSeasonName('');
+        setNewSeasonStartDate(null);
+        setNewSeasonEndDate(null);
+        setEditSeasonModalVisible(false);
+        setEditedSeasonName('');
+        setEditedSeasonStartDate(null);
+        setEditedSeasonEndDate(null);
+        setCreateGameModalVisible(false);
+        setNewGameLocation('');
+        setNewGameTime(new Date());
+        setNewGameLocation('');
+        setGameDatePickerVisible(false);
+        setGameTimePickerVisible(false);
+        setEditGameModalVisible(false);
+        setCurrentEditingGame(null);
+        setEditedGameName('');
+        setEditedGameDate(new Date());
+        setEditedGameTime(new Date());
+        setEditedGameLocation('');
+        setEditGameDatePickerVisible(false);
+        setEditGameTimePickerVisible(false);
+        setDatePickerVisible(false);
+        setDatePickerField(null);
+      };
+    }, [])
+  );
+
   const handleAddToCalendar = (game) => {
     const url = `${apiActions.API_BASE_URL}/api/games/calendar/${game.calendarToken}.ics`;
     Linking.openURL(url).catch(err => console.error('An error occurred', err));
@@ -124,6 +194,16 @@ const SeasonSettingsPage = () => {
 
   const isAdmin = currentUserMembership?.role === 'ADMIN' || currentUserMembership?.isOwner;
 
+  const seasonPickerItems = useMemo(() => {
+    return seasons.map((s) => {
+      const label = typeof s.seasonName === 'string' ? s.seasonName : String(s.seasonName ?? 'Unnamed');
+      const value = String(s.id);
+      return (
+        <SafePicker.Item key={value} label={label} value={value} />
+      );
+    });
+  }, [seasons]);
+
   const fetchGames = useCallback(async (seasonId) => {
     if (!seasonId) return;
     setLoadingGames(true);
@@ -144,43 +224,76 @@ const SeasonSettingsPage = () => {
     setLoadingSettings(true);
     try {
       let targetSeasonId = seasonIdToFetch;
+      let fetchedSeason = null;
+      let fetchedSettingsData = null;
+      let fetchedBlindLevels = [];
+      let fetchedPlacePoints = [];
+      let fetchedGames = [];
+      let hasGames = false;
+      let durationMins = '';
+      let durationSecs = '';
+      let warningMins = '';
+      let warningSecs = '';
 
       if (!targetSeasonId) {
         try {
-          const seasonData = await api(apiActions.getActiveSeason, selectedLeagueId);
-          targetSeasonId = seasonData.id;
-          setSelectedSeason(seasonData);
+          fetchedSeason = await api(apiActions.getActiveSeason, selectedLeagueId);
+          targetSeasonId = fetchedSeason.id;
         } catch (e) {
           if (e.message.includes('404')) {
+            // No active season, reset all related states
             setSettings(null);
             setSelectedSeason(null);
             setBlindLevels([]);
             setPlacePoints([]);
             setGames([]);
+            setHasGamesInSelectedSeason(false);
+            setDurationMinutes('');
+            setDurationSecondsInput('');
+            setWarningMinutes('');
+            setWarningSecondsInput('');
             return;
           }
           throw e;
         }
+      } else {
+        // If targetSeasonId was provided, we need to fetch the season data for setSelectedSeason
+        fetchedSeason = seasons.find(s => s.id === targetSeasonId);
+        if (!fetchedSeason) {
+          // Fallback if season not found in current 'seasons' state (e.g., after a new season is created)
+          const allSeasons = await api(apiActions.getSeasons, selectedLeagueId);
+          fetchedSeason = allSeasons.find(s => s.id === targetSeasonId);
+        }
       }
 
       if (targetSeasonId) {
-        const settingsData = await api(apiActions.getSeasonSettings, targetSeasonId);
-        setSettings(settingsData);
-        setBlindLevels((settingsData.blindLevels || []).sort((a, b) => a.level - b.level));
-        setPlacePoints(settingsData.placePoints || []);
-        const fetchedGames = await fetchGames(targetSeasonId);
-        setHasGamesInSelectedSeason(fetchedGames.length > 0);
+        fetchedSettingsData = await api(apiActions.getSeasonSettings, targetSeasonId);
+        fetchedBlindLevels = (fetchedSettingsData.blindLevels || []).sort((a, b) => a.level - b.level);
+        fetchedPlacePoints = fetchedSettingsData.placePoints || [];
+        fetchedGames = await fetchGames(targetSeasonId);
+        hasGames = fetchedGames.length > 0;
 
-        // Initialize duration and warning time states
-        if (settingsData.durationSeconds !== undefined) {
-          setDurationMinutes(Math.floor(settingsData.durationSeconds / 60).toString());
-          setDurationSecondsInput((settingsData.durationSeconds % 60).toString());
+        if (fetchedSettingsData.durationSeconds !== undefined) {
+          durationMins = Math.floor(fetchedSettingsData.durationSeconds / 60).toString();
+          durationSecs = (fetchedSettingsData.durationSeconds % 60).toString();
         }
-        if (settingsData.warningSoundTimeSeconds !== undefined) {
-          setWarningMinutes(Math.floor(settingsData.warningSoundTimeSeconds / 60).toString());
-          setWarningSecondsInput((settingsData.warningSoundTimeSeconds % 60).toString());
+        if (fetchedSettingsData.warningSoundTimeSeconds !== undefined) {
+          warningMins = Math.floor(fetchedSettingsData.warningSoundTimeSeconds / 60).toString();
+          warningSecs = (fetchedSettingsData.warningSoundTimeSeconds % 60).toString();
         }
       }
+
+      // Consolidate all state updates into a single block
+      setSelectedSeason(fetchedSeason);
+      setSettings(fetchedSettingsData);
+      setBlindLevels(fetchedBlindLevels);
+      setPlacePoints(fetchedPlacePoints);
+      setGames(fetchedGames);
+      setHasGamesInSelectedSeason(hasGames);
+      setDurationMinutes(durationMins);
+      setDurationSecondsInput(durationSecs);
+      setWarningMinutes(warningMins);
+      setWarningSecondsInput(warningSecs);
 
     } catch (e) {
       console.error("Failed to fetch settings:", e);
@@ -188,7 +301,7 @@ const SeasonSettingsPage = () => {
     } finally {
       setLoadingSettings(false);
     }
-  }, [selectedLeagueId, api, fetchGames]);
+  }, [selectedLeagueId, api, fetchGames, seasons]);
 
   const fetchAllSeasons = useCallback(async () => {
     if (!selectedLeagueId) return [];
@@ -214,6 +327,10 @@ const SeasonSettingsPage = () => {
       fetchSettings(newSelectedSeason.id);
     }
   }, [seasons, fetchSettings]);
+
+  const onSeasonPickerChange = useCallback((itemValue) => {
+    handleSeasonChange(Number(itemValue));
+  }, [handleSeasonChange]);
 
   useEffect(() => {
     fetchAllSeasons();
@@ -251,24 +368,40 @@ const SeasonSettingsPage = () => {
         handleSeasonChange(defaultSeason.id);
       } else {
         // No seasons found at all (should be caught by seasons.length === 0 check, but for safety)
+        // Consolidate state updates
         setSettings(null);
         setSelectedSeason(null);
         setBlindLevels([]);
         setPlacePoints([]);
         setGames([]);
+        setDurationMinutes('');
+        setDurationSecondsInput('');
+        setWarningMinutes('');
+        setWarningSecondsInput('');
+        setHasGamesInSelectedSeason(false);
       }
     } else if (seasons.length === 0 && !loadingSeasons) {
+      // Consolidate state updates
       setSettings(null);
       setSelectedSeason(null);
       setBlindLevels([]);
       setPlacePoints([]);
       setGames([]);
+      setDurationMinutes('');
+      setDurationSecondsInput('');
+      setWarningMinutes('');
+      setWarningSecondsInput('');
+      setHasGamesInSelectedSeason(false);
     }
   }, [seasons, selectedSeason, loadingSeasons, handleSeasonChange]);
 
-  const handleSettingChange = (field, value) => {
+  const handleSettingChange = useCallback((field, value) => {
     setSettings(prev => ({ ...prev, [field]: value }));
-  };
+  }, []);
+
+  const onBountyRuleChange = useCallback((itemValue) => {
+    handleSettingChange('bountyOnLeaderAbsenceRule', itemValue);
+  }, [handleSettingChange]);
 
   const handleNumericInputBlur = (field, currentValue) => {
     let cleanedValue = currentValue.toString().replace(/,/g, '');
@@ -324,8 +457,8 @@ const SeasonSettingsPage = () => {
     }
 
     try {
-      const formattedStartDate = DateTime.fromJSDate(newSeasonStartDate).startOf('day').toUTC().toISO();
-      const formattedEndDate = DateTime.fromJSDate(newSeasonEndDate).endOf('day').toUTC().toISO();
+      const formattedStartDate = DateTime.fromJSDate(newSeasonStartDate).toFormat('yyyy-MM-dd');
+      const formattedEndDate = DateTime.fromJSDate(newSeasonEndDate).toFormat('yyyy-MM-dd');
       const seasonData = {
         seasonName: newSeasonName,
         startDate: formattedStartDate,
@@ -374,8 +507,8 @@ const SeasonSettingsPage = () => {
     }
 
     try {
-      const formattedStartDate = DateTime.fromJSDate(editedSeasonStartDate).startOf('day').toUTC().toISO();
-      const formattedEndDate = DateTime.fromJSDate(editedSeasonEndDate).endOf('day').toUTC().toISO();
+      const formattedStartDate = DateTime.fromJSDate(editedSeasonStartDate).toFormat('yyyy-MM-dd');
+      const formattedEndDate = DateTime.fromJSDate(editedSeasonEndDate).toFormat('yyyy-MM-dd');
       const seasonData = {
         seasonName: editedSeasonName,
         startDate: formattedStartDate,
@@ -420,7 +553,6 @@ const SeasonSettingsPage = () => {
           minute: newGameTime.getMinutes(),
           second: newGameTime.getSeconds(),
         })
-        .toUTC()
         .toISO();
 
       const gameData = {
@@ -468,7 +600,6 @@ const SeasonSettingsPage = () => {
           minute: editedGameTime.getMinutes(),
           second: editedGameTime.getSeconds(),
         })
-        .toUTC()
         .toISO();
 
       const gameData = {
@@ -946,8 +1077,8 @@ const SeasonSettingsPage = () => {
                       }}
                       onCancel={() => setGameDatePickerVisible(false)}
                       date={newGameDate}
-                      minimumDate={selectedSeason?.startDate ? DateTime.fromISO(selectedSeason.startDate).toJSDate() : undefined}
-                      maximumDate={selectedSeason?.endDate ? DateTime.fromISO(selectedSeason.endDate).toJSDate() : undefined}
+                      minimumDate={parseDateStringAsLocal(selectedSeason?.startDate)}
+                      maximumDate={parseDateStringAsLocal(selectedSeason?.endDate)}
                     />
         
                     {/* Game Time Picker Modal */}
@@ -1024,8 +1155,8 @@ const SeasonSettingsPage = () => {
                       }}
                       onCancel={() => setEditGameDatePickerVisible(false)}
                       date={editedGameDate}
-                      minimumDate={selectedSeason?.startDate ? DateTime.fromISO(selectedSeason.startDate).toJSDate() : undefined}
-                      maximumDate={selectedSeason?.endDate ? DateTime.fromISO(selectedSeason.endDate).toJSDate() : undefined}
+                      minimumDate={parseDateStringAsLocal(selectedSeason?.startDate)}
+                      maximumDate={parseDateStringAsLocal(selectedSeason?.endDate)}
                     />
         
                     {/* Edit Game Time Picker Modal */}
@@ -1219,16 +1350,16 @@ const SeasonSettingsPage = () => {
                     <Text style={styles.settingLabel}>Bounty on Leader Absence</Text>
                     <HelpIcon topicKey="BOUNTY_ON_LEADER_ABSENCE" />
                 </View>
-                <Picker
+                <SafePicker
                     selectedValue={settings.bountyOnLeaderAbsenceRule}
                     style={styles.pickerBounty}
-                    onValueChange={(itemValue) => handleSettingChange('bountyOnLeaderAbsenceRule', itemValue)}
+                    onValueChange={onBountyRuleChange}
                     enabled={isSeasonFinalized ? false : (isAdmin ? true : false)}
                     itemStyle={{ color: 'black' }}
                 >
-                    <Picker.Item label="No Bounty" value="NO_BOUNTY"/>
-                    <Picker.Item label="Next Highest Player" value="NEXT_HIGHEST_PLAYER"/>
-                </Picker>
+                    <SafePicker.Item label="No Bounty" value="NO_BOUNTY"/>
+                    <SafePicker.Item label="Next Highest Player" value="NEXT_HIGHEST_PLAYER"/>
+                </SafePicker>
             </View>
         </View>
 
@@ -1384,18 +1515,12 @@ const SeasonSettingsPage = () => {
             <View style={styles.seasonSelectorContainer}>
               <View style={{ flexDirection: 'column', width: '100%' }}>
                 <Text style={styles.subtitle}>Current Season:</Text>
-                <Picker
-                  selectedValue={String(selectedSeason?.id)}
+                <SafePicker
+                  selectedValue={String(selectedSeason?.id ?? '')}
                   style={styles.picker}
-                  onValueChange={(itemValue) => handleSeasonChange(Number(itemValue))}>
-                  {seasons.map((s) => {
-                    const label = typeof s.seasonName === 'string' ? s.seasonName : String(s.seasonName ?? 'Unnamed');
-                    const value = String(s.id);
-                    return (
-                      <Picker.Item key={value} label={label} value={value} />
-                    );
-                  })}
-                </Picker>
+                  onValueChange={onSeasonPickerChange}>
+                  {seasonPickerItems}
+                </SafePicker>
               </View>
             </View>
             {isAdmin && selectedSeason && !selectedSeason.isFinalized && !selectedSeason.isCasual && (
@@ -1404,8 +1529,8 @@ const SeasonSettingsPage = () => {
                   style={[styles.button, styles.buttonPrimary, styles.actionButton]}
                   onPress={() => {
                     setEditedSeasonName(selectedSeason.seasonName);
-                    setEditedSeasonStartDate(selectedSeason.startDate ? DateTime.fromISO(selectedSeason.startDate).toJSDate() : null);
-                    setEditedSeasonEndDate(selectedSeason.endDate ? DateTime.fromISO(selectedSeason.endDate).toJSDate() : null);
+                    setEditedSeasonStartDate(parseDateStringAsLocal(selectedSeason.startDate));
+                    setEditedSeasonEndDate(parseDateStringAsLocal(selectedSeason.endDate));
                     setEditSeasonModalVisible(true);
                   }}
                 >
