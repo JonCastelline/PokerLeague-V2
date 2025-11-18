@@ -17,6 +17,15 @@ const SeasonSettingsPage = () => {
   const { api } = useAuth();
   const { selectedLeagueId, currentUserMembership, loadingCurrentUserMembership } = useLeague();
 
+  // Helper function to parse date strings robustly
+  const parseDateStringAsLocal = (dateString) => {
+    if (!dateString) return null;
+    const datePart = dateString.split('T')[0];
+    const [year, month, day] = datePart.split('-').map(Number);
+    // Create a new Date object using local timezone midnight
+    return new Date(year, month - 1, day);
+  };
+
   // State for all seasons
   const [seasons, setSeasons] = useState([]);
   const [loadingSeasons, setLoadingSeasons] = useState(true);
@@ -448,8 +457,8 @@ const SeasonSettingsPage = () => {
     }
 
     try {
-      const formattedStartDate = DateTime.fromJSDate(newSeasonStartDate).startOf('day').toUTC().toISO();
-      const formattedEndDate = DateTime.fromJSDate(newSeasonEndDate).endOf('day').toUTC().toISO();
+      const formattedStartDate = DateTime.fromJSDate(newSeasonStartDate).toFormat('yyyy-MM-dd');
+      const formattedEndDate = DateTime.fromJSDate(newSeasonEndDate).toFormat('yyyy-MM-dd');
       const seasonData = {
         seasonName: newSeasonName,
         startDate: formattedStartDate,
@@ -498,8 +507,8 @@ const SeasonSettingsPage = () => {
     }
 
     try {
-      const formattedStartDate = DateTime.fromJSDate(editedSeasonStartDate).startOf('day').toUTC().toISO();
-      const formattedEndDate = DateTime.fromJSDate(editedSeasonEndDate).endOf('day').toUTC().toISO();
+      const formattedStartDate = DateTime.fromJSDate(editedSeasonStartDate).toFormat('yyyy-MM-dd');
+      const formattedEndDate = DateTime.fromJSDate(editedSeasonEndDate).toFormat('yyyy-MM-dd');
       const seasonData = {
         seasonName: editedSeasonName,
         startDate: formattedStartDate,
@@ -544,7 +553,6 @@ const SeasonSettingsPage = () => {
           minute: newGameTime.getMinutes(),
           second: newGameTime.getSeconds(),
         })
-        .toUTC()
         .toISO();
 
       const gameData = {
@@ -592,7 +600,6 @@ const SeasonSettingsPage = () => {
           minute: editedGameTime.getMinutes(),
           second: editedGameTime.getSeconds(),
         })
-        .toUTC()
         .toISO();
 
       const gameData = {
@@ -1070,8 +1077,8 @@ const SeasonSettingsPage = () => {
                       }}
                       onCancel={() => setGameDatePickerVisible(false)}
                       date={newGameDate}
-                      minimumDate={selectedSeason?.startDate ? DateTime.fromISO(selectedSeason.startDate).toJSDate() : undefined}
-                      maximumDate={selectedSeason?.endDate ? DateTime.fromISO(selectedSeason.endDate).toJSDate() : undefined}
+                      minimumDate={parseDateStringAsLocal(selectedSeason?.startDate)}
+                      maximumDate={parseDateStringAsLocal(selectedSeason?.endDate)}
                     />
         
                     {/* Game Time Picker Modal */}
@@ -1148,8 +1155,8 @@ const SeasonSettingsPage = () => {
                       }}
                       onCancel={() => setEditGameDatePickerVisible(false)}
                       date={editedGameDate}
-                      minimumDate={selectedSeason?.startDate ? DateTime.fromISO(selectedSeason.startDate).toJSDate() : undefined}
-                      maximumDate={selectedSeason?.endDate ? DateTime.fromISO(selectedSeason.endDate).toJSDate() : undefined}
+                      minimumDate={parseDateStringAsLocal(selectedSeason?.startDate)}
+                      maximumDate={parseDateStringAsLocal(selectedSeason?.endDate)}
                     />
         
                     {/* Edit Game Time Picker Modal */}
@@ -1522,8 +1529,8 @@ const SeasonSettingsPage = () => {
                   style={[styles.button, styles.buttonPrimary, styles.actionButton]}
                   onPress={() => {
                     setEditedSeasonName(selectedSeason.seasonName);
-                    setEditedSeasonStartDate(selectedSeason.startDate ? DateTime.fromISO(selectedSeason.startDate).toJSDate() : null);
-                    setEditedSeasonEndDate(selectedSeason.endDate ? DateTime.fromISO(selectedSeason.endDate).toJSDate() : null);
+                    setEditedSeasonStartDate(parseDateStringAsLocal(selectedSeason.startDate));
+                    setEditedSeasonEndDate(parseDateStringAsLocal(selectedSeason.endDate));
                     setEditSeasonModalVisible(true);
                   }}
                 >
