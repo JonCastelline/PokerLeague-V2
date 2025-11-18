@@ -318,7 +318,7 @@ const PlayPage = (props) => {
                 </>
               ) : (
                 <>
-                  {isAdmin && (
+                  {(isAdmin || isCasualGame) && (
                     <>
                       <Text style={styles.title}>Select Players</Text>
                       <View style={{width: '100%'}}>
@@ -918,7 +918,6 @@ const PlayPageWrapper = (props) => {
                 newSetupData.activeSeason = playPageData.activeSeason;
                 newSetupData.activeSeasonSettings = playPageData.activeSeasonSettings;
                 newSetupData.allGames = playPageData.activeSeasonGames;
-                newSetupData.casualSeasonSettings = playPageData.casualSeasonSettings;
             const nonCompletedGames = playPageData.activeSeasonGames.filter(game => game.gameStatus !== 'COMPLETED');
             let defaultGame = nonCompletedGames.find(game => game.gameStatus === 'IN_PROGRESS' || game.gameStatus === 'PAUSED');
             if (!defaultGame && nonCompletedGames.length > 0) {
@@ -934,6 +933,8 @@ const PlayPageWrapper = (props) => {
             newSetupData.noActiveSeason = true;
             setSelectedGameId('casual');
         }
+        // Assign casualSeasonSettings unconditionally
+        newSetupData.casualSeasonSettings = playPageData.casualSeasonSettings;
     } catch (e) {
         handleApiError(e);
     } finally {

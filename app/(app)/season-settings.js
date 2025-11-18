@@ -1328,7 +1328,7 @@ const SeasonSettingsPage = () => {
             <Switch
                 value={settings.playerTimerControlEnabled}
                 onValueChange={(value) => handleSettingChange('playerTimerControlEnabled', value)}
-                disabled={isSeasonFinalized || !isAdmin}
+                disabled={isSeasonFinalized || !isAdmin || selectedSeason?.isCasual}
             />
         </View>
 
@@ -1340,7 +1340,7 @@ const SeasonSettingsPage = () => {
             <Switch
                 value={settings.playerEliminationEnabled}
                 onValueChange={(value) => handleSettingChange('playerEliminationEnabled', value)}
-                disabled={isSeasonFinalized || !isAdmin}
+                disabled={isSeasonFinalized || !isAdmin || selectedSeason?.isCasual}
             />
         </View>
 
