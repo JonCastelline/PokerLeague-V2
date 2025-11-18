@@ -17,11 +17,11 @@ export const HELP_TOPICS = {
   },
   PLAYER_TIMER_CONTROL: {
     title: 'Player Timer Control',
-    content: 'Enable this to allow all players in a live game to have control over the tournament timer. When disabled, only league admins can pause, resume, or adjust the timer.'
+    content: 'Enable this to allow all players in a live game to have control over the tournament timer. When disabled, only league admins can pause, resume, or adjust the timer. Automatically enabled for casual games.'
   },
   PLAYER_ELIMINATION_CONTROL: {
     title: 'Player Elimination Control',
-    content: 'Enable this to allow all players in a live game to record player eliminations. When disabled, only league admins can mark players as eliminated.'
+    content: 'Enable this to allow all players in a live game to record player eliminations. When disabled, only league admins can mark players as eliminated. Automatically enabled for casual games.'
   },
   BOUNTY_ON_LEADER_ABSENCE: {
     title: 'Bounty on Leader Absence',
