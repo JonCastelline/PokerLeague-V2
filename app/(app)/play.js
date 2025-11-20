@@ -331,7 +331,7 @@ const PlayPage = (props) => {
                                 <Switch
                                     value={selectedPlayerIds.has(player.id)}
                                     onValueChange={() => togglePlayerSelection(player.id)}
-                                    disabled={!isAdmin}
+                                    disabled={!isAdmin && !isCasualGame}
                                 />
                             </View>
                         ))}
@@ -380,13 +380,13 @@ const PlayPage = (props) => {
   });
 
   let mainButton = null;
-  if ((isAdmin || activeSeasonSettings?.playerEliminationEnabled) && (mode === 'eliminate_select_player' || mode === 'eliminate_select_killer')) {
+  if ((isAdmin || activeSeasonSettings?.playerEliminationEnabled || isCasualGame) && (mode === 'eliminate_select_player' || mode === 'eliminate_select_killer')) {
       mainButton = (
           <TouchableOpacity style={styles.button} onPress={() => setMode('play')} disabled={isActionLoading}>
               <Text style={styles.buttonText}>Cancel</Text>
           </TouchableOpacity>
       );
-  } else if ((isAdmin || activeSeasonSettings?.playerEliminationEnabled) && (gameState.gameStatus === 'IN_PROGRESS' || gameState.gameStatus === 'PAUSED') && mode === 'play') {
+  } else if ((isAdmin || activeSeasonSettings?.playerEliminationEnabled || isCasualGame) && (gameState.gameStatus === 'IN_PROGRESS' || gameState.gameStatus === 'PAUSED') && mode === 'play') {
       mainButton = (
           <TouchableOpacity style={styles.button} onPress={() => setMode('eliminate_select_player')} disabled={isActionLoading}>
               <Text style={styles.buttonText}>Eliminate Player</Text>
@@ -395,7 +395,7 @@ const PlayPage = (props) => {
   }
 
   let undoButton = null;
-  if ((isAdmin || activeSeasonSettings?.playerEliminationEnabled) && eliminatedPlayersCount > 0 && gameState.gameStatus === 'IN_PROGRESS') {
+  if ((isAdmin || activeSeasonSettings?.playerEliminationEnabled || isCasualGame) && eliminatedPlayersCount > 0 && gameState.gameStatus === 'IN_PROGRESS') {
       undoButton = (
           <TouchableOpacity style={styles.button} onPress={() => {
               handleAction(apiActions.undoElimination, selectedGameId).then(() => {
@@ -570,7 +570,7 @@ const PlayPage = (props) => {
           )
         )}
 
-        {(isAdmin || activeSeasonSettings?.playerTimerControlEnabled) && gameState.gameStatus !== 'COMPLETED' && (
+        {(isAdmin || activeSeasonSettings?.playerTimerControlEnabled || isCasualGame) && gameState.gameStatus !== 'COMPLETED' && (
             <View style={styles.buttonContainer}>
               <TouchableOpacity
                 style={[styles.button, (isActionLoading || gameState.timer.currentLevelIndex <= 0) && styles.disabledButton]}

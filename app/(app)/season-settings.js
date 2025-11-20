@@ -1172,18 +1172,20 @@ const SeasonSettingsPage = () => {
                     />
                   </>
                 )}
-        <View style={styles.settingItem}>
-            <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                <Text style={styles.settingLabel}>Track Kills</Text>
-                <HelpIcon topicKey="TRACK_KILLS" />
-            </View>
-            <Switch
-                value={settings.trackKills}
-                onValueChange={(value) => handleSettingChange('trackKills', value)}
-                disabled={isSeasonFinalized || !isAdmin}
-            />
-        </View>
-        {settings.trackKills ? (
+        {!selectedSeason?.isCasual && (
+          <View style={styles.settingItem}>
+              <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                  <Text style={styles.settingLabel}>Track Kills</Text>
+                  <HelpIcon topicKey="TRACK_KILLS" />
+              </View>
+              <Switch
+                  value={settings.trackKills}
+                  onValueChange={(value) => handleSettingChange('trackKills', value)}
+                  disabled={isSeasonFinalized || !isAdmin}
+              />
+          </View>
+        )}
+        {settings.trackKills && !selectedSeason?.isCasual ? (
             <View style={styles.settingItem}>
                 <Text style={styles.settingLabel}>Kill Points</Text>
                 <TextInput
@@ -1197,18 +1199,20 @@ const SeasonSettingsPage = () => {
             </View>
         ) : null}
 
-        <View style={styles.settingItem}>
-            <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                <Text style={styles.settingLabel}>Track Bounties</Text>
-                <HelpIcon topicKey="TRACK_BOUNTIES" />
-            </View>
-            <Switch
-                value={settings.trackBounties}
-                onValueChange={(value) => handleSettingChange('trackBounties', value)}
-                disabled={isSeasonFinalized || !isAdmin}
-            />
-        </View>
-        {settings.trackBounties ? (
+        {!selectedSeason?.isCasual && (
+          <View style={styles.settingItem}>
+              <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                  <Text style={styles.settingLabel}>Track Bounties</Text>
+                  <HelpIcon topicKey="TRACK_BOUNTIES" />
+              </View>
+              <Switch
+                  value={settings.trackBounties}
+                  onValueChange={(value) => handleSettingChange('trackBounties', value)}
+                  disabled={isSeasonFinalized || !isAdmin}
+              />
+          </View>
+        )}
+        {settings.trackBounties && !selectedSeason?.isCasual ? (
             <View style={styles.settingItem}>
                 <Text style={styles.settingLabel}>Bounty Points</Text>
                 <TextInput
@@ -1222,18 +1226,20 @@ const SeasonSettingsPage = () => {
             </View>
         ) : null}
 
-        <View style={styles.settingItem}>
-            <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                <Text style={styles.settingLabel}>Enable Attendance Points</Text>
-                <HelpIcon topicKey="ATTENDANCE_POINTS" />
-            </View>
-            <Switch
-                value={settings.enableAttendancePoints}
-                onValueChange={(value) => handleSettingChange('enableAttendancePoints', value)}
-                disabled={isSeasonFinalized || !isAdmin}
-            />
-        </View>
-        {settings.enableAttendancePoints ? (
+        {!selectedSeason?.isCasual && (
+          <View style={styles.settingItem}>
+              <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                  <Text style={styles.settingLabel}>Enable Attendance Points</Text>
+                  <HelpIcon topicKey="ATTENDANCE_POINTS" />
+              </View>
+              <Switch
+                  value={settings.enableAttendancePoints}
+                  onValueChange={(value) => handleSettingChange('enableAttendancePoints', value)}
+                  disabled={isSeasonFinalized || !isAdmin}
+              />
+          </View>
+        )}
+        {settings.enableAttendancePoints && !selectedSeason?.isCasual ? (
             <View style={styles.settingItem}>
                 <Text style={styles.settingLabel}>Attendance Points</Text>
                 <TextInput
@@ -1320,48 +1326,54 @@ const SeasonSettingsPage = () => {
             />
         </View>
 
-        <View style={styles.settingItem}>
-            <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                <Text style={styles.settingLabel}>Allow Players to Control Timer</Text>
-                <HelpIcon topicKey="PLAYER_TIMER_CONTROL" />
-            </View>
-            <Switch
-                value={settings.playerTimerControlEnabled}
-                onValueChange={(value) => handleSettingChange('playerTimerControlEnabled', value)}
-                disabled={isSeasonFinalized || !isAdmin || selectedSeason?.isCasual}
-            />
-        </View>
+        {!selectedSeason?.isCasual && (
+          <View style={styles.settingItem}>
+              <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                  <Text style={styles.settingLabel}>Allow Players to Control Timer</Text>
+                  <HelpIcon topicKey="PLAYER_TIMER_CONTROL" />
+              </View>
+              <Switch
+                  value={settings.playerTimerControlEnabled}
+                  onValueChange={(value) => handleSettingChange('playerTimerControlEnabled', value)}
+                  disabled={isSeasonFinalized || !isAdmin || selectedSeason?.isCasual}
+              />
+          </View>
+        )}
 
-        <View style={styles.settingItem}>
-            <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                <Text style={styles.settingLabel}>Allow Players to Handle Eliminations</Text>
-                <HelpIcon topicKey="PLAYER_ELIMINATION_CONTROL" />
-            </View>
-            <Switch
-                value={settings.playerEliminationEnabled}
-                onValueChange={(value) => handleSettingChange('playerEliminationEnabled', value)}
-                disabled={isSeasonFinalized || !isAdmin || selectedSeason?.isCasual}
-            />
-        </View>
+        {!selectedSeason?.isCasual && (
+          <View style={styles.settingItem}>
+              <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                  <Text style={styles.settingLabel}>Allow Players to Handle Eliminations</Text>
+                  <HelpIcon topicKey="PLAYER_ELIMINATION_CONTROL" />
+              </View>
+              <Switch
+                  value={settings.playerEliminationEnabled}
+                  onValueChange={(value) => handleSettingChange('playerEliminationEnabled', value)}
+                  disabled={isSeasonFinalized || !isAdmin || selectedSeason?.isCasual}
+              />
+          </View>
+        )}
 
-        <View style={styles.settingItem}>
-            <View style={{ flexDirection: 'column', width: '100%' }}>
-                <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                    <Text style={styles.settingLabel}>Bounty on Leader Absence</Text>
-                    <HelpIcon topicKey="BOUNTY_ON_LEADER_ABSENCE" />
-                </View>
-                <SafePicker
-                    selectedValue={settings.bountyOnLeaderAbsenceRule}
-                    style={styles.pickerBounty}
-                    onValueChange={onBountyRuleChange}
-                    enabled={isSeasonFinalized ? false : (isAdmin ? true : false)}
-                    itemStyle={{ color: 'black' }}
-                >
-                    <SafePicker.Item label="No Bounty" value="NO_BOUNTY"/>
-                    <SafePicker.Item label="Next Highest Player" value="NEXT_HIGHEST_PLAYER"/>
-                </SafePicker>
-            </View>
-        </View>
+        {!selectedSeason?.isCasual && (
+          <View style={styles.settingItem}>
+              <View style={{ flexDirection: 'column', width: '100%' }}>
+                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                      <Text style={styles.settingLabel}>Bounty on Leader Absence</Text>
+                      <HelpIcon topicKey="BOUNTY_ON_LEADER_ABSENCE" />
+                  </View>
+                  <SafePicker
+                      selectedValue={settings.bountyOnLeaderAbsenceRule}
+                      style={styles.pickerBounty}
+                      onValueChange={onBountyRuleChange}
+                      enabled={isSeasonFinalized ? false : (isAdmin ? true : false)}
+                      itemStyle={{ color: 'black' }}
+                  >
+                      <SafePicker.Item label="No Bounty" value="NO_BOUNTY"/>
+                      <SafePicker.Item label="Next Highest Player" value="NEXT_HIGHEST_PLAYER"/>
+                  </SafePicker>
+              </View>
+          </View>
+        )}
 
         {/* Blind Levels Section */}
         <View style={{flexDirection: 'row', alignItems: 'center'}}>
@@ -1409,51 +1421,55 @@ const SeasonSettingsPage = () => {
           </TouchableOpacity>
         )}
 
-        {/* Place Points Section */}
-        <View style={{flexDirection: 'row', alignItems: 'center'}}>
-            <Text style={styles.subtitle}>Place Points</Text>
-            <HelpIcon topicKey="PLACE_POINTS" />
-        </View>
-        {placePoints.map((pp, index) => (
-          <TouchableOpacity
-            key={index}
-            style={[ 
-              styles.placePointItem,
-              placePointErrors && placePointErrors[index] && { borderColor: 'red', borderWidth: 2 }
-            ]}
-            onPress={() => isAdmin && !isSeasonFinalized && handleEditPlacePoint(pp, index)}
-            disabled={isSeasonFinalized || !isAdmin}
-            activeOpacity={0.7}
-          >
-            <View style={styles.placePointItemContent}> 
-              <Text>Place: {pp.place}</Text>
-              <Text>Points: {pp.points}</Text>
-              {placePointErrors && placePointErrors[index] && (
-                <Text style={{ color: 'red', fontSize: 12 }}>{placePointErrors[index]}</Text>
-              )}
+        {!selectedSeason?.isCasual && (
+          <>
+            {/* Place Points Section */}
+            <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                <Text style={styles.subtitle}>Place Points</Text>
+                <HelpIcon topicKey="PLACE_POINTS" />
             </View>
-            {isAdmin && !isSeasonFinalized && index === placePoints.length - 1 && (
-              <View style={{ marginLeft: 10 }}>
-                <TouchableOpacity
-                  style={styles.deleteButton}
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    handleDeletePlacePoint(index);
-                  }}
-                >
-                  <Text style={styles.deleteButtonText}>Delete</Text>
-                </TouchableOpacity>
-              </View>
+            {placePoints.map((pp, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[ 
+                  styles.placePointItem,
+                  placePointErrors && placePointErrors[index] && { borderColor: 'red', borderWidth: 2 }
+                ]}
+                onPress={() => isAdmin && !isSeasonFinalized && handleEditPlacePoint(pp, index)}
+                disabled={isSeasonFinalized || !isAdmin}
+                activeOpacity={0.7}
+              >
+                <View style={styles.placePointItemContent}> 
+                  <Text>Place: {pp.place}</Text>
+                  <Text>Points: {pp.points}</Text>
+                  {placePointErrors && placePointErrors[index] && (
+                    <Text style={{ color: 'red', fontSize: 12 }}>{placePointErrors[index]}</Text>
+                  )}
+                </View>
+                {isAdmin && !isSeasonFinalized && index === placePoints.length - 1 && (
+                  <View style={{ marginLeft: 10 }}>
+                    <TouchableOpacity
+                      style={styles.deleteButton}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleDeletePlacePoint(index);
+                      }}
+                    >
+                      <Text style={styles.deleteButtonText}>Delete</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </TouchableOpacity>
+            ))}
+            {isAdmin && !isSeasonFinalized && (
+              <TouchableOpacity
+                style={[styles.button, styles.buttonPrimaryRed, styles.actionButton]}
+                onPress={() => setAddPlacePointModalVisible(true)}
+              >
+                <Text style={styles.textStyle}>Add Place Point</Text>
+              </TouchableOpacity>
             )}
-          </TouchableOpacity>
-        ))}
-        {isAdmin && !isSeasonFinalized && (
-          <TouchableOpacity
-            style={[styles.button, styles.buttonPrimaryRed, styles.actionButton]}
-            onPress={() => setAddPlacePointModalVisible(true)}
-          >
-            <Text style={styles.textStyle}>Add Place Point</Text>
-          </TouchableOpacity>
+          </>
         )}
 
         {isSeasonFinalized

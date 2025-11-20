@@ -80,7 +80,7 @@ const Timer = ({ gameId, timerState, blindLevels, settings, isPlaying, onTimerEn
   };
 
   const handleOpenModal = async () => {
-    const canControlTimer = isAdmin || settings.playerTimerControlEnabled;
+    const canControlTimer = isAdmin || settings.playerTimerControlEnabled || isCasualGame;
     if (!canControlTimer) return;
 
     if (isPlaying) {
@@ -95,7 +95,7 @@ const Timer = ({ gameId, timerState, blindLevels, settings, isPlaying, onTimerEn
   };
 
   const handleSetTime = async (timeInMillis) => {
-    const canControlTimer = isAdmin || settings.playerTimerControlEnabled;
+    const canControlTimer = isAdmin || settings.playerTimerControlEnabled || isCasualGame;
     if (!canControlTimer) return;
 
     if (isCasualGame) {
@@ -118,7 +118,7 @@ const Timer = ({ gameId, timerState, blindLevels, settings, isPlaying, onTimerEn
   };
 
   const handleResetLevel = async () => {
-    const canControlTimer = isAdmin || settings.playerTimerControlEnabled;
+    const canControlTimer = isAdmin || settings.playerTimerControlEnabled || isCasualGame;
     if (!canControlTimer) return;
 
     if (isCasualGame) {
@@ -175,7 +175,7 @@ const Timer = ({ gameId, timerState, blindLevels, settings, isPlaying, onTimerEn
 
   return (
     <View style={styles.timerContainer}>
-        <TouchableOpacity onPress={handleOpenModal} disabled={!isAdmin}>
+        <TouchableOpacity onPress={handleOpenModal} disabled={!isAdmin && !isCasualGame}>
             <CountdownCircleTimer
                 key={timerKey}
                 isPlaying={isPlaying}
@@ -190,7 +190,7 @@ const Timer = ({ gameId, timerState, blindLevels, settings, isPlaying, onTimerEn
             </CountdownCircleTimer>
         </TouchableOpacity>
 
-      {isAdmin && (
+      {(isAdmin || isCasualGame) && (
           <TimerModal
             visible={isModalVisible}
             onClose={() => setModalVisible(false)}
