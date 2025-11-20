@@ -86,7 +86,7 @@ const SeasonSettingsPage = () => {
 
   // State for create game modal
   const [createGameModalVisible, setCreateGameModalVisible] = useState(false);
-  const [newGameName, setNewGameName] = useState(''); // New state for game name
+  const [newGameName, setNewGameName] = useState('');
   const [newGameDate, setNewGameDate] = useState(new Date());
   const [newGameTime, setNewGameTime] = useState(new Date());
   const [newGameLocation, setNewGameLocation] = useState('');
@@ -557,7 +557,7 @@ const SeasonSettingsPage = () => {
         .toISO();
 
       const gameData = {
-        gameName: newGameName || null, // Pass null if empty string
+        gameName: newGameName || null, // Pass null if empty string. Backend will add default name if null.
         gameDateTime: combinedDateTime,
         gameLocation: newGameLocation,
       };
@@ -569,7 +569,7 @@ const SeasonSettingsPage = () => {
         text2: 'Game added successfully!'
       });
       setCreateGameModalVisible(false);
-      setNewGameName(''); // Reset newGameName
+      setNewGameName('');
       setNewGameLocation('');
       setNewGameTime(new Date());
       fetchGames(selectedSeason.id);
