@@ -1226,6 +1226,27 @@ const SeasonSettingsPage = () => {
             </View>
         ) : null}
 
+        {settings.trackBounties && !selectedSeason?.isCasual && (
+          <View style={styles.settingItem}>
+              <View style={{ flexDirection: 'column', width: '100%' }}>
+                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                      <Text style={styles.settingLabel}>Bounty on Leader Absence</Text>
+                      <HelpIcon topicKey="BOUNTY_ON_LEADER_ABSENCE" />
+                  </View>
+                  <SafePicker
+                      selectedValue={settings.bountyOnLeaderAbsenceRule}
+                      style={styles.pickerBounty}
+                      onValueChange={onBountyRuleChange}
+                      enabled={isSeasonFinalized ? false : (isAdmin ? true : false)}
+                      itemStyle={{ color: 'black' }}
+                  >
+                      <SafePicker.Item label="No Bounty" value="NO_BOUNTY"/>
+                      <SafePicker.Item label="Next Highest Player" value="NEXT_HIGHEST_PLAYER"/>
+                  </SafePicker>
+              </View>
+          </View>
+        )}
+
         {!selectedSeason?.isCasual && (
           <View style={styles.settingItem}>
               <View style={{flexDirection: 'row', alignItems: 'center'}}>
@@ -1354,26 +1375,7 @@ const SeasonSettingsPage = () => {
           </View>
         )}
 
-        {!selectedSeason?.isCasual && (
-          <View style={styles.settingItem}>
-              <View style={{ flexDirection: 'column', width: '100%' }}>
-                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                      <Text style={styles.settingLabel}>Bounty on Leader Absence</Text>
-                      <HelpIcon topicKey="BOUNTY_ON_LEADER_ABSENCE" />
-                  </View>
-                  <SafePicker
-                      selectedValue={settings.bountyOnLeaderAbsenceRule}
-                      style={styles.pickerBounty}
-                      onValueChange={onBountyRuleChange}
-                      enabled={isSeasonFinalized ? false : (isAdmin ? true : false)}
-                      itemStyle={{ color: 'black' }}
-                  >
-                      <SafePicker.Item label="No Bounty" value="NO_BOUNTY"/>
-                      <SafePicker.Item label="Next Highest Player" value="NEXT_HIGHEST_PLAYER"/>
-                  </SafePicker>
-              </View>
-          </View>
-        )}
+
 
         {/* Blind Levels Section */}
         <View style={{flexDirection: 'row', alignItems: 'center'}}>
