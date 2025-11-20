@@ -186,6 +186,7 @@ The play page is the main screen for a game in progress. It features the tournam
 
 **Features:**
 *   **Game Setup:** Before a game starts, admins can select which players are participating.
+*   **Casual Games:** These are informal games that do not affect league standings or player statistics. They are for practice or fun. Non-admin players have full control over player selection and in-game actions (timer, eliminations). The settings for casual games can be configured in the "Casual Games" season on the Season Settings page.
 *   **Tournament Timer:** A timer that counts down each blind level.
 *   **Blind Level Display:** Shows the current and next blind levels.
 *   **Player List:** Displays a list of players in the game, along with their status (active or eliminated), place, kills, and bounties.
