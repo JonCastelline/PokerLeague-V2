@@ -83,6 +83,7 @@ const SeasonSettingsPage = () => {
   const [editedSeasonName, setEditedSeasonName] = useState('');
   const [editedSeasonStartDate, setEditedSeasonStartDate] = useState(null);
   const [editedSeasonEndDate, setEditedSeasonEndDate] = useState(null);
+  const [newlyCreatedSeasonId, setNewlyCreatedSeasonId] = useState(null);
 
   // State for create game modal
   const [createGameModalVisible, setCreateGameModalVisible] = useState(false);
@@ -338,7 +339,10 @@ const SeasonSettingsPage = () => {
   }, [fetchAllSeasons]);
 
   useEffect(() => {
-    if (!selectedSeason && seasons.length > 0) {
+    if (newlyCreatedSeasonId && seasons.find(s => s.id === newlyCreatedSeasonId)) {
+      handleSeasonChange(newlyCreatedSeasonId);
+      setNewlyCreatedSeasonId(null);
+    } else if (!selectedSeason && seasons.length > 0) {
       const today = new Date();
       let defaultSeason = null;
 
@@ -394,7 +398,7 @@ const SeasonSettingsPage = () => {
       setWarningSecondsInput('');
       setHasGamesInSelectedSeason(false);
     }
-  }, [seasons, selectedSeason, loadingSeasons, handleSeasonChange]);
+  }, [seasons, selectedSeason, loadingSeasons, handleSeasonChange, newlyCreatedSeasonId]);
 
   const handleSettingChange = useCallback((field, value) => {
     setSettings(prev => ({ ...prev, [field]: value }));
@@ -466,7 +470,7 @@ const SeasonSettingsPage = () => {
         endDate: formattedEndDate,
       };
 
-      await api(apiActions.createSeason, selectedLeagueId, seasonData);
+      const newSeason = await api(apiActions.createSeason, selectedLeagueId, seasonData);
 
       Toast.show({
         type: 'success',
@@ -477,6 +481,7 @@ const SeasonSettingsPage = () => {
       setNewSeasonName('');
       setNewSeasonStartDate(null);
       setNewSeasonEndDate(null);
+      setNewlyCreatedSeasonId(newSeason.id);
       fetchAllSeasons();
     } catch (e) {
       console.error("Failed to create season:", e);
