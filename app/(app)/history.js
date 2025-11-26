@@ -102,6 +102,10 @@ const HistoryPage = () => {
                 setGames([]);
                 setIsLoading(false);
               }
+            } else {
+                setSelectedSeasonId(null);
+                setGames([]);
+                setIsLoading(false);
             }
           } catch (err) {
             console.error("Failed to fetch seasons:", err);
