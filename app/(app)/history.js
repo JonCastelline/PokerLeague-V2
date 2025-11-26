@@ -56,14 +56,52 @@ const HistoryPage = () => {
             setSeasons(sortedData);
 
             if (sortedData.length > 0) {
-              const activeSeasonInList = sortedData.find(s => s.id === activeSeason?.id);
-              const initialSeasonId = activeSeasonInList ? activeSeason.id : sortedData[0].id;
-              setSelectedSeasonId(initialSeasonId);
-              await fetchGames(initialSeasonId); // Fetch games for the initial season
-            } else {
-              setSelectedSeasonId(null);
-              setGames([]);
-              setIsLoading(false);
+              const today = new Date();
+              today.setHours(0, 0, 0, 0); // Normalize today to start of day
+
+              let initialSeason = null;
+
+              // 1. Find a season that is currently active
+              const activeSeasons = sortedData.filter(s => {
+                const startDate = new Date(s.startDate);
+                startDate.setHours(0, 0, 0, 0);
+                const endDate = new Date(s.endDate);
+                endDate.setHours(23, 59, 59, 999); // Normalize endDate to end of day
+                return today >= startDate && today <= endDate;
+              });
+
+              if (activeSeasons.length > 0) {
+                // If multiple active seasons, pick the one with the most recent end date
+                initialSeason = activeSeasons.sort((a, b) => new Date(b.endDate) - new Date(a.endDate))[0];
+              }
+
+              // 3. If no active season found, find the most recently ended season
+              if (!initialSeason) {
+                const endedSeasons = sortedData.filter(s => {
+                  const endDate = new Date(s.endDate);
+                  endDate.setHours(23, 59, 59, 999);
+                  return endDate < today;
+                });
+
+                if (endedSeasons.length > 0) {
+                  // Pick the one with the most recent end date
+                  initialSeason = endedSeasons.sort((a, b) => new Date(b.endDate) - new Date(a.endDate))[0];
+                }
+              }
+
+              // 4. If still no initial season, default to the first in the sorted list
+              if (!initialSeason && sortedData.length > 0) {
+                initialSeason = sortedData[0];
+              }
+
+              if (initialSeason) {
+                setSelectedSeasonId(initialSeason.id);
+                await fetchGames(initialSeason.id);
+              } else {
+                setSelectedSeasonId(null);
+                setGames([]);
+                setIsLoading(false);
+              }
             }
           } catch (err) {
             console.error("Failed to fetch seasons:", err);
@@ -74,7 +112,7 @@ const HistoryPage = () => {
       };
 
       loadInitialData();
-    }, [currentLeague?.id, activeSeason?.id, api, fetchGames])
+    }, [currentLeague?.id, api, fetchGames])
   );
 
   useEffect(() => {
