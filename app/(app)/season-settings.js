@@ -28,14 +28,12 @@ const SeasonSettingsPage = () => {
 
   // State for all seasons
   const [seasons, setSeasons] = useState([]);
-  const [loadingSeasons, setLoadingSeasons] = useState(true);
-  const [errorSeasons, setErrorSeasons] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // State for selected season and its settings
   const [selectedSeason, setSelectedSeason] = useState(null);
   const [settings, setSettings] = useState(null);
-  const [loadingSettings, setLoadingSettings] = useState(true);
-  const [errorSettings, setErrorSettings] = useState(null);
 
   // New states for timer duration (minutes and seconds)
   const [durationMinutes, setDurationMinutes] = useState('');
@@ -47,7 +45,6 @@ const SeasonSettingsPage = () => {
 
   // State for Games
   const [games, setGames] = useState([]);
-  const [loadingGames, setLoadingGames] = useState(false);
   const [hasGamesInSelectedSeason, setHasGamesInSelectedSeason] = useState(false);
 
   // State for Blind Levels and Place Points
@@ -107,6 +104,42 @@ const SeasonSettingsPage = () => {
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
   const [datePickerField, setDatePickerField] = useState(null); // 'startDate' or 'endDate'
 
+  const fetchPageData = useCallback(async (seasonId) => {
+    if (!selectedLeagueId) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await api(apiActions.getSeasonSettingsPageData, selectedLeagueId, seasonId);
+      setSeasons(data.allSeasons || []);
+      setSelectedSeason(data.selectedSeason);
+      setSettings(data.settings);
+      setGames(data.games ? data.games.sort((a, b) => new Date(a.gameDateTime) - new Date(b.gameDateTime)) : []);
+      setHasGamesInSelectedSeason(data.games && data.games.length > 0);
+      setBlindLevels((data.settings?.blindLevels || []).sort((a, b) => a.level - b.level));
+      setPlacePoints(data.settings?.placePoints || []);
+      if (data.settings?.durationSeconds !== undefined) {
+        setDurationMinutes(Math.floor(data.settings.durationSeconds / 60).toString());
+        setDurationSecondsInput((data.settings.durationSeconds % 60).toString());
+      } else {
+        setDurationMinutes('');
+        setDurationSecondsInput('');
+      }
+      if (data.settings?.warningSoundTimeSeconds !== undefined) {
+        setWarningMinutes(Math.floor(data.settings.warningSoundTimeSeconds / 60).toString());
+        setWarningSecondsInput((data.settings.warningSoundTimeSeconds % 60).toString());
+      } else {
+        setWarningMinutes('');
+        setWarningSecondsInput('');
+      }
+    } catch (e) {
+      console.error("Failed to fetch page data:", e);
+      setError(e.message);
+      Toast.show({ type: 'error', text1: 'Error', text2: 'Failed to load page data.' });
+    } finally {
+      setLoading(false);
+    }
+  }, [api, selectedLeagueId]);
+
   useFocusEffect(
     useCallback(() => {
       // When the screen is focused, do nothing special for now.
@@ -114,18 +147,15 @@ const SeasonSettingsPage = () => {
       return () => {
         // Reset all state variables to their initial values when the screen blurs
         setSeasons([]);
-        setLoadingSeasons(true);
-        setErrorSeasons(null);
+        setLoading(true);
+        setError(null);
         setSelectedSeason(null);
         setSettings(null);
-        setLoadingSettings(true);
-        setErrorSettings(null);
         setDurationMinutes('');
         setDurationSecondsInput('');
         setWarningMinutes('');
         setWarningSecondsInput('');
         setGames([]);
-        setLoadingGames(false);
         setHasGamesInSelectedSeason(false);
         setBlindLevels([]);
         setPlacePoints([]);
@@ -206,199 +236,22 @@ const SeasonSettingsPage = () => {
     });
   }, [seasons]);
 
-  const fetchGames = useCallback(async (seasonId) => {
-    if (!seasonId) return;
-    setLoadingGames(true);
-    try {
-      const gamesData = await api(apiActions.getAllGamesBySeason, seasonId);
-      setGames(gamesData.sort((a, b) => new Date(a.gameDateTime) - new Date(b.gameDateTime)));
-      return gamesData; // Return gamesData
-    } catch (e) {
-      console.error("Failed to fetch games:", e);
-      return []; // Return empty array on error
-    } finally {
-      setLoadingGames(false);
-    }
-  }, [api]);
-
-  const fetchSettings = useCallback(async (seasonIdToFetch = null) => {
-    if (!selectedLeagueId) return;
-    setLoadingSettings(true);
-    try {
-      let targetSeasonId = seasonIdToFetch;
-      let fetchedSeason = null;
-      let fetchedSettingsData = null;
-      let fetchedBlindLevels = [];
-      let fetchedPlacePoints = [];
-      let fetchedGames = [];
-      let hasGames = false;
-      let durationMins = '';
-      let durationSecs = '';
-      let warningMins = '';
-      let warningSecs = '';
-
-      if (!targetSeasonId) {
-        try {
-          fetchedSeason = await api(apiActions.getActiveSeason, selectedLeagueId);
-          targetSeasonId = fetchedSeason.id;
-        } catch (e) {
-          if (e.message.includes('404')) {
-            // No active season, reset all related states
-            setSettings(null);
-            setSelectedSeason(null);
-            setBlindLevels([]);
-            setPlacePoints([]);
-            setGames([]);
-            setHasGamesInSelectedSeason(false);
-            setDurationMinutes('');
-            setDurationSecondsInput('');
-            setWarningMinutes('');
-            setWarningSecondsInput('');
-            return;
-          }
-          throw e;
-        }
-      } else {
-        // If targetSeasonId was provided, we need to fetch the season data for setSelectedSeason
-        fetchedSeason = seasons.find(s => s.id === targetSeasonId);
-        if (!fetchedSeason) {
-          // Fallback if season not found in current 'seasons' state (e.g., after a new season is created)
-          const allSeasons = await api(apiActions.getSeasons, selectedLeagueId);
-          fetchedSeason = allSeasons.find(s => s.id === targetSeasonId);
-        }
-      }
-
-      if (targetSeasonId) {
-        fetchedSettingsData = await api(apiActions.getSeasonSettings, targetSeasonId);
-        fetchedBlindLevels = (fetchedSettingsData.blindLevels || []).sort((a, b) => a.level - b.level);
-        fetchedPlacePoints = fetchedSettingsData.placePoints || [];
-        fetchedGames = await fetchGames(targetSeasonId);
-        hasGames = fetchedGames.length > 0;
-
-        if (fetchedSettingsData.durationSeconds !== undefined) {
-          durationMins = Math.floor(fetchedSettingsData.durationSeconds / 60).toString();
-          durationSecs = (fetchedSettingsData.durationSeconds % 60).toString();
-        }
-        if (fetchedSettingsData.warningSoundTimeSeconds !== undefined) {
-          warningMins = Math.floor(fetchedSettingsData.warningSoundTimeSeconds / 60).toString();
-          warningSecs = (fetchedSettingsData.warningSoundTimeSeconds % 60).toString();
-        }
-      }
-
-      // Consolidate all state updates into a single block
-      setSelectedSeason(fetchedSeason);
-      setSettings(fetchedSettingsData);
-      setBlindLevels(fetchedBlindLevels);
-      setPlacePoints(fetchedPlacePoints);
-      setGames(fetchedGames);
-      setHasGamesInSelectedSeason(hasGames);
-      setDurationMinutes(durationMins);
-      setDurationSecondsInput(durationSecs);
-      setWarningMinutes(warningMins);
-      setWarningSecondsInput(warningSecs);
-
-    } catch (e) {
-      console.error("Failed to fetch settings:", e);
-      setErrorSettings(e.message);
-    } finally {
-      setLoadingSettings(false);
-    }
-  }, [selectedLeagueId, api, fetchGames, seasons]);
-
-  const fetchAllSeasons = useCallback(async () => {
-    if (!selectedLeagueId) return [];
-    setLoadingSeasons(true);
-    try {
-      const data = await api(apiActions.getSeasons, selectedLeagueId);
-      const sortedData = [...data].sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
-      setSeasons(sortedData || []);
-      return sortedData || [];
-    } catch (e) {
-      console.error("Failed to fetch all seasons:", e);
-      setErrorSeasons(e.message);
-      return [];
-    } finally {
-      setLoadingSeasons(false);
-    }
-  }, [selectedLeagueId, api]);
-
   const handleSeasonChange = useCallback((seasonId) => {
-    const newSelectedSeason = seasons.find(s => s.id === seasonId);
-    if (newSelectedSeason) {
-      setSelectedSeason(newSelectedSeason);
-      fetchSettings(newSelectedSeason.id);
-    }
-  }, [seasons, fetchSettings]);
+    fetchPageData(seasonId);
+  }, [fetchPageData]);
 
   const onSeasonPickerChange = useCallback((itemValue) => {
-    handleSeasonChange(Number(itemValue));
-  }, [handleSeasonChange]);
-
-  useEffect(() => {
-    fetchAllSeasons();
-  }, [fetchAllSeasons]);
-
-  useEffect(() => {
-    if (newlyCreatedSeasonId && seasons.find(s => s.id === newlyCreatedSeasonId)) {
-      handleSeasonChange(newlyCreatedSeasonId);
-      setNewlyCreatedSeasonId(null);
-    } else if (!selectedSeason && seasons.length > 0) {
-      const today = new Date();
-      let defaultSeason = null;
-
-      // 1. Try to find an active non-casual season
-      const activeNonCasualSeason = seasons.find(season => {
-        if (season.isCasual) return false; // Skip casual seasons
-        const startDate = DateTime.fromISO(season.startDate).toJSDate();
-        const endDate = DateTime.fromISO(season.endDate).toJSDate();
-        return today >= startDate && today <= endDate;
-      });
-
-      if (activeNonCasualSeason) {
-        defaultSeason = activeNonCasualSeason;
-      } else {
-        // 2. If no active non-casual, try to find the most recently started non-casual season
-        const nonCasualSeasons = seasons.filter(s => !s.isCasual);
-        if (nonCasualSeasons.length > 0) {
-          // Seasons are already sorted by startDate descending, so nonCasualSeasons[0] is the latest
-          defaultSeason = nonCasualSeasons[0];
-        } else {
-          // 3. If only casual seasons exist, default to the most recently started casual season
-          // Seasons are already sorted by startDate descending, so seasons[0] is the latest (which would be casual here)
-          defaultSeason = seasons[0];
-        }
-      }
-
-      if (defaultSeason) {
-        handleSeasonChange(defaultSeason.id);
-      } else {
-        // No seasons found at all (should be caught by seasons.length === 0 check, but for safety)
-        // Consolidate state updates
-        setSettings(null);
-        setSelectedSeason(null);
-        setBlindLevels([]);
-        setPlacePoints([]);
-        setGames([]);
-        setDurationMinutes('');
-        setDurationSecondsInput('');
-        setWarningMinutes('');
-        setWarningSecondsInput('');
-        setHasGamesInSelectedSeason(false);
-      }
-    } else if (seasons.length === 0 && !loadingSeasons) {
-      // Consolidate state updates
-      setSettings(null);
-      setSelectedSeason(null);
-      setBlindLevels([]);
-      setPlacePoints([]);
-      setGames([]);
-      setDurationMinutes('');
-      setDurationSecondsInput('');
-      setWarningMinutes('');
-      setWarningSecondsInput('');
-      setHasGamesInSelectedSeason(false);
+    const newSeasonId = Number(itemValue);
+    if (selectedSeason?.id !== newSeasonId) {
+      fetchPageData(newSeasonId);
     }
-  }, [seasons, selectedSeason, loadingSeasons, handleSeasonChange, newlyCreatedSeasonId]);
+  }, [fetchPageData, selectedSeason]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchPageData();
+    }, [fetchPageData])
+  );
 
   const handleSettingChange = useCallback((field, value) => {
     setSettings(prev => ({ ...prev, [field]: value }));
@@ -481,8 +334,7 @@ const SeasonSettingsPage = () => {
       setNewSeasonName('');
       setNewSeasonStartDate(null);
       setNewSeasonEndDate(null);
-      setNewlyCreatedSeasonId(newSeason.id);
-      fetchAllSeasons();
+      fetchPageData(newSeason.id);
     } catch (e) {
       console.error("Failed to create season:", e);
       Toast.show({
@@ -528,17 +380,7 @@ const SeasonSettingsPage = () => {
         text2: 'Season updated successfully!'
       });
       setEditSeasonModalVisible(false);
-
-      // Refresh seasons list and then update selectedSeason state
-      const fetchedSeasons = await fetchAllSeasons(); // Get the updated seasons directly
-
-      // Find the updated season object from the fetched seasons array
-      const updatedSeason = fetchedSeasons.find(s => s.id === selectedSeason.id);
-      if (updatedSeason) {
-        setSelectedSeason(updatedSeason); // Update selectedSeason state with fresh data
-      }
-
-      fetchSettings(updatedSeason.id); // Refresh current season settings using the updated selectedSeason state
+      fetchPageData(selectedSeason.id);
     } catch (e) {
       console.error("Failed to update season:", e);
       Toast.show({
@@ -577,7 +419,7 @@ const SeasonSettingsPage = () => {
       setNewGameName('');
       setNewGameLocation('');
       setNewGameTime(new Date());
-      fetchGames(selectedSeason.id);
+      fetchPageData(selectedSeason.id);
     } catch (e) {
       console.error("Failed to add game:", e);
       Toast.show({
@@ -628,7 +470,7 @@ const SeasonSettingsPage = () => {
       setEditedGameDate(new Date());
       setEditedGameTime(new Date());
       setEditedGameLocation('');
-      fetchGames(selectedSeason.id);
+      fetchPageData(selectedSeason.id);
     } catch (e) {
       console.error("Failed to update game:", e);
       Toast.show({
@@ -656,7 +498,7 @@ const SeasonSettingsPage = () => {
                 text1: 'Game Deleted',
                 text2: 'Game deleted successfully!'
               });
-              fetchGames(selectedSeason.id);
+              fetchPageData(selectedSeason.id);
             } catch (e) {
               console.error("Failed to delete game:", e);
               Toast.show({
@@ -689,12 +531,7 @@ const SeasonSettingsPage = () => {
                 text1: 'Season Finalized',
                 text2: 'Season finalized successfully!'
               });
-              const updatedSeasons = await fetchAllSeasons();
-              const updatedSelectedSeason = updatedSeasons.find(s => s.id === selectedSeason.id);
-              if (updatedSelectedSeason) {
-                setSelectedSeason(updatedSelectedSeason);
-              }
-              fetchSettings(selectedSeason.id);
+              fetchPageData(selectedSeason.id);
             } catch (e) {
               console.error("Failed to finalize season:", e);
               Toast.show({
@@ -728,7 +565,7 @@ const SeasonSettingsPage = () => {
                 text1: 'Season Deleted',
                 text2: 'Season deleted successfully!'
               });
-              fetchAllSeasons(); // Refresh seasons list
+              fetchPageData(); // Refetch all data, backend will provide new default
             } catch (e) {
               console.error("Failed to delete season:", e);
               Toast.show({
@@ -746,7 +583,7 @@ const SeasonSettingsPage = () => {
 
   const saveSettings = async () => {
       if (!selectedSeason?.id || !settings) return;
-      setLoadingSettings(true);
+      setLoading(true);
       try {
           // Convert minutes and seconds to total seconds
           const totalDurationSeconds = (parseInt(durationMinutes, 10) || 0) * 60 + (parseInt(durationSecondsInput, 10) || 0);
@@ -774,7 +611,7 @@ const SeasonSettingsPage = () => {
             text2: 'Failed to save settings.'
           });
       } finally {
-          setLoadingSettings(false);
+          setLoading(false);
       }
   };
 
@@ -909,10 +746,10 @@ const SeasonSettingsPage = () => {
   };
 
   const renderSettings = () => {
-    if (loadingSettings || loadingCurrentUserMembership) {
+    if (loading || loadingCurrentUserMembership) {
       return <ActivityIndicator size="large" color="#fb5b5a" />;
     }
-    if (errorSettings) {
+    if (error) {
       return <Text style={styles.errorText}>Error loading settings: {errorSettings}</Text>;
     }
     if (!settings) {
@@ -944,7 +781,7 @@ const SeasonSettingsPage = () => {
                   <>
                     {/* Games Section */}
                     <Text style={styles.subtitle}>Games</Text>
-                    {loadingGames ? (
+                    {loading ? (
                       <ActivityIndicator size="small" color="#fb5b5a" />
                     ) : games.length === 0 ? (
                       <Text>No games have been added to this season yet.</Text>
@@ -991,7 +828,7 @@ const SeasonSettingsPage = () => {
                           // Calculate the correct default date for the modal and picker (local time, no timezone offset)
                           const today = new Date();
                           let defaultDate = today;
-                          if (selectedSeason?.startDate && selectedSeason?.endDate) {
+                          if (selectedSeason?.startDate && selectedSeason?.endDate) { //this section is different
                             // Manually parse the date components to avoid timezone issues during initial parsing
                             const [startDatePart] = selectedSeason.startDate.split('T');
                             const [startYear, startMonth, startDay] = startDatePart.split('-').map(Number);
@@ -1525,10 +1362,10 @@ const SeasonSettingsPage = () => {
       <View style={styles.container}>
         <Text style={styles.title}>Season Settings</Text>
 
-        {loadingSeasons ? (
+        {loading || loadingCurrentUserMembership ? (
           <ActivityIndicator size="large" color="#fb5b5a" />
-        ) : errorSeasons ? (
-          <Text style={styles.errorText}>Error loading seasons: {errorSeasons}</Text>
+        ) : error ? (
+          <Text style={styles.errorText}>Error loading seasons: {error}</Text>
         ) : seasons.length === 0 ? (
           <View style={styles.noSeasonsContainer}>
             <Text style={styles.noSeasonsText}>No seasons found for this league.</Text>

@@ -201,6 +201,14 @@ export const getPlayPageData = (leagueId, token) => {
   return apiFetch(`/api/leagues/${leagueId}/play-page-data`, { token });
 };
 
+export const getSeasonSettingsPageData = (leagueId, selectedSeasonId, token) => {
+  let url = `/api/leagues/${leagueId}/seasons/season-settings-page`;
+  if (selectedSeasonId) {
+    url += `?selectedSeasonId=${selectedSeasonId}`;
+  }
+  return apiFetch(url, { token });
+};
+
 export const updateLeagueHomeContent = (leagueId, content, logoImageUrl, token) => {
   return apiFetch(`/api/leagues/${leagueId}/home-content`, {
     method: 'PUT',
