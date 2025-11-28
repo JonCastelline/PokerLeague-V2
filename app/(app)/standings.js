@@ -13,12 +13,13 @@ import Toast from 'react-native-toast-message';
 
 const StandingsPage = () => {
   const [standings, setStandings] = useState([]);
-  const [allSeasons, setAllSeasons] = useState([]); // New state for all seasons
-  const [selectedSeasonId, setSelectedSeasonId] = useState(null); // New state for selected season
+  const [allSeasons, setAllSeasons] = useState([]);
+  const [selectedSeasonId, setSelectedSeasonId] = useState(null);
   const [seasonSettings, setSeasonSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [exporting, setExporting] = useState(false);
+  const { api, token } = useAuth();
   const { currentLeague } = useLeague();
 
   useEffect(() => {
