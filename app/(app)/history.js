@@ -200,28 +200,38 @@ const HistoryPage = () => {
                     <SafePicker.Item key={s.id} label={s.seasonName} value={s.id}/>
                 ))}
             </SafePicker>
-            <TouchableOpacity
-                onPress={handleExportCsv}
-                style={styles.exportButton}
-                disabled={exporting || isLoading}
-            >
-                {exporting ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                    <Ionicons name="download-outline" size={24} color="#fff" />
-                )}
-                <Text style={styles.exportButtonText}>Export CSV</Text>
-            </TouchableOpacity>
         </View>
         {isLoading && <ActivityIndicator size="large" color="#0000ff" />}
     </>
-  ), [selectedSeasonId, seasons, isLoading, exporting]);
+  ), [selectedSeasonId, seasons, isLoading]);
 
   const ListEmpty = useCallback(() => (
     <View style={styles.emptyContainer}>
         { !isLoading && <Text style={styles.emptyText}>No completed games found for this season.</Text> }
     </View>
   ), [isLoading]);
+
+  const renderListFooter = () => {
+    if (games.length === 0) {
+      return null;
+    }
+    return (
+      <View style={styles.footerContainer}>
+        <TouchableOpacity
+          onPress={handleExportCsv}
+          style={styles.exportButton}
+          disabled={exporting || isLoading}
+        >
+          {exporting ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Ionicons name="download-outline" size={24} color="#fff" />
+          )}
+          <Text style={styles.exportButtonText}>Export CSV</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   if (error && !games.length) {
       return <PageLayout><Text style={styles.errorText}>{error}</Text></PageLayout>;
@@ -239,6 +249,7 @@ const HistoryPage = () => {
             keyExtractor={item => item.id.toString()}
             ListHeaderComponent={ListHeader}
             ListEmptyComponent={ListEmpty}
+            ListFooterComponent={renderListFooter}
             contentContainerStyle={styles.listContentContainer}
             style={styles.container}
         />
@@ -272,19 +283,24 @@ const styles = StyleSheet.create({
     width: '100%',
     color: 'black',
   },
+  footerContainer: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
   exportButton: {
     backgroundColor: '#007bff',
-    padding: 10,
-    borderRadius: 5,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 10,
   },
   exportButtonText: {
     color: '#fff',
     marginLeft: 10,
     fontWeight: 'bold',
+    fontSize: 16,
   },
   gameItem: {
     backgroundColor: '#f9f9f9',

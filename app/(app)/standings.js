@@ -198,18 +198,6 @@ const StandingsPage = () => {
               <SafePicker.Item key={season.id} label={season.seasonName} value={season.id} />
             ))}
           </SafePicker>
-          <TouchableOpacity
-            onPress={handleExportCsv}
-            style={styles.exportButton}
-            disabled={exporting || loading}
-          >
-            {exporting ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Ionicons name="download-outline" size={24} color="#fff" />
-            )}
-            <Text style={styles.exportButtonText}>Export CSV</Text>
-          </TouchableOpacity>
         </View>
       )}
     </>
@@ -226,6 +214,28 @@ const StandingsPage = () => {
       <Text style={[styles.headerCell, styles.totalCell]}>Total</Text>
     </View>
   );
+
+  const renderListFooter = () => {
+    if (standings.length === 0) {
+      return null;
+    }
+    return (
+      <View style={styles.footerContainer}>
+        <TouchableOpacity
+          onPress={handleExportCsv}
+          style={styles.exportButton}
+          disabled={exporting || loading}
+        >
+          {exporting ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Ionicons name="download-outline" size={24} color="#fff" />
+          )}
+          <Text style={styles.exportButtonText}>Export CSV</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   if (loading) {
     return (
@@ -272,6 +282,7 @@ const StandingsPage = () => {
         keyExtractor={item => item.playerId.toString()}
         renderItem={renderItem}
         ListHeaderComponent={<>{renderPageHeader()}{renderTableHeader()}</>}
+        ListFooterComponent={renderListFooter}
         style={styles.container}
       />
     </PageLayout>
@@ -383,19 +394,24 @@ const styles = StyleSheet.create({
     width: '100%',
     color: 'black',
   },
+  footerContainer: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
   exportButton: {
     backgroundColor: '#007bff',
-    padding: 10,
-    borderRadius: 5,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 10,
   },
   exportButtonText: {
     color: '#fff',
     marginLeft: 10,
     fontWeight: 'bold',
+    fontSize: 16,
   },
 });
 
