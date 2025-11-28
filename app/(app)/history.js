@@ -6,9 +6,14 @@ import PageLayout from '../../components/PageLayout';
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
 import { getGameHistory, getSeasons } from '../../src/api';
+import * as apiActions from '../../src/api';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
+import { Ionicons } from '@expo/vector-icons';
+import Toast from 'react-native-toast-message';
 
 const HistoryPage = () => {
-  const { api } = useAuth();
+  const { api, token } = useAuth();
   const { currentLeague, activeSeason } = useLeague();
   const router = useRouter();
 
@@ -17,6 +22,7 @@ const HistoryPage = () => {
   const [games, setGames] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [exporting, setExporting] = useState(false);
 
   const fetchGames = useCallback(async (seasonId) => {
     if (!seasonId) {
@@ -128,6 +134,50 @@ const HistoryPage = () => {
     }
   }, [selectedSeasonId, fetchGames]);
 
+  const handleExportCsv = async () => {
+    if (!selectedSeasonId || !currentLeague) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please select a season first.',
+      });
+      return;
+    }
+
+    setExporting(true);
+    try {
+      const selectedSeason = seasons.find(s => s.id == selectedSeasonId);
+      const seasonName = selectedSeason ? selectedSeason.seasonName.replace(/[^a-z0-9]/gi, '_').toLowerCase() : `season_${selectedSeasonId}`;
+      const filename = `game-history-${seasonName}.csv`;
+
+      const csvData = await api(apiActions.exportGameHistoryCsv, selectedSeasonId, token);
+      const fileUri = FileSystem.cacheDirectory + filename;
+
+      await FileSystem.writeAsStringAsync(fileUri, csvData, { encoding: 'utf8' });
+
+      if (!(await Sharing.isAvailableAsync())) {
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Sharing is not available on this device.',
+        });
+        return;
+      }
+
+      await Sharing.shareAsync(fileUri, { mimeType: 'text/csv', UTI: 'public.comma-separated-values' });
+
+    } catch (e) {
+      console.error("Failed to export CSV:", e);
+      Toast.show({
+        type: 'error',
+        text1: 'Export Failed',
+        text2: e.message || 'An unknown error occurred during export.',
+      });
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const renderGame = useCallback(({ item }) => (
     <TouchableOpacity style={styles.gameItem} onPress={() => router.push({ pathname: '/(app)/gameDetails', params: { gameId: item.id } })}>
       <Text style={styles.gameName}>{item.gameName}</Text>
@@ -161,6 +211,28 @@ const HistoryPage = () => {
     </View>
   ), [isLoading]);
 
+  const renderListFooter = () => {
+    if (games.length === 0) {
+      return null;
+    }
+    return (
+      <View style={styles.footerContainer}>
+        <TouchableOpacity
+          onPress={handleExportCsv}
+          style={styles.exportButton}
+          disabled={exporting || isLoading}
+        >
+          {exporting ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Ionicons name="download-outline" size={24} color="#fff" />
+          )}
+          <Text style={styles.exportButtonText}>Export CSV</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
   if (error && !games.length) {
       return <PageLayout><Text style={styles.errorText}>{error}</Text></PageLayout>;
   }
@@ -177,6 +249,7 @@ const HistoryPage = () => {
             keyExtractor={item => item.id.toString()}
             ListHeaderComponent={ListHeader}
             ListEmptyComponent={ListEmpty}
+            ListFooterComponent={renderListFooter}
             contentContainerStyle={styles.listContentContainer}
             style={styles.container}
         />
@@ -209,6 +282,25 @@ const styles = StyleSheet.create({
   picker: {
     width: '100%',
     color: 'black',
+  },
+  footerContainer: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  exportButton: {
+    backgroundColor: '#007bff',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  exportButtonText: {
+    color: '#fff',
+    marginLeft: 10,
+    fontWeight: 'bold',
+    fontSize: 16,
   },
   gameItem: {
     backgroundColor: '#f9f9f9',

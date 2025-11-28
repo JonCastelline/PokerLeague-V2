@@ -2,7 +2,7 @@ import { API_BASE_URL } from './config';
 export { API_BASE_URL } from './config';
 
 const apiFetch = async (url, options = {}) => {
-  const { token, ...restOptions } = options;
+  const { token, responseType, ...restOptions } = options;
 
   const headers = {
     'Content-Type': 'application/json',
@@ -26,9 +26,10 @@ const apiFetch = async (url, options = {}) => {
     throw new Error(`API Error: ${response.status} - ${errorData}`);
   }
 
-  // return response.json() if there is a body, otherwise return null
   const contentType = response.headers.get('content-type');
-  if (contentType && contentType.indexOf('application/json') !== -1) {
+  if (responseType === 'text') { // If responseType is explicitly 'text'
+      return response.text();
+  } else if (contentType && contentType.indexOf('application/json') !== -1) {
     return response.json();
   }
   return null;
@@ -445,4 +446,12 @@ export const updateLastLeague = (leagueId, token) => {
     token,
     body: JSON.stringify({ leagueId: leagueId }),
   });
+};
+
+export const exportStandingsCsv = (seasonId, token) => {
+  return apiFetch(`/api/seasons/${seasonId}/standings/csv`, { token, responseType: 'text' });
+};
+
+export const exportGameHistoryCsv = (seasonId, token) => {
+  return apiFetch(`/api/seasons/${seasonId}/games/csv`, { token, responseType: 'text' });
 };

@@ -1,19 +1,25 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import SafePicker from '../../components/SafePicker';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, Image } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, Image, TouchableOpacity } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import PageLayout from '../../components/PageLayout';
 import { useLeague } from '../../context/LeagueContext';
 import * as apiActions from '../../src/api';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
+import { Ionicons } from '@expo/vector-icons';
+import Toast from 'react-native-toast-message';
+
 
 const StandingsPage = () => {
   const [standings, setStandings] = useState([]);
-  const [allSeasons, setAllSeasons] = useState([]); // New state for all seasons
-  const [selectedSeasonId, setSelectedSeasonId] = useState(null); // New state for selected season
+  const [allSeasons, setAllSeasons] = useState([]);
+  const [selectedSeasonId, setSelectedSeasonId] = useState(null);
   const [seasonSettings, setSeasonSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { api } = useAuth();
+  const [exporting, setExporting] = useState(false);
+  const { api, token } = useAuth();
   const { currentLeague } = useLeague();
 
   useEffect(() => {
@@ -116,6 +122,50 @@ const StandingsPage = () => {
     fetchStandingsAndSettings();
   }, [selectedSeasonId, api]); // Re-run when selectedSeasonId or token changes
 
+  const handleExportCsv = async () => {
+    if (!selectedSeasonId || !currentLeague) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please select a season first.',
+      });
+      return;
+    }
+
+    setExporting(true);
+    try {
+      const selectedSeason = allSeasons.find(s => s.id == selectedSeasonId);
+      const seasonName = selectedSeason ? selectedSeason.seasonName.replace(/[^a-z0-9]/gi, '_').toLowerCase() : `season_${selectedSeasonId}`;
+      const filename = `standings-${seasonName}.csv`;
+
+      const csvData = await api(apiActions.exportStandingsCsv, selectedSeasonId, token);
+      const fileUri = FileSystem.cacheDirectory + filename;
+
+      await FileSystem.writeAsStringAsync(fileUri, csvData, { encoding: 'utf8' });
+
+      if (!(await Sharing.isAvailableAsync())) {
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Sharing is not available on this device.',
+        });
+        return;
+      }
+
+      await Sharing.shareAsync(fileUri, { mimeType: 'text/csv', UTI: 'public.comma-separated-values' });
+
+    } catch (e) {
+      console.error("Failed to export CSV:", e);
+      Toast.show({
+        type: 'error',
+        text1: 'Export Failed',
+        text2: e.message || 'An unknown error occurred during export.',
+      });
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const renderItem = ({ item, index }) => (
     <View style={[styles.tableRow, index % 2 === 0 ? styles.evenRow : styles.oddRow]}>
       <Text style={[styles.rankCell, styles.centeredCellContent]}>{item.rank.toString()}</Text>
@@ -165,6 +215,28 @@ const StandingsPage = () => {
     </View>
   );
 
+  const renderListFooter = () => {
+    if (standings.length === 0) {
+      return null;
+    }
+    return (
+      <View style={styles.footerContainer}>
+        <TouchableOpacity
+          onPress={handleExportCsv}
+          style={styles.exportButton}
+          disabled={exporting || loading}
+        >
+          {exporting ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Ionicons name="download-outline" size={24} color="#fff" />
+          )}
+          <Text style={styles.exportButtonText}>Export CSV</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
   if (loading) {
     return (
       <PageLayout>
@@ -210,6 +282,7 @@ const StandingsPage = () => {
         keyExtractor={item => item.playerId.toString()}
         renderItem={renderItem}
         ListHeaderComponent={<>{renderPageHeader()}{renderTableHeader()}</>}
+        ListFooterComponent={renderListFooter}
         style={styles.container}
       />
     </PageLayout>
@@ -320,6 +393,25 @@ const styles = StyleSheet.create({
     height: 50,
     width: '100%',
     color: 'black',
+  },
+  footerContainer: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  exportButton: {
+    backgroundColor: '#007bff',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  exportButtonText: {
+    color: '#fff',
+    marginLeft: 10,
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });
 
