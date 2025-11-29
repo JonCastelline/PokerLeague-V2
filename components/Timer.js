@@ -6,6 +6,9 @@ import { useLeague } from '../context/LeagueContext';
 import { useGame } from '../context/GameContext';
 import * as apiActions from '../src/api';
 import TimerModal from './TimerModal';
+import { useThemeColor } from '../hooks/useThemeColor';
+import Colors from '../constants/Colors';
+import { useColorScheme } from '../hooks/useColorScheme';
 
 const Timer = ({ gameId, timerState, blindLevels, settings, isPlaying, onTimerEnd, warningSoundEnabled, warningSoundTimeSeconds, isCasualGame }) => {
   const { currentUserMembership } = useLeague();
@@ -20,6 +23,14 @@ const Timer = ({ gameId, timerState, blindLevels, settings, isPlaying, onTimerEn
   const [isModalVisible, setModalVisible] = useState(false);
   const [timerKey, setTimerKey] = useState(0);
   const isInitialMount = useRef(true);
+
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme || 'light'];
+
+  const primaryBlueColor = useThemeColor({ light: '#004777', dark: '#42a5f5' }, 'background'); // Example: blue for light, lighter blue for dark
+  const warningYellowColor = useThemeColor({ light: '#F7B801', dark: '#ffee58' }, 'background'); // Example: yellow for light, lighter yellow for dark
+  const alertRedColor = useThemeColor({ light: '#A30000', dark: '#ef5350' }, 'background'); // Example: red for light, lighter red for dark
+  const textColor = useThemeColor({}, 'text');
 
   const warningSoundPlayer = useAudioPlayer(require('../assets/ding.wav'));
   const alarmPlayer = useAudioPlayer(require('../assets/alarm.mp3'));
@@ -180,8 +191,7 @@ const Timer = ({ gameId, timerState, blindLevels, settings, isPlaying, onTimerEn
                 key={timerKey}
                 isPlaying={isPlaying}
                 duration={initialRemainingTime}
-                initialRemainingTime={initialRemainingTime}
-                colors={['#004777', '#F7B801', '#A30000', '#A30000']}
+                colors={[primaryBlueColor, warningYellowColor, alertRedColor, alertRedColor]}
                 colorsTime={[10, 6, 3, 0]}
                 onComplete={handleComplete}
                 size={200}
@@ -235,48 +245,53 @@ const Timer = ({ gameId, timerState, blindLevels, settings, isPlaying, onTimerEn
   );
 };
 
-const styles = StyleSheet.create({
+  const isInitialMount = useRef(true);
+
+  const styles = React.useMemo(() => StyleSheet.create({
     timerContainer: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 20,
     },
     countdownText: {
-        fontSize: 40,
-        fontWeight: 'bold',
-        color: '#004777',
+      fontSize: 40,
+      fontWeight: 'bold',
+      color: primaryBlueColor,
     },
     levelContainer: {
-        marginTop: 20,
-        alignItems: 'center',
+      marginTop: 20,
+      alignItems: 'center',
     },
     levelText: {
-        fontSize: 18,
-        fontWeight: 'bold',
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: textColor,
     },
     blindContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        width: '100%',
-        marginTop: 10,
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      width: '100%',
+      marginTop: 10,
     },
     blindItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        width: '45%',
+      flexDirection: 'row',
+      alignItems: 'center',
+      width: '45%',
     },
     blindLabel: {
-        fontSize: 16,
-        width: 90,
-        textAlign: 'right',
-        marginRight: 5,
+      fontSize: 16,
+      width: 90,
+      textAlign: 'right',
+      marginRight: 5,
+      color: textColor,
     },
     blindValue: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        textAlign: 'left',
-        flex: 1,
+      fontSize: 16,
+      fontWeight: 'bold',
+      textAlign: 'left',
+      flex: 1,
+      color: textColor,
     },
-});
+  }), [primaryBlueColor, textColor]);
 
 export default Timer;

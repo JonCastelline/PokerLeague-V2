@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, TextInput, Dimensions } from 'react-native';
+import { useThemeColor } from '../../hooks/useThemeColor';
 import Toast from 'react-native-toast-message';
 import { Image } from 'expo-image';
 import { useAuth } from '../../context/AuthContext';
@@ -29,45 +30,186 @@ import * as Clipboard from 'expo-clipboard';
 
            const { width } = Dimensions.get('window'); // Screen width
 
+           // Themed colors
+           const textColor = useThemeColor({}, 'text');
+           const backgroundColor = useThemeColor({}, 'background');
+           const borderColor = useThemeColor({}, 'icon'); // General border color
+           const buttonBgColor = useThemeColor({}, 'tint');
+           const buttonTextColor = useThemeColor({}, 'background'); // Text color on primary buttons
+           const mutedTextColor = useTheme_color({}, 'icon'); // For gray-like colors
+           const activityIndicatorColor = useThemeColor({}, 'tint'); // For ActivityIndicator
+           const cancelButtonBgColor = useThemeColor({ light: '#6c757d', dark: '#495057' }, 'background'); // Themed gray for cancel button
+
+            const styles = useMemo(() => StyleSheet.create({
+                container: {
+                    flex: 1,
+                    alignItems: 'center',
+                    padding: 20,
+                    backgroundColor: backgroundColor,
+                },
+                centeredContent: {
+                    flex: 1,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    width: '100%',
+                    backgroundColor: backgroundColor,
+                },
+                title: {
+                    fontSize: 28,
+                    fontWeight: 'bold',
+                    marginBottom: 20,
+                    textAlign: 'center',
+                    color: textColor,
+                },
+                subtitle: {
+                    fontSize: 18,
+                    color: mutedTextColor,
+                    marginBottom: 40,
+                    textAlign: 'center',
+                },
+                button: {
+                    backgroundColor: buttonBgColor,
+                    borderRadius: 20,
+                    height: 40,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '60%', // Default button width
+                    marginVertical: 8,
+                },
+                buttonText: {
+                    color: buttonTextColor,
+                    fontSize: 16,
+                    fontWeight: 'bold',
+                    paddingHorizontal: 10,
+                },
+                adminControlsContainer: {
+                    width: '80%',
+                    alignItems: 'center',
+                    marginVertical: 10,
+                },
+                editButtons: {
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    width: '100%',
+                },
+                saveButton: {
+                    flex: 1,
+                    marginRight: 5,
+                    backgroundColor: buttonBgColor,
+                },
+                cancelButton: {
+                    backgroundColor: cancelButtonBgColor, // Gray color
+                    flex: 1,
+                    marginLeft: 5,
+                },
+                inviteContainer: {
+                    width: '100%',
+                    alignItems: 'center',
+                    marginTop: 10,
+                },
+                inviteCodeText: {
+                    fontSize: 16,
+                    fontWeight: 'bold',
+                    marginBottom: 10,
+                    textAlign: 'center',
+                    color: textColor,
+                },
+                copyButton: {
+                    width: 80,
+                    height: 30,
+                    marginLeft: 10,
+                    paddingVertical: 0,
+                    paddingHorizontal: 0,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    backgroundColor: buttonBgColor,
+                },
+                contentContainer: {
+                    width: '100%',
+                    padding: 15,
+                    borderWidth: 1,
+                    borderColor: borderColor,
+                    borderRadius: 10,
+                    marginBottom: 20,
+                    minHeight: 150,
+                    backgroundColor: backgroundColor,
+                },
+                leagueNameHeader: {
+                    fontSize: 22,
+                    fontWeight: 'bold',
+                    textAlign: 'center',
+                    marginBottom: 10,
+                    color: textColor,
+                },
+                textInput: {
+                    flex: 1, // Make TextInput take available space in edit mode
+                    width: '100%',
+                    textAlignVertical: 'top',
+                    borderColor: borderColor,
+                    borderWidth: 1,
+                    borderRadius: 5,
+                    padding: 10,
+                    color: textColor,
+                },
+                editHeader: {
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: 10,
+                },
+                editHeaderText: {
+                    fontSize: 18,
+                    fontWeight: 'bold',
+                    marginRight: 5,
+                    color: textColor,
+                },
+                }), [width, textColor, backgroundColor, borderColor, buttonBgColor, buttonTextColor, mutedTextColor, activityIndicatorColor, cancelButtonBgColor]);
+
            // Define markdownStyles INSIDE the component using useMemo
            // so it can access 'width' and is memoized.
            const markdownStyles = useMemo(() => StyleSheet.create({
-             text: {},
+             text: { color: textColor },
              heading1: {
                textAlign: 'center',
                fontSize: 24,
                fontWeight: 'bold',
                marginVertical: 10,
+               color: textColor,
              },
              heading2: {
                textAlign: 'center',
                fontSize: 20,
                fontWeight: 'bold',
                marginVertical: 8,
+               color: textColor,
              },
              heading3: {
                textAlign: 'center',
                fontSize: 18,
                fontWeight: 'bold',
                marginVertical: 6,
+               color: textColor,
              },
              heading4: {
                textAlign: 'center',
                fontSize: 16,
                fontWeight: 'bold',
                marginVertical: 4,
+               color: textColor,
              },
              heading5: {
                textAlign: 'center',
                fontSize: 14,
                fontWeight: 'bold',
                marginVertical: 2,
+               color: textColor,
              },
              heading6: {
                textAlign: 'center',
                fontSize: 12,
                fontWeight: 'bold',
                marginVertical: 2,
+               color: textColor,
              },
              markdownImage: { // Style for images rendered by Markdown
                width: width * 0.9,    // 90% of screen width
@@ -75,7 +217,7 @@ import * as Clipboard from 'expo-clipboard';
                marginVertical: 10,
                alignSelf: 'center',
              },
-           }), [width]); // Recalculate if screen width changes
+           }), [width, textColor]); // Recalculate if screen width changes or theme changes
 
            // Custom image renderer that uses the 'markdownImage' style from the component's markdownStyles
            const customImageRenderer = (node, children, parent, stylesFromMarkdownDisplay) => {
@@ -232,122 +374,5 @@ import * as Clipboard from 'expo-clipboard';
              </PageLayout>
            );
          };
-
-         // These are the general styles for the HomePage component,
-         // NOT for the Markdown content specifically (unless passed explicitly).
-         const styles = StyleSheet.create({
-           container: {
-             flex: 1,
-             alignItems: 'center',
-             padding: 20,
-           },
-           centeredContent: {
-             flex: 1,
-             justifyContent: 'center',
-             alignItems: 'center',
-             width: '100%',
-           },
-           title: {
-             fontSize: 28,
-             fontWeight: 'bold',
-             marginBottom: 20,
-             textAlign: 'center',
-           },
-           subtitle: {
-             fontSize: 18,
-             color: 'gray',
-             marginBottom: 40,
-             textAlign: 'center',
-           },
-           button: {
-             backgroundColor: '#fb5b5a',
-             borderRadius: 20,
-             height: 40,
-             alignItems: 'center',
-             justifyContent: 'center',
-             width: '60%', // Default button width
-             marginVertical: 8,
-           },
-           buttonText: {
-             color: 'white',
-             fontSize: 16,
-             fontWeight: 'bold',
-             paddingHorizontal: 10,
-           },
-           adminControlsContainer: {
-             width: '80%',
-             alignItems: 'center',
-             marginVertical: 10,
-           },
-           editButtons: {
-             flexDirection: 'row',
-             justifyContent: 'space-between',
-             width: '100%',
-           },
-           saveButton: {
-             flex: 1,
-             marginRight: 5,
-           },
-           cancelButton: {
-             backgroundColor: '#6c757d', // Gray color
-             flex: 1,
-             marginLeft: 5,
-           },
-           inviteContainer: {
-             width: '100%',
-             alignItems: 'center',
-             marginTop: 10,
-           },
-           inviteCodeText: {
-             fontSize: 16,
-             fontWeight: 'bold',
-             marginBottom: 10,
-             textAlign: 'center',
-           },
-           copyButton: {
-             width: 80,
-             height: 30,
-             marginLeft: 10,
-             paddingVertical: 0,
-             paddingHorizontal: 0,
-             justifyContent: 'center',
-             alignItems: 'center',
-           },
-           contentContainer: {
-             width: '100%',
-             padding: 15,
-             borderWidth: 1,
-             borderColor: '#ddd',
-             borderRadius: 10,
-             marginBottom: 20,
-             minHeight: 150,
-           },
-           leagueNameHeader: {
-             fontSize: 22,
-             fontWeight: 'bold',
-             textAlign: 'center',
-             marginBottom: 10,
-           },
-           textInput: {
-             flex: 1, // Make TextInput take available space in edit mode
-             width: '100%',
-             textAlignVertical: 'top',
-             borderColor: '#ccc', // Added border for visibility
-             borderWidth: 1,
-             borderRadius: 5,
-             padding: 10,
-           },
-           editHeader: {
-             flexDirection: 'row',
-             alignItems: 'center',
-             justifyContent: 'center',
-             marginBottom: 10,
-           },
-           editHeaderText: {
-             fontSize: 18,
-             fontWeight: 'bold',
-             marginRight: 5,
-           },
-         });
 
          export default HomePage;

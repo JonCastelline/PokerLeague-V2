@@ -4,10 +4,22 @@ import Toast from 'react-native-toast-message';
 import * as apiActions from '../src/api';
 import { useAuth } from '../context/AuthContext';
 import HelpIcon from './HelpIcon';
+import { useThemeColor } from '../hooks/useThemeColor';
+import Colors from '../constants/Colors';
+import { useColorScheme } from '../hooks/useColorScheme';
 
 const AddUnregisteredPlayerForm = ({ leagueId, onPlayerAdded }) => {
   const [playerName, setPlayerName] = useState('');
   const { api } = useAuth();
+
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme || 'light'];
+
+  const backgroundColor = useThemeColor({}, 'background');
+  const textColor = useThemeColor({}, 'text');
+  const inputBorderColor = useThemeColor({ light: '#ccc', dark: '#555' }, 'background');
+  const inputBackgroundColor = useThemeColor({}, 'cardBackground');
+  const successButtonColor = useThemeColor({ light: '#4CAF50', dark: '#66bb6a' }, 'background');
 
   const handleAddPlayer = async () => {
     if (!playerName.trim()) {
@@ -57,41 +69,42 @@ const AddUnregisteredPlayerForm = ({ leagueId, onPlayerAdded }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-    padding: 15,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 10,
-    marginBottom: 20,
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  input: {
-    width: 225,
-    height: 40,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    marginBottom: 10,
-    backgroundColor: 'white',
-  },
-  button: {
-    backgroundColor: '#4CAF50',
-    padding: 10,
-    borderRadius: 5,
-    alignItems: 'center',
-    alignSelf: 'center', // Center the button if it's not full width
-  },
-  buttonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-});
-
+  const styles = React.useMemo(() => StyleSheet.create({
+      container: {
+        width: '100%',
+        padding: 15,
+        backgroundColor: backgroundColor,
+        borderRadius: 10,
+        marginBottom: 20,
+        alignItems: 'center',
+      },
+      title: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 10,
+        color: textColor,
+      },
+      input: {
+        width: 225,
+        height: 40,
+        borderColor: inputBorderColor,
+        borderWidth: 1,
+        borderRadius: 5,
+        paddingHorizontal: 10,
+        marginBottom: 10,
+        backgroundColor: inputBackgroundColor,
+        color: textColor,
+      },
+      button: {
+        backgroundColor: successButtonColor,
+        padding: 10,
+        borderRadius: 5,
+        alignItems: 'center',
+        alignSelf: 'center',
+      },
+      buttonText: {
+        color: 'white', // Assuming button text is always white for contrast
+        fontWeight: 'bold',
+      },
+    }), [backgroundColor, textColor, inputBorderColor, inputBackgroundColor, successButtonColor]);
 export default AddUnregisteredPlayerForm;

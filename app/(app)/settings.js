@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'expo-router';
 import { View, Text, StyleSheet, TextInput, Alert, ActivityIndicator, TouchableOpacity, Image } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
@@ -9,11 +9,29 @@ import axios from 'axios';
 import { API_BASE_URL } from '../../src/config';
 import * as apiActions from '../../src/api';
 import HelpIcon from '../../components/HelpIcon';
+import { useThemeColor } from '../../hooks/useThemeColor';
+import Colors from '../../constants/Colors';
+import { useColorScheme } from '../../hooks/useColorScheme';
 
 const SettingsScreen = () => {
   const { user, updateAuthUser, isLoading, token, signOut, api } = useAuth();
   const { selectedLeagueId, reloadLeagues, reloadCurrentUserMembership, currentUserMembership } = useLeague();
   const router = useRouter();
+
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme || 'light'];
+
+  const backgroundColor = useThemeColor({}, 'background');
+  const textColor = useThemeColor({}, 'text');
+  const primaryButtonColor = useThemeColor({ light: colors.tint, dark: colors.tint }, 'background');
+  const sectionBackgroundColor = useThemeColor({}, 'cardBackground');
+  const sectionTitleColor = useThemeColor({ light: '#333', dark: '#ccc' }, 'background');
+  const labelColor = useThemeColor({ light: '#555', dark: '#aaaaaa' }, 'background');
+  const borderColor = useThemeColor({ light: '#ddd', dark: '#555' }, 'background');
+  const noPreviewTextColor = useThemeColor({ light: '#888', dark: '#bbbbbb' }, 'background');
+  const loadingOverlayColor = useThemeColor({ light: 'rgba(255, 255, 255, 0.7)', dark: 'rgba(0, 0, 0, 0.7)' }, 'background');
+  const activityIndicatorColor = useThemeColor({ light: '#0000ff', dark: '#4285F4' }, 'background');
+  const shadowColor = useThemeColor({ light: '#000', dark: '#fff' }, 'background');
 
   // Account Settings State
   const [firstName, setFirstName] = useState(user?.firstName || '');
@@ -29,36 +47,96 @@ const SettingsScreen = () => {
 
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    // Populate account settings from auth context
-    if (user) {
-      setFirstName(user.firstName);
-      setLastName(user.lastName);
-      setEmail(user.email);
-    }
-
-    // Fetch league-specific player settings
-    const fetchPlayerSettings = async () => {
-      if (!selectedLeagueId || !user || isLoading) return;
-      setLoading(true);
-      try {
-        const response = await api(apiActions.getCurrentUserMembership, selectedLeagueId);
-        setDisplayName(response.displayName || '');
-        setIconUrl(response.iconUrl || '');
-      } catch (error) {
-        console.error('Error fetching player settings:', error);
-        Toast.show({
-          type: 'error',
-          text1: 'Error',
-          text2: 'Failed to fetch player settings.'
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPlayerSettings();
-  }, [user, selectedLeagueId, isLoading, api]);
+  const styles = React.useMemo(() => StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: backgroundColor,
+    },
+    contentContainer: {
+      padding: 20,
+      paddingBottom: 60,
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      marginBottom: 20,
+      color: textColor,
+    },
+    section: {
+      backgroundColor: sectionBackgroundColor,
+      padding: 15,
+      borderRadius: 8,
+      marginBottom: 15,
+      shadowColor: shadowColor,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.2,
+      shadowRadius: 1.41,
+      elevation: 2,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      marginBottom: 10,
+      color: sectionTitleColor,
+    },
+    label: {
+      fontSize: 16,
+      marginBottom: 5,
+      color: labelColor,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: borderColor,
+      padding: 10,
+      marginBottom: 15,
+      borderRadius: 5,
+      fontSize: 16,
+      color: textColor,
+      backgroundColor: backgroundColor,
+    },
+    button: {
+      backgroundColor: primaryButtonColor,
+      padding: 10,
+      borderRadius: 25,
+      alignItems: 'center',
+      alignSelf: 'center',
+      marginTop: 10,
+    },
+    buttonText: {
+      color: 'white', // Assuming button text is always white for contrast
+      fontWeight: 'bold',
+      paddingHorizontal: 10,
+      fontSize: 16,
+    },
+    iconPreview: {
+      width: 100,
+      height: 100,
+      borderRadius: 50,
+      alignSelf: 'center',
+      marginBottom: 15,
+      borderWidth: 1,
+      borderColor: borderColor,
+    },
+    noPreviewText: {
+      textAlign: 'center',
+      color: noPreviewTextColor,
+      marginBottom: 15,
+    },
+    loadingIndicator: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      top: 0,
+      bottom: 0,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: loadingOverlayColor,
+      zIndex: 1000,
+    },
+    leaveLeagueButton: {
+      backgroundColor: Colors.light.red, // Directly use a red from Colors for specific actions
+    },
+  }), [backgroundColor, textColor, primaryButtonColor, sectionBackgroundColor, sectionTitleColor, labelColor, borderColor, noPreviewTextColor, loadingOverlayColor, activityIndicatorColor, shadowColor]);
 
   const handleUpdateAccount = async () => {
     if (!user || !token) return;
@@ -190,7 +268,7 @@ const SettingsScreen = () => {
     <KeyboardAwareScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <Text style={styles.title}>Settings</Text>
 
-      {loading && <ActivityIndicator size="large" color="#0000ff" style={styles.loadingIndicator} />}
+      {loading && <ActivityIndicator size="large" color={activityIndicatorColor} style={styles.loadingIndicator} />}
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Account Details</Text>
@@ -269,91 +347,5 @@ const SettingsScreen = () => {
     </KeyboardAwareScrollView>
   );
 };
-
-const styles = StyleSheet.create({
-    container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  contentContainer: {
-    padding: 20,
-    paddingBottom: 60,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  section: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.41,
-    elevation: 2,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#333',
-  },
-  label: {
-    fontSize: 16,
-    marginBottom: 5,
-    color: '#555',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    padding: 10,
-    marginBottom: 15,
-    borderRadius: 5,
-    fontSize: 16,
-    color: 'black',
-  },
-  button: {
-    backgroundColor: '#fb5b5a',
-    padding: 10,
-    borderRadius: 25,
-    alignItems: 'center',
-    alignSelf: 'center',
-    marginTop: 10,
-  },
-  buttonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    paddingHorizontal: 10,
-    fontSize: 16,
-  },
-  iconPreview: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    alignSelf: 'center',
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  noPreviewText: {
-    textAlign: 'center',
-    color: '#888',
-    marginBottom: 15,
-  },
-  loadingIndicator: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    zIndex: 1000,
-  },
-});
 
 export default SettingsScreen;

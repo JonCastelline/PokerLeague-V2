@@ -1,10 +1,24 @@
 
 import React, { useState } from 'react';
 import { Modal, View, Text, TextInput, Button, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { useThemeColor } from '../hooks/useThemeColor';
+import Colors from '../constants/Colors';
+import { useColorScheme } from '../hooks/useColorScheme';
 
 const TimerModal = ({ visible, onClose, onSetTime, onResetLevel }) => {
     const [minutes, setMinutes] = useState('');
     const [seconds, setSeconds] = useState('');
+
+    const colorScheme = useColorScheme();
+    const colors = Colors[colorScheme || 'light'];
+
+    const modalOverlayBackgroundColor = useThemeColor({ light: 'rgba(0,0,0,0.5)', dark: 'rgba(0,0,0,0.7)' }, 'background');
+    const modalViewBackgroundColor = useThemeColor({}, 'cardBackground');
+    const shadowColor = useThemeColor({ light: '#000', dark: '#fff' }, 'background');
+    const inputBorderColor = useThemeColor({ light: 'gray', dark: '#bbbbbb' }, 'background');
+    const destructiveButtonColor = useThemeColor({ light: 'red', dark: '#ff6666' }, 'background');
+    const textColor = useThemeColor({}, 'text');
+    const primaryButtonColor = useThemeColor({ light: colors.tint, dark: colors.tint }, 'background');
 
     const handleSetTime = () => {
         const totalSeconds = (parseInt(minutes, 10) || 0) * 60 + (parseInt(seconds, 10) || 0);
@@ -54,7 +68,7 @@ const TimerModal = ({ visible, onClose, onSetTime, onResetLevel }) => {
                         <View style={styles.buttonWrapper}><Button title="Reset Level" onPress={handleResetLevel} /></View>
                     </View>
                     <View style={styles.singleButtonContainer}>
-                        <View style={styles.buttonWrapper}><Button title="Cancel" onPress={onClose} color="red" /></View>
+                        <View style={styles.buttonWrapper}><Button title="Cancel" onPress={onClose} color={destructiveButtonColor} /></View>
                     </View>
                 </View>
             </KeyboardAvoidingView>
@@ -62,67 +76,71 @@ const TimerModal = ({ visible, onClose, onSetTime, onResetLevel }) => {
     );
 };
 
-const styles = StyleSheet.create({
-    centeredView: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'rgba(0,0,0,0.5)',
-    },
-    modalView: {
-        margin: 20,
-        backgroundColor: 'white',
-        borderRadius: 20,
-        padding: 35,
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 2,
+    const styles = React.useMemo(() => StyleSheet.create({
+        centeredView: {
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: modalOverlayBackgroundColor,
         },
-        shadowOpacity: 0.25,
-        shadowRadius: 4,
-        elevation: 5,
-    },
-    modalText: {
-        marginBottom: 15,
-        textAlign: 'center',
-        fontSize: 20,
-        fontWeight: 'bold',
-    },
-    inputContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    input: {
-        borderWidth: 1,
-        borderColor: 'gray',
-        borderRadius: 5,
-        padding: 10,
-        width: 80,
-        textAlign: 'center',
-        fontSize: 18,
-    },
-    separator: {
-        fontSize: 18,
-        marginHorizontal: 10,
-    },
-    buttonContainer: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        width: '100%',
-        marginTop: 20,
-    },
-    buttonWrapper: {
-        marginHorizontal: 5,
-        borderRadius: 5,
-    },
-    singleButtonContainer: {
-        width: '100%',
-        alignItems: 'center',
-        marginTop: 10,
-    },
-});
+        modalView: {
+            margin: 20,
+            backgroundColor: modalViewBackgroundColor,
+            borderRadius: 20,
+            padding: 35,
+            alignItems: 'center',
+            shadowColor: shadowColor,
+            shadowOffset: {
+                width: 0,
+                height: 2,
+            },
+            shadowOpacity: 0.25,
+            shadowRadius: 4,
+            elevation: 5,
+        },
+        modalText: {
+            marginBottom: 15,
+            textAlign: 'center',
+            fontSize: 20,
+            fontWeight: 'bold',
+            color: textColor,
+        },
+        inputContainer: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: 20,
+        },
+        input: {
+            borderWidth: 1,
+            borderColor: inputBorderColor,
+            borderRadius: 5,
+            padding: 10,
+            width: 80,
+            textAlign: 'center',
+            fontSize: 18,
+            color: textColor,
+            backgroundColor: modalViewBackgroundColor,
+        },
+        separator: {
+            fontSize: 18,
+            marginHorizontal: 10,
+            color: textColor,
+        },
+        buttonContainer: {
+            flexDirection: 'row',
+            justifyContent: 'center',
+            width: '100%',
+            marginTop: 20,
+        },
+        buttonWrapper: {
+            marginHorizontal: 5,
+            borderRadius: 5,
+        },
+        singleButtonContainer: {
+            width: '100%',
+            alignItems: 'center',
+            marginTop: 10,
+        },
+    }), [modalOverlayBackgroundColor, modalViewBackgroundColor, shadowColor, inputBorderColor, destructiveButtonColor, textColor, primaryButtonColor]);
 
 export default TimerModal;

@@ -11,6 +11,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
+import { useThemeColor } from '../../hooks/useThemeColor';
 
 const HistoryPage = () => {
   const { api, token } = useAuth();
@@ -23,6 +24,18 @@ const HistoryPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [exporting, setExporting] = useState(false);
+
+  // Themed colors
+  const textColor = useThemeColor({}, 'text');
+  const backgroundColor = useThemeColor({}, 'background');
+  const borderColor = useThemeColor({}, 'icon'); // For input border or general border color
+  const exportButtonBgColor = useThemeColor({}, 'tint'); // For button background
+  const exportButtonTextColor = useThemeColor({}, 'background'); // For button text color
+  const gameItemBgColor = useThemeColor({}, 'background');
+  const gameItemBorderColor = useThemeColor({}, 'icon');
+  const mutedTextColor = useThemeColor({}, 'icon');
+  const errorColor = 'red'; // Keep red for errors, assuming it's visible on both backgrounds.
+  const activityIndicatorColor = useThemeColor({}, 'tint');
 
   const fetchGames = useCallback(async (seasonId) => {
     if (!seasonId) {
@@ -178,38 +191,41 @@ const HistoryPage = () => {
     }
   };
 
-  const renderGame = useCallback(({ item }) => (
-    <TouchableOpacity style={styles.gameItem} onPress={() => router.push({ pathname: '/(app)/gameDetails', params: { gameId: item.id } })}>
-      <Text style={styles.gameName}>{item.gameName}</Text>
-      <Text style={styles.gameDate}>{new Date(item.gameDateTime).toLocaleDateString()}</Text>
-    </TouchableOpacity>
-  ), [router]);
+  const GameHistoryItem = ({ item }) => {
+    const router = useRouter();
+    return (
+      <TouchableOpacity style={[styles.gameItem, {backgroundColor: gameItemBgColor, borderColor: gameItemBorderColor}]} onPress={() => router.push({ pathname: '/(app)/gameDetails', params: { gameId: item.id } })}>
+        <Text style={[styles.gameName, {color: textColor}]}>{item.gameName}</Text>
+        <Text style={[styles.gameDate, {color: mutedTextColor}]}>{new Date(item.gameDateTime).toLocaleDateString()}</Text>
+      </TouchableOpacity>
+    );
+  };
 
   const ListHeader = useCallback(() => (
     <>
-        <Text style={styles.title}>Game History</Text>
-        <View style={styles.pickerContainer}>
+        <Text style={[styles.title, {color: textColor}]}>Game History</Text>
+        <View style={[styles.pickerContainer, {backgroundColor: backgroundColor, borderColor: borderColor}]}>
             <SafePicker
                 selectedValue={selectedSeasonId}
                 onValueChange={(itemValue) => setSelectedSeasonId(itemValue)}
-                style={styles.picker}
+                style={[styles.picker, {color: textColor}]}
                 mode="dialog"
-                dropdownIconColor="black"
+                dropdownIconColor={textColor}
             >
                 {seasons.map(s => (
                     <SafePicker.Item key={s.id} label={s.seasonName} value={s.id}/>
                 ))}
             </SafePicker>
         </View>
-        {isLoading && <ActivityIndicator size="large" color="#0000ff" />}
+        {isLoading && <ActivityIndicator size="large" color={activityIndicatorColor} />}
     </>
-  ), [selectedSeasonId, seasons, isLoading]);
+  ), [selectedSeasonId, seasons, isLoading, textColor, backgroundColor, borderColor, activityIndicatorColor]);
 
   const ListEmpty = useCallback(() => (
     <View style={styles.emptyContainer}>
-        { !isLoading && <Text style={styles.emptyText}>No completed games found for this season.</Text> }
+        { !isLoading && <Text style={[styles.emptyText, {color: mutedTextColor}]}>No completed games found for this season.</Text> }
     </View>
-  ), [isLoading]);
+  ), [isLoading, mutedTextColor]);
 
   const renderListFooter = () => {
     if (games.length === 0) {
@@ -219,38 +235,38 @@ const HistoryPage = () => {
       <View style={styles.footerContainer}>
         <TouchableOpacity
           onPress={handleExportCsv}
-          style={styles.exportButton}
+          style={[styles.exportButton, {backgroundColor: exportButtonBgColor}]}
           disabled={exporting || isLoading}
         >
           {exporting ? (
-            <ActivityIndicator size="small" color="#fff" />
+            <ActivityIndicator size="small" color={exportButtonTextColor} />
           ) : (
-            <Ionicons name="download-outline" size={24} color="#fff" />
+            <Ionicons name="download-outline" size={24} color={exportButtonTextColor} />
           )}
-          <Text style={styles.exportButtonText}>Export CSV</Text>
+          <Text style={[styles.exportButtonText, {color: exportButtonTextColor}]}>Export CSV</Text>
         </TouchableOpacity>
       </View>
     );
   };
 
   if (error && !games.length) {
-      return <PageLayout><Text style={styles.errorText}>{error}</Text></PageLayout>;
+      return <PageLayout><Text style={[styles.errorText, {color: errorColor}]}>{error}</Text></PageLayout>;
   }
 
   if (!seasons.length && !isLoading) {
-      return <PageLayout><Text style={styles.emptyText}>No seasons found for this league.</Text></PageLayout>;
+      return <PageLayout><Text style={[styles.emptyText, {color: mutedTextColor}]}>No seasons found for this league.</Text></PageLayout>;
   }
 
   return (
     <PageLayout noScroll>
         <FlatList
             data={games}
-            renderItem={renderGame}
+            renderItem={({ item }) => <GameHistoryItem item={item} router={router} />}
             keyExtractor={item => item.id.toString()}
             ListHeaderComponent={ListHeader}
             ListEmptyComponent={ListEmpty}
             ListFooterComponent={renderListFooter}
-            contentContainerStyle={styles.listContentContainer}
+            contentContainerStyle={[styles.listContentContainer, {backgroundColor: backgroundColor}]}
             style={styles.container}
         />
     </PageLayout>
@@ -274,21 +290,16 @@ const styles = StyleSheet.create({
   pickerContainer: {
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#ddd',
     borderRadius: 8,
-    backgroundColor: 'white',
-    color: 'black',
   },
   picker: {
     width: '100%',
-    color: 'black',
   },
   footerContainer: {
     marginTop: 20,
     alignItems: 'center',
   },
   exportButton: {
-    backgroundColor: '#007bff',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,
@@ -297,18 +308,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   exportButtonText: {
-    color: '#fff',
     marginLeft: 10,
     fontWeight: 'bold',
     fontSize: 16,
   },
   gameItem: {
-    backgroundColor: '#f9f9f9',
     padding: 15,
     marginBottom: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#ddd',
   },
   gameName: {
     fontSize: 18,
@@ -316,7 +324,6 @@ const styles = StyleSheet.create({
   },
   gameDate: {
     fontSize: 14,
-    color: '#666',
     marginTop: 5,
   },
   emptyContainer: {
@@ -327,12 +334,10 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#888',
     textAlign: 'center',
   },
   errorText: {
     fontSize: 16,
-    color: 'red',
     textAlign: 'center',
   },
 });

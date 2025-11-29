@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Image } from 'react-native';
 
 import { View, Text, StyleSheet, ActivityIndicator, FlatList, Switch, TextInput, Modal, TouchableOpacity, Dimensions, Alert } from 'react-native';
@@ -14,11 +14,264 @@ import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 
 import * as Clipboard from 'expo-clipboard';
+import { useThemeColor } from '../../hooks/useThemeColor';
 
 const LeagueSettingsPage = () => {
   const router = useRouter();
   const { api } = useAuth();
   const { selectedLeagueId, currentUserMembership, loadingCurrentUserMembership, reloadHomeContent, reloadCurrentUserMembership, currentLeague, reloadLeagues, refreshInviteCode, inviteCode, setInviteCode } = useLeague();
+
+  // Themed colors
+  const textColor = useThemeColor({}, 'text');
+  const backgroundColor = useThemeColor({}, 'background');
+  const borderColor = useThemeColor({}, 'icon');
+  const mutedTextColor = useThemeColor({}, 'icon');
+  const errorColor = 'red';
+  const activityIndicatorColor = useThemeColor({}, 'tint');
+  const tintColor = useThemeColor({}, 'tint');
+  const buttonTextColor = useThemeColor({}, 'background');
+  const destructiveColor = useThemeColor({ light: '#dc3545', dark: '#a12832' }, 'destructive');
+  const placeholderTextColor = useThemeColor({ light: '#888', dark: '#555' }, 'icon');
+
+  const styles = useMemo(() => StyleSheet.create({
+    container: {
+        alignItems: 'center',
+        padding: 20,
+        width: '100%',
+        maxWidth: Dimensions.get('window').width - 40,
+        backgroundColor: backgroundColor,
+    },
+    title: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        marginBottom: 20,
+        color: textColor,
+    },
+    subtitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginTop: 30,
+        marginBottom: 10,
+        textAlign: 'center',
+        color: textColor,
+    },
+    logoContainer: {
+        width: 150,
+        height: 150,
+        borderRadius: 75,
+        overflow: 'hidden',
+        marginBottom: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: borderColor,
+    },
+    logoImage: {
+        width: '100%',
+        height: '100%',
+        resizeMode: 'cover',
+    },
+    logoPlaceholder: {
+        width: 150,
+        height: 150,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 75,
+        marginBottom: 20,
+    },
+    logoText: {
+        fontSize: 16,
+        color: mutedTextColor,
+    },
+    settingItem: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 10,
+        borderBottomWidth: 1,
+        width: '100%',
+        borderBottomColor: borderColor,
+    },
+    settingLabel: {
+        marginRight: 10,
+        color: textColor,
+    },
+    settingsGroup: {
+        width: '100%',
+        borderWidth: 1,
+        borderRadius: 10,
+        padding: 10,
+        marginBottom: 20,
+        marginTop: 20,
+        borderColor: borderColor,
+    },
+    input: {
+        borderWidth: 1,
+        padding: 10,
+        borderRadius: 5,
+        width: '100%',
+        borderColor: borderColor,
+        color: textColor,
+    },
+    memberList: {
+        width: '100%',
+    },
+    memberItem: {
+        padding: 15,
+        borderRadius: 10,
+        marginBottom: 10,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 1.41,
+        elevation: 2,
+        backgroundColor: backgroundColor,
+        shadowColor: textColor,
+    },
+    memberInfoContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    memberIcon: {
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        marginRight: 10,
+    },
+    memberName: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: textColor,
+    },
+    realNameText: {
+        fontSize: 12,
+        fontStyle: 'italic',
+        color: mutedTextColor,
+    },
+    memberRole: {
+        fontSize: 14,
+        color: mutedTextColor,
+    },
+    memberEmail: {
+        fontSize: 14,
+        color: tintColor,
+    },
+    unregisteredTag: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: destructiveColor,
+    },
+    inactiveTag: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: mutedTextColor,
+    },
+    errorText: {
+        textAlign: 'center',
+        marginTop: 10,
+        color: errorColor,
+    },
+    manageButton: {
+        paddingVertical: 5,
+        paddingHorizontal: 10,
+        borderRadius: 5,
+        backgroundColor: tintColor,
+    },
+    manageButtonText: {
+        fontSize: 12,
+        color: buttonTextColor,
+    },
+    centeredView: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        marginTop: 22
+    },
+    modalView: {
+        margin: 20,
+        borderRadius: 20,
+        padding: 35,
+        alignItems: "center",
+        shadowOffset: {
+          width: 0,
+          height: 2
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5,
+        width: '90%',
+        backgroundColor: backgroundColor,
+    },
+    modalText: {
+        marginBottom: 15,
+        textAlign: "center",
+        fontWeight: 'bold',
+        color: textColor,
+    },
+    modalSubtitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginTop: 10,
+        marginBottom: 5,
+        color: textColor,
+    },
+    modalSection: {
+        width: '100%',
+        alignItems: 'center',
+        marginBottom: 15,
+    },
+    button: {
+        borderRadius: 25,
+        padding: 10,
+        elevation: 2,
+        width: '100%',
+    },
+    buttonClose: {
+        backgroundColor: '#6c757d',
+    },
+    buttonPrimary: {
+        backgroundColor: tintColor,
+    },
+    buttonSecondary: {
+        backgroundColor: '#6c757d',
+    },
+    buttonPrimaryRed: {
+        backgroundColor: destructiveColor,
+    },
+    buttonDestructive: {
+        backgroundColor: destructiveColor,
+    },
+    actionButton: {
+        width: 'auto',
+        alignSelf: 'center',
+        marginTop: 10,
+    },
+    textStyle: {
+        fontWeight: "bold",
+        textAlign: "center",
+        color: buttonTextColor,
+    },
+    inviteContainer: {
+        width: '100%',
+        alignItems: 'center',
+        marginTop: 10,
+    },
+    inviteCodeRow: {},
+    inviteCodeTextContent: {
+        color: textColor,
+    },
+    logoModalContent: {
+        width: '100%',
+        marginBottom: 20,
+    },
+    modalButtonContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        width: '100%',
+        marginTop: 20,
+    },
+  }), [textColor, backgroundColor, borderColor, mutedTextColor, errorColor, activityIndicatorColor, tintColor, buttonTextColor, destructiveColor, placeholderTextColor]);
 
   // Existing state for members
   const [members, setMembers] = useState([]);
@@ -344,15 +597,129 @@ const LeagueSettingsPage = () => {
     }, [isAdmin, fetchLeagueMembers, fetchHomeContent])
   );
 
-  if (loadingCurrentUserMembership || !isAdmin) {
-    return (
-      <PageLayout>
-        <ActivityIndicator size="large" color="#fb5b5a" />
-      </PageLayout>
-    );
-  }
+  const ManagementOptions = () => {
+    if (!selectedMember) return null;
 
-  const renderMemberItem = ({ item }) => (
+    const isOwner = currentUserMembership?.isOwner;
+    const canAdminsManage = nonOwnerAdminsCanManageRoles;
+    const canManageRoles = isOwner || (isAdmin && canAdminsManage);
+    const targetIsOwner = selectedMember.isOwner;
+
+    if (targetIsOwner) {
+        return null; // Safeguard: Owners should not be manageable from this modal
+    }
+
+    // Unregistered player options
+    if (!selectedMember.playerAccountId) {
+      return (
+        <View style={styles.modalSection}>
+          <Text style={styles.modalSubtitle}>Invite to Claim</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter user's email"
+            value={playerEmail}
+            onChangeText={setPlayerEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            placeholderTextColor={mutedTextColor}
+          />
+          <TouchableOpacity
+            style={[styles.button, styles.buttonPrimary, { marginTop: 10 }]}
+            onPress={handleInvite}
+          >
+            <Text style={styles.textStyle}>Send In-App Invite</Text>
+          </TouchableOpacity>
+          {canManageRoles ? (
+              selectedMember.isActive ? (
+                  <TouchableOpacity
+                      style={[styles.button, { marginTop: 10, backgroundColor: destructiveColor }]}
+                      onPress={() => handleUpdateStatus(selectedMember, false)}
+                  >
+                      <Text style={styles.textStyle}>Deactivate Player</Text>
+                  </TouchableOpacity>
+              ) : (
+                  <TouchableOpacity
+                      style={[styles.button, styles.buttonPrimary, { marginTop: 10 }]}
+                      onPress={() => handleUpdateStatus(selectedMember, true)}
+                  >
+                      <Text style={styles.textStyle}>Activate Player</Text>
+                  </TouchableOpacity>
+              )
+          ) : null}
+        </View>
+      );
+    }
+
+    // Registered player options
+    return (
+        <View style={styles.modalSection}>
+            {isOwner && selectedMember.role === 'ADMIN' ? (
+                <TouchableOpacity
+                    style={[styles.button, {backgroundColor: destructiveColor}]}
+                    onPress={() => handleUpdateRole('PLAYER')}
+                >
+                    <Text style={styles.textStyle}>Demote to Player</Text>
+                </TouchableOpacity>
+            ) : null}
+            {canManageRoles && selectedMember.role === 'PLAYER' ? (
+                <TouchableOpacity
+                    style={[styles.button, styles.buttonPrimary, { marginTop: 10 }]}
+                    onPress={() => handleUpdateRole('ADMIN')}
+                >
+                    <Text style={styles.textStyle}>Promote to Admin</Text>
+                </TouchableOpacity>
+            ) : null}
+            {isOwner ? (
+                <TouchableOpacity
+                    style={[styles.button, { marginTop: 10, backgroundColor: destructiveColor }]}
+                    onPress={handleTransferOwnership}
+                >
+                    <Text style={styles.textStyle}>Transfer Ownership</Text>
+                </TouchableOpacity>
+            ) : null}
+            {canManageRoles && !targetIsOwner ? (
+                selectedMember.isActive ? (
+                    <TouchableOpacity
+                        style={[styles.button, { marginTop: 10, backgroundColor: destructiveColor }]}
+                        onPress={() => handleUpdateStatus(selectedMember, false)}
+                    >
+                        <Text style={styles.textStyle}>Deactivate Player</Text>
+                    </TouchableOpacity>
+                ) : (
+                    <TouchableOpacity
+                        style={[styles.button, styles.buttonPrimary, { marginTop: 10 }]}
+                        onPress={() => handleUpdateStatus(selectedMember, true)}
+                    >
+                        <Text style={styles.textStyle}>Activate Player</Text>
+                    </TouchableOpacity>
+                )
+            ) : null}
+            {canManageRoles && !targetIsOwner ? (
+                <TouchableOpacity
+                    style={[styles.button, { marginTop: 10, backgroundColor: destructiveColor }]}
+                    onPress={handleRemovePlayer}>
+                    <Text style={styles.textStyle}>Remove Player</Text>
+                </TouchableOpacity>
+            ) : null}
+            {canManageRoles && !targetIsOwner ? (
+                <TouchableOpacity
+                    style={[styles.button, { marginTop: 10, backgroundColor: destructiveColor }]}
+                    onPress={handleResetDisplayName}>
+                    <Text style={styles.textStyle}>Reset Display Name</Text>
+                </TouchableOpacity>
+            ) : null}
+            {canManageRoles && !targetIsOwner ? (
+                <TouchableOpacity
+                    style={[styles.button, { marginTop: 10, backgroundColor: destructiveColor }]}
+                    onPress={handleResetPlayerIcon}>
+                    <Text style={styles.textStyle}>Reset Player Icon</Text>
+                </TouchableOpacity>
+            ) : null}
+        </View>
+    );
+  };
+
+  const MemberItem = ({ item }) => (
     <View style={styles.memberItem}>
       <View style={styles.memberInfoContainer}>
         {item.iconUrl && (
@@ -377,126 +744,13 @@ const LeagueSettingsPage = () => {
     </View>
   );
 
-  const renderManagementOptions = () => {
-    if (!selectedMember) return null;
-
-    const isOwner = currentUserMembership?.isOwner;
-    const canAdminsManage = nonOwnerAdminsCanManageRoles;
-    const canManageRoles = isOwner || (isAdmin && canAdminsManage);
-    const targetIsOwner = selectedMember.isOwner;
-
-    if (targetIsOwner) {
-        return null; // Safeguard: Owners should not be manageable from this modal
-    }
-
-    // Unregistered player options
-    if (!selectedMember.playerAccountId) {
-      return (
-        <View style={styles.modalSection}>
-          <Text style={styles.modalSubtitle}>Invite to Claim</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter user's email"
-            value={playerEmail}
-            onChangeText={setPlayerEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-          <TouchableOpacity
-            style={[styles.button, styles.buttonPrimary, { marginTop: 10 }]} 
-            onPress={handleInvite}
-          >
-            <Text style={styles.textStyle}>Send In-App Invite</Text>
-          </TouchableOpacity>
-          {canManageRoles ? (
-              selectedMember.isActive ? (
-                  <TouchableOpacity
-                      style={[styles.button, styles.buttonDestructive, { marginTop: 10 }]} 
-                      onPress={() => handleUpdateStatus(selectedMember, false)}
-                  >
-                      <Text style={styles.textStyle}>Deactivate Player</Text>
-                  </TouchableOpacity>
-              ) : (
-                  <TouchableOpacity
-                      style={[styles.button, styles.buttonPrimary, { marginTop: 10 }]} 
-                      onPress={() => handleUpdateStatus(selectedMember, true)}
-                  >
-                      <Text style={styles.textStyle}>Activate Player</Text>
-                  </TouchableOpacity>
-              )
-          ) : null}
-        </View>
-      );
-    }
-
-    // Registered player options
+  if (loadingCurrentUserMembership || !isAdmin) {
     return (
-        <View style={styles.modalSection}>
-            {isOwner && selectedMember.role === 'ADMIN' ? (
-                <TouchableOpacity
-                    style={[styles.button, styles.buttonDestructive]}
-                    onPress={() => handleUpdateRole('PLAYER')}
-                >
-                    <Text style={styles.textStyle}>Demote to Player</Text>
-                </TouchableOpacity>
-            ) : null}
-            {canManageRoles && selectedMember.role === 'PLAYER' ? (
-                <TouchableOpacity
-                    style={[styles.button, styles.buttonPrimary, { marginTop: 10 }]} 
-                    onPress={() => handleUpdateRole('ADMIN')}
-                >
-                    <Text style={styles.textStyle}>Promote to Admin</Text>
-                </TouchableOpacity>
-            ) : null}
-            {isOwner ? (
-                <TouchableOpacity
-                    style={[styles.button, styles.buttonDestructive, { marginTop: 10 }]} 
-                    onPress={handleTransferOwnership}
-                >
-                    <Text style={styles.textStyle}>Transfer Ownership</Text>
-                </TouchableOpacity>
-            ) : null}
-            {canManageRoles && !targetIsOwner ? (
-                selectedMember.isActive ? (
-                    <TouchableOpacity
-                        style={[styles.button, styles.buttonDestructive, { marginTop: 10 }]} 
-                        onPress={() => handleUpdateStatus(selectedMember, false)}
-                    >
-                        <Text style={styles.textStyle}>Deactivate Player</Text>
-                    </TouchableOpacity>
-                ) : (
-                    <TouchableOpacity
-                        style={[styles.button, styles.buttonPrimary, { marginTop: 10 }]} 
-                        onPress={() => handleUpdateStatus(selectedMember, true)}
-                    >
-                        <Text style={styles.textStyle}>Activate Player</Text>
-                    </TouchableOpacity>
-                )
-            ) : null}
-            {canManageRoles && !targetIsOwner ? (
-                <TouchableOpacity
-                    style={[styles.button, styles.buttonDestructive, { marginTop: 10 }]} 
-                    onPress={handleRemovePlayer}>
-                    <Text style={styles.textStyle}>Remove Player</Text>
-                </TouchableOpacity>
-            ) : null}
-            {canManageRoles && !targetIsOwner ? (
-                <TouchableOpacity
-                    style={[styles.button, styles.buttonDestructive, { marginTop: 10 }]} 
-                    onPress={handleResetDisplayName}>
-                    <Text style={styles.textStyle}>Reset Display Name</Text>
-                </TouchableOpacity>
-            ) : null}
-            {canManageRoles && !targetIsOwner ? (
-                <TouchableOpacity
-                    style={[styles.button, styles.buttonDestructive, { marginTop: 10 }]} 
-                    onPress={handleResetPlayerIcon}>
-                    <Text style={styles.textStyle}>Reset Player Icon</Text>
-                </TouchableOpacity>
-            ) : null}
-        </View>
+      <PageLayout>
+        <ActivityIndicator size="large" color={activityIndicatorColor} />
+      </PageLayout>
     );
-  };
+  }
 
   return (
     <PageLayout>
@@ -516,7 +770,7 @@ const LeagueSettingsPage = () => {
 
         {isAdmin ? (
           <TouchableOpacity
-            style={[styles.button, styles.buttonPrimaryRed, styles.actionButton]}
+            style={[styles.button, styles.actionButton]}
             onPress={() => {
               setTempLogoImageUrl(logoImageUrl);
               setLogoModalVisible(true);
@@ -532,16 +786,17 @@ const LeagueSettingsPage = () => {
             <View style={styles.settingItem}>
               <Text style={styles.settingLabel}>League Name</Text>
               <TextInput
-                style={[styles.input, {width: '60%'}]}
+                style={[styles.input, {width: '60%'} ]}
                 placeholder="Enter league name"
                 value={leagueName}
                 onChangeText={setLeagueName}
+                placeholderTextColor={mutedTextColor}
               />
             </View>
           )}
 
           {/* Admins Can Manage Roles */}
-          <View style={styles.settingItem}>
+          <View style={[styles.settingItem, {borderBottomColor: 'transparent'}]}>
             <View style={{flexDirection: 'row', alignItems: 'center'}}>
               <Text style={styles.settingLabel}>Admins Can Manage Roles</Text>
               <HelpIcon topicKey="ADMINS_MANAGE_ROLES" />
@@ -554,7 +809,7 @@ const LeagueSettingsPage = () => {
           </View>
           {currentUserMembership?.isOwner && (
             <TouchableOpacity
-              style={[styles.button, styles.buttonPrimaryRed, styles.actionButton]}
+              style={[styles.button, styles.actionButton]}
               onPress={handleSaveLeagueSettings}
             >
               <Text style={styles.textStyle}>Save League Settings</Text>
@@ -565,14 +820,14 @@ const LeagueSettingsPage = () => {
 
         <Text style={styles.subtitle}>League Members</Text>
         {loadingMembers ? (
-          <ActivityIndicator size="large" color="#fb5b5a" />
+          <ActivityIndicator size="large" color={activityIndicatorColor} />
         ) : errorMembers ? (
           <Text style={styles.errorText}>Error: {errorMembers}</Text>
         ) : (
           <FlatList
             data={members}
             keyExtractor={(item) => item.id.toString()}
-            renderItem={renderMemberItem}
+            renderItem={({ item }) => <MemberItem item={item} />}
             style={styles.memberList}
             scrollEnabled={false}
           />
@@ -600,7 +855,7 @@ const LeagueSettingsPage = () => {
                         <TextInput
                             style={styles.input}
                             placeholder="Enter image URL"
-                            placeholderTextColor='#888'
+                            placeholderTextColor={placeholderTextColor}
                             value={tempLogoImageUrl}
                             onChangeText={setTempLogoImageUrl}
                         />
@@ -637,7 +892,7 @@ const LeagueSettingsPage = () => {
                     <View style={styles.modalView}>
                         <Text style={styles.modalText}>Manage {selectedMember.displayName}</Text>
 
-                        {renderManagementOptions()}
+                        <ManagementOptions />
 
                         <TouchableOpacity
                             style={[styles.button, styles.buttonClose, { marginTop: 20 }]} 
@@ -665,7 +920,7 @@ const LeagueSettingsPage = () => {
                 </TouchableOpacity>
               </View>
             )}
-            <TouchableOpacity style={[styles.button, styles.buttonPrimaryRed, styles.actionButton]} onPress={() => refreshInviteCode(selectedLeagueId)}>
+            <TouchableOpacity style={[styles.button, styles.actionButton]} onPress={() => refreshInviteCode(selectedLeagueId)}>
               <Text style={styles.textStyle}>Generate Invite Code</Text>
             </TouchableOpacity>
           </View>
@@ -675,232 +930,5 @@ const LeagueSettingsPage = () => {
     </PageLayout>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    padding: 20,
-    width: '100%',
-    maxWidth: Dimensions.get('window').width - 40,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  subtitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginTop: 30,
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  logoContainer: {
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    overflow: 'hidden',
-    marginBottom: 20,
-    backgroundColor: '#e0e0e0',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  logoPlaceholder: {
-    width: 150,
-    height: 150,
-    backgroundColor: '#e0e0e0',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 75,
-    marginBottom: 20,
-  },
-  logoText: {
-    color: '#888',
-    fontSize: 16,
-  },
-  settingItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-    width: '100%',
-  },
-  settingLabel: {
-    marginRight: 10,
-  },
-  settingsGroup: {
-    width: '100%',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 20,
-    marginTop: 20,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    padding: 10,
-    borderRadius: 5,
-    width: '100%',
-  },
-  memberList: {
-    width: '100%',
-  },
-  memberItem: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.41,
-    elevation: 2,
-  },
-  memberInfoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  memberIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    marginRight: 10,
-  },
-  memberName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  realNameText: {
-    fontSize: 12,
-    color: '#666',
-    fontStyle: 'italic',
-  },
-  memberRole: {
-    fontSize: 14,
-    color: 'gray',
-  },
-  memberEmail: {
-    fontSize: 14,
-    color: '#007bff',
-  },
-  unregisteredTag: {
-    fontSize: 12,
-    color: 'red',
-    fontWeight: 'bold',
-  },
-  inactiveTag: {
-    fontSize: 12,
-    color: 'gray',
-    fontWeight: 'bold',
-  },
-  errorText: {
-    color: 'red',
-    textAlign: 'center',
-    marginTop: 10,
-  },
-  manageButton: {
-    backgroundColor: '#007bff',
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: 5,
-  },
-  manageButtonText: {
-    color: '#fff',
-    fontSize: 12,
-  },
-  centeredView: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 22
-  },
-  modalView: {
-    margin: 20,
-    backgroundColor: "white",
-    borderRadius: 20,
-    padding: 35,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-    width: '90%',
-  },
-  modalText: {
-    marginBottom: 15,
-    textAlign: "center",
-    fontWeight: 'bold'
-  },
-  modalSubtitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginTop: 10,
-    marginBottom: 5,
-  },
-  modalSection: {
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  button: {
-    borderRadius: 25,
-    padding: 10,
-    elevation: 2,
-    width: '100%',
-  },
-  buttonClose: {
-    backgroundColor: '#6c757d',
-  },
-  buttonPrimary: {
-    backgroundColor: '#007bff',
-  },
-  buttonSecondary: {
-    backgroundColor: '#6c757d',
-  },
-  buttonPrimaryRed: {
-    backgroundColor: '#fb5b5a',
-  },
-  buttonDestructive: {
-    backgroundColor: '#dc3545',
-  },
-  actionButton: {
-    width: 'auto',
-    alignSelf: 'center',
-    marginTop: 10,
-  },
-  textStyle: {
-    color: "white",
-    fontWeight: "bold",
-    textAlign: "center"
-  },
-  inviteCodeRow: {},
-  inviteCodeTextContent: {},
-  logoModalContent: {
-    width: '100%',
-    marginBottom: 20,
-  },
-  modalButtonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '100%',
-    marginTop: 20,
-  },
-});
 
 export default LeagueSettingsPage;

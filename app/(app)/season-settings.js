@@ -12,10 +12,32 @@ import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
 import * as apiActions from '../../src/api';
 import HelpIcon from '../../components/HelpIcon';
+import { useThemeColor } from '../../hooks/useThemeColor';
+import Colors from '../../constants/Colors';
+import { useColorScheme } from '../../hooks/useColorScheme';
 
 const SeasonSettingsPage = () => {
   const { api } = useAuth();
   const { selectedLeagueId, currentUserMembership, loadingCurrentUserMembership } = useLeague();
+
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme || 'light'];
+
+  const backgroundColor = useThemeColor({}, 'background');
+  const textColor = useThemeColor({}, 'text');
+  const primaryButtonColor = useThemeColor({ light: colors.tint, dark: colors.tint }, 'background');
+  const infoButtonColor = useThemeColor({ light: '#007bff', dark: '#52a3ff' }, 'background');
+  const destructiveButtonColor = useThemeColor({ light: '#dc3545', dark: '#ff6666' }, 'background');
+  const secondaryBackgroundColor = useThemeColor({ light: '#e0e0e0', dark: '#444444' }, 'background');
+  const lightBackgroundColor = useThemeColor({ light: '#f0f0f0', dark: '#333333' }, 'background');
+  const borderColor = useThemeColor({ light: '#ccc', dark: '#555' }, 'background');
+  const lightBorderColor = useThemeColor({ light: '#ddd', dark: '#666' }, 'background');
+  const errorColor = useThemeColor({ light: 'red', dark: '#ff6666' }, 'background');
+  const placeholderTextColor = useThemeColor({ light: 'gray', dark: '#bbbbbb' }, 'background');
+  const shadowColor = useThemeColor({ light: '#000', dark: '#fff' }, 'background');
+  const calendarIconColor = useThemeColor({ light: '#28a745', dark: '#4CAF50' }, 'background');
+  const closeButtonColor = useThemeColor({ light: '#2196F3', dark: '#64B5F6' }, 'background');
+  const cardBackgroundColor = useThemeColor({}, 'cardBackground');
 
   // Helper function to parse date strings robustly
   const parseDateStringAsLocal = (dateString) => {
@@ -225,6 +247,339 @@ const SeasonSettingsPage = () => {
   };
 
   const isAdmin = currentUserMembership?.role === 'ADMIN' || currentUserMembership?.isOwner;
+
+  const styles = useMemo(() => StyleSheet.create({
+    container: {
+      alignItems: 'center',
+      width: '100%',
+      backgroundColor: backgroundColor,
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      marginBottom: 20,
+      color: textColor,
+    },
+    subtitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      marginTop: 15,
+      marginBottom: 10,
+      color: textColor,
+    },
+    noSeasonsContainer: {
+      alignItems: 'center',
+      padding: 20,
+      backgroundColor: lightBackgroundColor,
+      borderRadius: 10,
+      marginBottom: 20,
+      width: '100%',
+      justifyContent: 'center',
+      paddingHorizontal: 20,
+    },
+    noSeasonsText: {
+      fontSize: 18,
+      textAlign: 'center',
+      marginBottom: 10,
+      color: textColor,
+    },
+    seasonSelectorContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      alignSelf: 'stretch',
+      marginBottom: 20,
+      marginHorizontal: 10,
+    },
+    seasonActionButtonsContainer: {
+      flexDirection: 'column',
+      alignItems: 'center',
+      alignSelf: 'center',
+      paddingHorizontal: 10,
+    },
+    settingsContainer: {
+      backgroundColor: lightBackgroundColor,
+      borderRadius: 10,
+      padding: 15,
+      marginBottom: 20,
+      alignSelf: 'stretch',
+      marginHorizontal: 10,
+    },
+    settingItem: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 10,
+      borderBottomWidth: 1,
+      borderBottomColor: lightBorderColor,
+      flexWrap: 'wrap',
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: borderColor,
+      borderRadius: 5,
+      padding: 8,
+      marginBottom: 10,
+      color: textColor,
+      backgroundColor: backgroundColor,
+    },
+    numericInput: {
+      borderWidth: 1,
+      borderColor: borderColor,
+      borderRadius: 5,
+      padding: 8,
+      width: 60,
+      textAlign: 'center',
+      marginBottom: 10,
+      color: textColor,
+      backgroundColor: backgroundColor,
+    },
+    timeInputContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+      flex: 1,
+    },
+    timeInput: {
+      borderWidth: 1,
+      borderColor: borderColor,
+      borderRadius: 5,
+      padding: 8,
+      width: 50,
+      textAlign: 'center',
+      marginBottom: 10,
+      marginHorizontal: 5,
+      color: textColor,
+      backgroundColor: backgroundColor,
+    },
+    timeLabel: {
+      fontSize: 14,
+      marginBottom: 10,
+      color: textColor,
+    },
+    modalInput: {
+      width: 250,
+      color: textColor,
+      backgroundColor: backgroundColor,
+    },
+    dateInputButton: {
+      borderWidth: 1,
+      borderColor: borderColor,
+      borderRadius: 5,
+      padding: 10,
+      width: 250,
+      marginBottom: 10,
+      backgroundColor: backgroundColor,
+    },
+    dateInputText: {
+      color: textColor,
+    },
+    picker: {
+      backgroundColor: cardBackgroundColor,
+      color: textColor,
+    },
+    pickerBounty: {
+      width: 210,
+      backgroundColor: cardBackgroundColor,
+      color: textColor,
+    },
+    pickerWrapper: {
+      justifyContent: 'center',
+      paddingLeft: 10,
+      borderRadius: 10,
+    },
+    modalButton: {
+      width: '80%',
+      borderRadius: 25,
+      marginTop: 10,
+    },
+    memberList: {
+      width: '100%',
+    },
+    memberItem: {
+      backgroundColor: cardBackgroundColor,
+      padding: 15,
+      borderRadius: 10,
+      marginBottom: 10,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      shadowColor: shadowColor,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.2,
+      shadowRadius: 1.41,
+      elevation: 2,
+    },
+    memberName: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: textColor,
+    },
+    memberRole: {
+      fontSize: 14,
+      color: placeholderTextColor,
+    },
+    memberEmail: {
+      fontSize: 14,
+      color: infoButtonColor,
+    },
+    unregisteredTag: {
+      fontSize: 12,
+      color: errorColor,
+      fontWeight: 'bold',
+    },
+    settingLabel: {
+      marginRight: 10,
+      flexShrink: 1,
+      color: textColor,
+    },
+    errorText: {
+      color: errorColor,
+      textAlign: 'center',
+      marginTop: 10,
+    },
+    manageButton: {
+      backgroundColor: infoButtonColor,
+      paddingVertical: 5,
+      paddingHorizontal: 10,
+      borderRadius: 5,
+    },
+    manageButtonText: {
+      color: 'white',
+      fontSize: 12,
+    },
+    centeredView: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      marginTop: 22
+    },
+    modalView: {
+      margin: 20,
+      backgroundColor: cardBackgroundColor,
+      borderRadius: 20,
+      padding: 35,
+      alignItems: "center",
+      shadowColor: shadowColor,
+      shadowOffset: {
+        width: 0,
+        height: 2
+      },
+      shadowOpacity: 0.25,
+      shadowRadius: 4,
+      elevation: 5
+    },
+    modalText: {
+      marginBottom: 15,
+      textAlign: "center",
+      fontWeight: 'bold',
+      color: textColor,
+    },
+    modalButtonContainer: {
+      width: '80%',
+    },
+    button: {
+      borderRadius: 25,
+      padding: 10,
+      elevation: 2,
+      marginBottom: 10,
+    },
+    buttonClose: {
+      backgroundColor: closeButtonColor,
+    },
+    buttonPrimary: {
+      backgroundColor: infoButtonColor,
+    },
+    buttonPrimaryRed: {
+      backgroundColor: primaryButtonColor,
+    },
+    buttonDestructive: {
+      backgroundColor: destructiveButtonColor,
+    },
+    actionButton: {
+      width: 'auto',
+      alignSelf: 'center',
+      marginTop: 10,
+      marginBottom: 15,
+    },
+    textStyle: {
+      color: "white",
+      fontWeight: "bold",
+      textAlign: "center"
+    },
+    finalizedMessage: {
+      fontSize: 16,
+      color: errorColor,
+      textAlign: 'center',
+      marginBottom: 10,
+      fontWeight: 'bold',
+    },
+    blindLevelItem: {
+      backgroundColor: secondaryBackgroundColor,
+      padding: 10,
+      borderRadius: 5,
+      marginBottom: 5,
+      width: '100%',
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    blindLevelItemContent: {
+      flexDirection: 'column',
+      color: textColor,
+    },
+    placePointItem: {
+      backgroundColor: secondaryBackgroundColor,
+      padding: 10,
+      borderRadius: 5,
+      marginBottom: 5,
+      width: '100%',
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    placePointItemContent: {
+      flexDirection: 'column',
+      color: textColor,
+    },
+    deleteButton: {
+      backgroundColor: destructiveButtonColor,
+      padding: 5,
+      borderRadius: 5,
+    },
+    deleteButtonText: {
+      color: 'white',
+      fontSize: 12,
+    },
+    gameNameText: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      marginBottom: 5,
+      color: textColor,
+    },
+    gameItem: {
+      backgroundColor: secondaryBackgroundColor,
+      padding: 10,
+      borderRadius: 5,
+      marginBottom: 5,
+      width: '100%',
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    gameInfo: {
+      color: textColor,
+    },
+    gameActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    smallButton: {
+      paddingVertical: 5,
+      paddingHorizontal: 10,
+      borderRadius: 5,
+    },
+  }), [backgroundColor, textColor, primaryButtonColor, infoButtonColor, destructiveButtonColor, secondaryBackgroundColor, lightBackgroundColor, borderColor, lightBorderColor, errorColor, placeholderTextColor, shadowColor, calendarIconColor, closeButtonColor, cardBackgroundColor]);
 
   const seasonPickerItems = useMemo(() => {
     return seasons.map((s) => {
@@ -747,7 +1102,7 @@ const SeasonSettingsPage = () => {
 
   const renderSettings = () => {
     if (loading || loadingCurrentUserMembership) {
-      return <ActivityIndicator size="large" color="#fb5b5a" />;
+      return <ActivityIndicator size="large" color={primaryButtonColor} />;
     }
     if (error) {
       return <Text style={styles.errorText}>Error loading settings: {errorSettings}</Text>;
@@ -782,7 +1137,7 @@ const SeasonSettingsPage = () => {
                     {/* Games Section */}
                     <Text style={styles.subtitle}>Games</Text>
                     {loading ? (
-                      <ActivityIndicator size="small" color="#fb5b5a" />
+                      <ActivityIndicator size="small" color={primaryButtonColor} />
                     ) : games.length === 0 ? (
                       <Text>No games have been added to this season yet.</Text>
                     ) : (
@@ -814,7 +1169,7 @@ const SeasonSettingsPage = () => {
                             )}
                             {game.gameStatus !== 'COMPLETED' && (
                               <TouchableOpacity onPress={() => handleAddToCalendar(game)} style={{ marginLeft: 10 }}>
-                                <MaterialCommunityIcons name="calendar-plus" size={30} color="#28a745" />
+                                <MaterialCommunityIcons name="calendar-plus" size={30} color={calendarIconColor} />
                               </TouchableOpacity>
                             )}
                           </View>
@@ -877,7 +1232,7 @@ const SeasonSettingsPage = () => {
                           <TextInput
                             style={[styles.input, styles.modalInput]}
                             placeholder="Game Name (Optional)"
-                            placeholderTextColor="gray"
+                            placeholderTextColor={placeholderTextColor}
                             value={newGameName}
                             onChangeText={setNewGameName}
                           />
@@ -900,7 +1255,7 @@ const SeasonSettingsPage = () => {
                           <TextInput
                             style={[styles.input, styles.modalInput]}
                             placeholder="Game Location (Optional)"
-                            placeholderTextColor="gray"
+                            placeholderTextColor={placeholderTextColor}
                             value={newGameLocation}
                             onChangeText={setNewGameLocation}
                           />
@@ -1090,7 +1445,7 @@ const SeasonSettingsPage = () => {
                       style={styles.pickerBounty}
                       onValueChange={onBountyRuleChange}
                       enabled={isSeasonFinalized ? false : (isAdmin ? true : false)}
-                      itemStyle={{ color: 'black' }}
+                      itemStyle={{ color: textColor }}
                   >
                       <SafePicker.Item label="No Bounty" value="NO_BOUNTY"/>
                       <SafePicker.Item label="Next Highest Player" value="NEXT_HIGHEST_PLAYER"/>
@@ -1250,7 +1605,7 @@ const SeasonSettingsPage = () => {
               <Text>Small Blind: {bl.smallBlind}</Text>
               <Text>Big Blind: {bl.bigBlind}</Text>
               {blindLevelErrors[index] && (
-                <Text style={{ color: 'red', fontSize: 12 }}>{blindLevelErrors[index]}</Text>
+                <Text style={{ color: errorColor, fontSize: 12 }}>{blindLevelErrors[index]}</Text>
               )}
             </View>
             {isAdmin && !isSeasonFinalized && index === blindLevels.length - 1 && (
@@ -1297,7 +1652,7 @@ const SeasonSettingsPage = () => {
                   <Text>Place: {pp.place}</Text>
                   <Text>Points: {pp.points}</Text>
                   {placePointErrors && placePointErrors[index] && (
-                    <Text style={{ color: 'red', fontSize: 12 }}>{placePointErrors[index]}</Text>
+                    <Text style={{ color: errorColor, fontSize: 12 }}>{placePointErrors[index]}</Text>
                   )}
                 </View>
                 {isAdmin && !isSeasonFinalized && index === placePoints.length - 1 && (
@@ -1340,7 +1695,7 @@ const SeasonSettingsPage = () => {
                     <Text style={styles.textStyle}>Save Settings</Text>
                   </TouchableOpacity>
                   {(!hasMinimumBlindLevels || !hasMinimumPlacePoints || hasBlindLevelErrors || hasPlacePointErrors) && (
-                    <Text style={{ color: 'red', textAlign: 'center', marginTop: 5 }}>
+                    <Text style={{ color: errorColor, textAlign: 'center', marginTop: 5 }}>
                       {!hasMinimumBlindLevels && 'At least one blind level is required. '}
                       {!hasMinimumPlacePoints && 'At least one place point is required. '}
                       {hasBlindLevelErrors && 'Please fix all blind level errors before saving settings.'}
@@ -1363,7 +1718,7 @@ const SeasonSettingsPage = () => {
         <Text style={styles.title}>Season Settings</Text>
 
         {loading || loadingCurrentUserMembership ? (
-          <ActivityIndicator size="large" color="#fb5b5a" />
+          <ActivityIndicator size="large" color={primaryButtonColor} />
         ) : error ? (
           <Text style={styles.errorText}>Error loading seasons: {error}</Text>
         ) : seasons.length === 0 ? (
@@ -1453,14 +1808,13 @@ const SeasonSettingsPage = () => {
           <View style={styles.centeredView}>
             <View style={styles.modalView}>
               <Text style={styles.modalText}>Create New Season</Text>
-              <TextInput
-                style={[styles.input, styles.modalInput]}
-                placeholder="Season Name (e.g., 2025 Season)"
-                placeholderTextColor="gray"
-                value={newSeasonName}
-                onChangeText={setNewSeasonName}
-              />
-              <TouchableOpacity onPress={() => showDatePicker('startDate')} style={styles.dateInputButton}>
+                                        <TextInput
+                                          style={[styles.input, styles.modalInput]}
+                                          placeholder="Season Name (e.g., 2025 Season)"
+                                          placeholderTextColor={placeholderTextColor}
+                                          value={newSeasonName}
+                                          onChangeText={setNewSeasonName}
+                                        />              <TouchableOpacity onPress={() => showDatePicker('startDate')} style={styles.dateInputButton}>
                 <Text style={styles.dateInputText}>
                   Start Date: {newSeasonStartDate ? DateTime.fromJSDate(newSeasonStartDate).toFormat('MM/dd/yyyy') : 'Select Date'}
                 </Text>
@@ -1622,7 +1976,7 @@ const SeasonSettingsPage = () => {
                       <Text style={styles.textStyle}>Save Changes</Text>
                     </TouchableOpacity>
                     {editBlindLevelErrors[currentEditingBlindLevelIndex] && (
-                      <Text style={{ color: 'red', marginTop: 5 }}>
+                      <Text style={{ color: errorColor, marginTop: 5 }}>
                         {editBlindLevelErrors[currentEditingBlindLevelIndex]}
                       </Text>
                     )}
@@ -1716,7 +2070,7 @@ const SeasonSettingsPage = () => {
                       <Text style={styles.textStyle}>Save Changes</Text>
                     </TouchableOpacity>
                     {editPlacePointErrors[currentEditingPlacePointIndex] && (
-                      <Text style={{ color: 'red', marginTop: 5 }}>
+                      <Text style={{ color: errorColor, marginTop: 5 }}>
                         {editPlacePointErrors[currentEditingPlacePointIndex]}
                       </Text>
                     )}

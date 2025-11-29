@@ -1,10 +1,11 @@
-import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, Pressable, Image } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useLeague } from '../context/LeagueContext';
 import { useAuth } from '../context/AuthContext';
 import * as Animatable from 'react-native-animatable';
+import Colors from '../constants/Colors';
+import { useThemeColor } from '../hooks/useThemeColor';
 
 const UserMenu = ({ isVisible, onClose, inviteCount }) => {
   const router = useRouter();
@@ -16,6 +17,18 @@ const UserMenu = ({ isVisible, onClose, inviteCount }) => {
 
   const displayUserName = currentUserMembership?.displayName || user?.firstName;
   const displayIconUrl = currentUserMembership?.iconUrl;
+
+  const currentScheme = useColorScheme();
+  const modalOverlayBackgroundColor = currentScheme === 'dark' ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.5)';
+  const modalViewBackgroundColor = useThemeColor({}, 'background');
+  const textColor = useThemeColor({}, 'text');
+  const borderColor = useThemeColor({}, 'borderColor');
+  const separatorColor = useThemeColor({}, 'separator');
+  const dropdownBackgroundColor = useThemeColor({}, 'cardBackground');
+  const dropdownOptionBorderColor = useThemeColor({}, 'border');
+  const disabledBackgroundColor = useThemeColor({}, 'tabIconDefault');
+  const badgeBackgroundColor = Colors.light.tint; // Keeping red for badge for now, or use a specific theme color if available
+  const badgeTextColor = Colors.light.white; // Keeping white for badge text
 
   const navigateTo = (path) => {
     closeMenu();
@@ -45,37 +58,37 @@ const UserMenu = ({ isVisible, onClose, inviteCount }) => {
       visible={isVisible}
       onRequestClose={closeMenu}
     >
-      <Pressable style={styles.modalOverlay} onPress={closeMenu}>
+      <Pressable style={[styles.modalOverlay, { backgroundColor: modalOverlayBackgroundColor }]} onPress={closeMenu}>
         <Animatable.View
           ref={animatableRef}
           animation="zoomIn"
           duration={500}
-          style={styles.modalView}
+          style={[styles.modalView, { backgroundColor: modalViewBackgroundColor, shadowColor: borderColor }]}
         >
           <View style={styles.userInfoContainer}>
             {displayIconUrl && (
               <Image source={{ uri: displayIconUrl }} style={styles.userIcon} />
             )}
-            <Text style={styles.userName}>{displayUserName}</Text>
+            <Text style={[styles.userName, { color: textColor }]}>{displayUserName}</Text>
           </View>
-          <View style={styles.separator} />
+          <View style={[styles.separator, { backgroundColor: separatorColor }]} />
 
           {leagues.length > 0 && (
             <>
               <TouchableOpacity
-                style={[styles.dropdownTrigger, leagues.length <= 1 && styles.dropdownTriggerDisabled]}
+                style={[styles.dropdownTrigger, { borderColor: borderColor, backgroundColor: dropdownBackgroundColor }, leagues.length <= 1 && styles.dropdownTriggerDisabled]}
                 onPress={() => setIsDropdownOpen(!isDropdownOpen)}
                 disabled={leagues.length <= 1}
               >
-                <Text style={styles.dropdownTriggerText}>{selectedLeagueName}</Text>
-                {leagues.length > 1 && <MaterialIcons name="arrow-drop-down" size={24} color="black" />}
+                <Text style={[styles.dropdownTriggerText, { color: textColor }]}>{selectedLeagueName}</Text>
+                {leagues.length > 1 && <MaterialIcons name="arrow-drop-down" size={24} color={textColor} />}
               </TouchableOpacity>
               {isDropdownOpen && (
-                <View style={styles.dropdownOptionsContainer}>
+                <View style={[styles.dropdownOptionsContainer, { borderColor: borderColor, backgroundColor: dropdownBackgroundColor }]}>
                   {leagues.map(league => (
                     <TouchableOpacity
                       key={league.id}
-                      style={styles.dropdownOption}
+                      style={[styles.dropdownOption, { borderBottomColor: dropdownOptionBorderColor }]}
                       onPress={() => {
                         switchLeague(league.id);
                         setIsDropdownOpen(false);
@@ -83,32 +96,32 @@ const UserMenu = ({ isVisible, onClose, inviteCount }) => {
                         router.replace({ pathname: '(app)/home', params: { leagueId: league.id } });
                       }}
                     >
-                      <Text style={styles.dropdownOptionText}>{league.leagueName}</Text>
+                      <Text style={[styles.dropdownOptionText, { color: textColor }]}>{league.leagueName}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
               )}
-              <View style={styles.separator} />
+              <View style={[styles.separator, { backgroundColor: separatorColor }]} />
             </>
           )}
           <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('create-league')}>
-            <Text style={styles.menuItemText}>Create League</Text>
+            <Text style={[styles.menuItemText, { color: textColor }]}>Create League</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('join-league')}>
             <View style={styles.menuItemContainer}>
-              <Text style={styles.menuItemText}>Join League</Text>
+              <Text style={[styles.menuItemText, { color: textColor }]}>Join League</Text>
               {inviteCount > 0 && 
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{inviteCount}</Text>
+                <View style={[styles.badge, { backgroundColor: badgeBackgroundColor }]}>
+                  <Text style={[styles.badgeText, { color: badgeTextColor }]}>{inviteCount}</Text>
                 </View>
               }
             </View>
           </TouchableOpacity>
           <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('settings')}>
-            <Text style={styles.menuItemText}>Settings</Text>
+            <Text style={[styles.menuItemText, { color: textColor }]}>Settings</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
-            <Text style={styles.menuItemText}>Logout</Text>
+            <Text style={[styles.menuItemText, { color: textColor }]}>Logout</Text>
           </TouchableOpacity>
         </Animatable.View>
       </Pressable>
@@ -121,16 +134,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-start',
     alignItems: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modalView: {
     margin: 10,
     marginTop: 50,
-    backgroundColor: 'white',
     borderRadius: 10,
     padding: 20,
     alignItems: 'flex-start',
-    shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 2,
@@ -148,7 +158,6 @@ const styles = StyleSheet.create({
   },
   separator: {
     height: 1,
-    backgroundColor: '#ddd',
     width: '100%',
     marginVertical: 5,
   },
@@ -171,10 +180,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 15,
     borderWidth: 1,
-    borderColor: '#ddd',
     borderRadius: 5,
     width: '100%',
-    backgroundColor: '#f9f9f9',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -185,11 +192,9 @@ const styles = StyleSheet.create({
   },
   dropdownOptionsContainer: {
     borderWidth: 1,
-    borderColor: '#ddd',
     borderRadius: 5,
     width: '100%',
     marginTop: 5,
-    backgroundColor: 'white',
     position: 'absolute',
     top: 0,
     zIndex: 1000,
@@ -198,13 +203,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
   },
   dropdownOptionText: {
     fontSize: 16,
   },
   dropdownTriggerDisabled: {
-    backgroundColor: '#e0e0e0',
     opacity: 0.6,
   },
   menuItemContainer: {
@@ -214,7 +217,6 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   badge: {
-    backgroundColor: 'red',
     borderRadius: 10,
     width: 20,
     height: 20,
@@ -222,7 +224,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   badgeText: {
-    color: 'white',
     fontSize: 12,
     fontWeight: 'bold',
   },

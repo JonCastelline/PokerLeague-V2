@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-nativ
 import { Image } from 'expo-image';
 import { useLocalSearchParams } from 'expo-router';
 import PageLayout from '../../components/PageLayout';
+import { useThemeColor } from '../../hooks/useThemeColor';
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
 import { getGameResults, getSeasonSettings } from '../../src/api';
@@ -16,6 +17,15 @@ const GameDetailsPage = () => {
   const [error, setError] = useState(null);
   const [currentSeasonSettings, setCurrentSeasonSettings] = useState(null);
   const [gameName, setGameName] = useState(null);
+
+  // Themed colors
+  const textColor = useThemeColor({}, 'text');
+  const backgroundColor = useThemeColor({}, 'background');
+  const itemBorderColor = useThemeColor({}, 'icon'); // Item border
+  const itemBgColor = useThemeColor({}, 'cardBackground');
+  const mutedTextColor = useThemeColor({}, 'icon'); // For #666, #888 like colors
+  const errorColor = 'red'; // Keep red for errors, assuming it's visible on both backgrounds.
+  const activityIndicatorColor = useThemeColor({}, 'tint'); // For activity indicator
 
   useEffect(() => {
     if (gameId) {
@@ -53,37 +63,39 @@ const GameDetailsPage = () => {
     }
   }, [gameId, api]);
 
+  // Moved getHeaderStyles and getItemStyles for clarity to be defined within the component
+  // to leverage the themed colors. They should not create new StyleSheet.create instances on every render.
   const getHeaderStyles = (trackKills, trackBounties) => {
     const showStats = trackKills || trackBounties;
-    return StyleSheet.create({
+    return {
       placeHeader: { flex: 1 },
       playerHeader: { flex: showStats ? 3 : 5 },
       statsHeader: { flex: 2, textAlign: 'right' },
-    });
+    };
   };
 
   const getItemStyles = (trackKills, trackBounties) => {
     const showStats = trackKills || trackBounties;
-    return StyleSheet.create({
+    return {
       place: { flex: 1 },
       playerContainer: { flex: showStats ? 3 : 5 },
       statsContainer: { flex: 2, alignItems: 'flex-end' },
-    });
+    };
   };
 
   const renderResult = ({ item }) => {
     const itemStyles = getItemStyles(currentSeasonSettings?.trackKills, currentSeasonSettings?.trackBounties);
     return (
-      <View style={styles.resultItem}>
-        <Text style={[styles.place, itemStyles.place]}>{item.place}</Text>
+      <View style={[styles.resultItem, {backgroundColor: itemBgColor, borderColor: itemBorderColor}]}>
+        <Text style={[styles.place, itemStyles.place, {color: textColor}]}>{item.place}</Text>
         <View style={[styles.playerContainer, itemStyles.playerContainer]}>
           <Image source={{ uri: item.player.iconUrl }} style={styles.playerIcon} />
-          <Text style={styles.playerName}>{item.player.displayName}</Text>
+          <Text style={[styles.playerName, {color: textColor}]}>{item.player.displayName}</Text>
         </View>
         {(currentSeasonSettings?.trackKills || currentSeasonSettings?.trackBounties) && (
           <View style={[styles.statsContainer, itemStyles.statsContainer]}>
-            {currentSeasonSettings?.trackKills && <Text style={styles.stat}>Kills: {item.kills}</Text>}
-            {currentSeasonSettings?.trackBounties && <Text style={styles.stat}>Bounties: {item.bounties}</Text>}
+            {currentSeasonSettings?.trackKills && <Text style={[styles.stat, {color: mutedTextColor}]}>Kills: {item.kills}</Text>}
+            {currentSeasonSettings?.trackBounties && <Text style={[styles.stat, {color: mutedTextColor}]}>Bounties: {item.bounties}</Text>}
           </View>
         )}
       </View>
@@ -94,13 +106,13 @@ const GameDetailsPage = () => {
     const headerStyles = getHeaderStyles(currentSeasonSettings?.trackKills, currentSeasonSettings?.trackBounties);
     return (
       <>
-          <Text style={styles.title}>Game Results</Text>
-          {gameName && <Text style={styles.gameNameText}>{gameName}</Text>}
-          <View style={styles.header}>
-              <Text style={[styles.headerText, headerStyles.placeHeader]}>Place</Text>
-              <Text style={[styles.headerText, headerStyles.playerHeader]}>Player</Text>
+          <Text style={[styles.title, {color: textColor}]}>Game Results</Text>
+          {gameName && <Text style={[styles.gameNameText, {color: mutedTextColor}]}>{gameName}</Text>}
+          <View style={[styles.header, {backgroundColor: backgroundColor, borderBottomColor: itemBorderColor}]}>
+              <Text style={[styles.headerText, headerStyles.placeHeader, {color: textColor}]}>Place</Text>
+              <Text style={[styles.headerText, headerStyles.playerHeader, {color: textColor}]}>Player</Text>
               {(currentSeasonSettings?.trackKills || currentSeasonSettings?.trackBounties) && (
-                  <Text style={[styles.headerText, headerStyles.statsHeader]}>Stats</Text>
+                  <Text style={[styles.headerText, headerStyles.statsHeader, {color: textColor}]}>Stats</Text>
               )}
           </View>
       </>
@@ -108,11 +120,11 @@ const GameDetailsPage = () => {
   };
 
   if (loading) {
-    return <PageLayout><ActivityIndicator size="large" color="#0000ff" /></PageLayout>;
+    return <PageLayout><ActivityIndicator size="large" color={activityIndicatorColor} /></PageLayout>;
   }
 
   if (error) {
-      return <PageLayout><Text style={styles.errorText}>{error}</Text></PageLayout>;
+      return <PageLayout><Text style={[styles.errorText, {color: errorColor}]}>{error}</Text></PageLayout>;
   }
 
   return (
@@ -122,7 +134,7 @@ const GameDetailsPage = () => {
         renderItem={renderResult}
         keyExtractor={item => item.id.toString()}
         ListHeaderComponent={() => <ListHeader gameName={gameName} />}
-        contentContainerStyle={styles.container}
+        contentContainerStyle={[styles.container, {backgroundColor: backgroundColor}]}
       />
     </PageLayout>
   );
@@ -143,16 +155,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     textAlign: 'center',
     marginBottom: 10,
-    color: '#666',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 10,
     paddingHorizontal: 15,
-    backgroundColor: '#eef',
     borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
   },
   headerText: {
     fontSize: 16,
@@ -171,12 +180,10 @@ const styles = StyleSheet.create({
   resultItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f9f9f9',
     padding: 15,
     marginBottom: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#ddd',
   },
   place: {
     fontSize: 18,
@@ -203,11 +210,9 @@ const styles = StyleSheet.create({
   },
   stat: {
     fontSize: 14,
-    color: '#333',
   },
   errorText: {
     fontSize: 16,
-    color: 'red',
     textAlign: 'center',
   },
 });

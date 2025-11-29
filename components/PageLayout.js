@@ -8,12 +8,26 @@ import UserMenu from './UserMenu';
 import { useLeague } from '../context/LeagueContext';
 import { API_BASE_URL } from '../src/config';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import { useThemeColor } from '../hooks/useThemeColor';
+import Colors from '../constants/Colors';
+import { useColorScheme } from '../hooks/useColorScheme';
 
 const PageLayout = ({ children, noScroll }) => {
   const { currentLeague, loadingLeagues, leagueHomeContent, currentUserMembership, reloadCurrentUserMembership } = useLeague();
   const { user, token } = useAuth();
   const [userMenuVisible, setUserMenuVisible] = useState(false);
   const [inviteCount, setInviteCount] = useState(0);
+
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme || 'light'];
+
+  const backgroundColor = useThemeColor({}, 'background');
+  const textColor = useThemeColor({}, 'text');
+  const primaryColor = useThemeColor({ light: colors.tint, dark: colors.tint }, 'background');
+  const darkTextColor = useThemeColor({ light: '#333', dark: '#ccc' }, 'background');
+  const lightBackgroundColor = useThemeColor({ light: '#f0f0f0', dark: '#333333' }, 'background');
+  const badgeBackgroundColor = useThemeColor({ light: 'red', dark: '#ff6666' }, 'background');
+  const iconColor = useThemeColor({}, 'text');
 
   const fetchInvites = useCallback(async () => {
     if (!token) return;
@@ -43,13 +57,92 @@ const PageLayout = ({ children, noScroll }) => {
   if (loadingLeagues) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#fb5b5a" />
+        <ActivityIndicator size="large" color={primaryColor} />
       </View>
     );
   }
 
   const displayUserName = currentUserMembership?.displayName || user?.firstName;
   const displayIconUrl = currentUserMembership?.iconUrl;
+
+  const styles = React.useMemo(() => StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: backgroundColor,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center', // Center the logo
+      paddingTop: 85, // Adjust for status bar
+      paddingHorizontal: 10,
+      backgroundColor: 'transparent',
+      minHeight: 150, // Increased minHeight to ensure space
+      position: 'relative',
+      width: '100%', // Explicitly set width to 100%
+    },
+    menuContainer: {
+      position: 'absolute',
+      top: 50,
+      left: 10,
+      zIndex: 1, // Ensure menu is on top
+    },
+    logoContainer: {
+      flex: 1,
+      alignItems: 'center',
+    },
+    logo: {
+      width: '100%', // Make logo responsive to its container
+      height: 150,
+    },
+    userContainer: {
+      position: 'absolute',
+      top: 50,
+      right: 10,
+    },
+    userName: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: darkTextColor,
+    },
+    userNameContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    userIcon: {
+      width: 30,
+      height: 30,
+      borderRadius: 15, // Make it circular
+      marginRight: 5,
+    },
+    badge: {
+      position: 'absolute',
+      right: -5,
+      top: -5,
+      backgroundColor: badgeBackgroundColor,
+      borderRadius: 9,
+      width: 18,
+      height: 18,
+      borderWidth: 2,
+      borderColor: lightBackgroundColor,
+    },
+    content: {
+      flexGrow: 1,
+      justifyContent: 'flex-start',
+      alignItems: 'center',
+      paddingBottom: 30,
+    },
+    noScrollContent: {
+      flex: 1,
+      alignItems: 'stretch',
+    },
+    centered: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: backgroundColor,
+    },
+  }), [backgroundColor, textColor, primaryColor, darkTextColor, lightBackgroundColor, badgeBackgroundColor, iconColor]);
 
   return (
     <View style={styles.container}>
@@ -71,7 +164,7 @@ const PageLayout = ({ children, noScroll }) => {
                 <Image source={{ uri: displayIconUrl }} style={styles.userIcon} />
               )}
               <Text style={styles.userName}>{displayUserName}</Text>
-              <MaterialIcons name="arrow-drop-down" size={24} color="black" />
+              <MaterialIcons name="arrow-drop-down" size={24} color={iconColor} />
               {inviteCount > 0 && <View style={styles.badge} />}
             </TouchableOpacity>
           )}
@@ -90,83 +183,5 @@ const PageLayout = ({ children, noScroll }) => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f0f0f0',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center', // Center the logo
-    paddingTop: 85, // Adjust for status bar
-    paddingHorizontal: 10,
-    backgroundColor: 'transparent',
-    minHeight: 150, // Increased minHeight to ensure space
-    position: 'relative',
-    width: '100%', // Explicitly set width to 100%
-  },
-  menuContainer: {
-    position: 'absolute',
-    top: 50,
-    left: 10,
-    zIndex: 1, // Ensure menu is on top
-  },
-  logoContainer: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  logo: {
-    width: '100%', // Make logo responsive to its container
-    height: 150,
-  },
-  userContainer: {
-    position: 'absolute',
-    top: 50,
-    right: 10,
-  },
-  userName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  userNameContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  userIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 15, // Make it circular
-    marginRight: 5,
-  },
-  badge: {
-    position: 'absolute',
-    right: -5,
-    top: -5,
-    backgroundColor: 'red',
-    borderRadius: 9,
-    width: 18,
-    height: 18,
-    borderWidth: 2,
-    borderColor: '#f0f0f0',
-  },
-  content: {
-    flexGrow: 1,
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-    paddingBottom: 30,
-  },
-  noScrollContent: {
-    flex: 1,
-    alignItems: 'stretch',
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});
-
+  
 export default PageLayout;

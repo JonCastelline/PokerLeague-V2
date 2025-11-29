@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
+import { useThemeColor } from '../../hooks/useThemeColor';
 import Toast from 'react-native-toast-message';
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
@@ -12,6 +13,13 @@ const CreateLeaguePage = () => {
   const router = useRouter();
   const { api } = useAuth();
   const { reloadLeagues, switchLeague } = useLeague();
+
+  // Get themed colors
+  const textColor = useThemeColor({}, 'text');
+  const backgroundColor = useThemeColor({}, 'background'); // For input background
+  const borderColor = useThemeColor({}, 'icon'); // For input border or general border color
+  const buttonBgColor = useThemeColor({}, 'tint'); // For button background
+  const buttonTextColor = useThemeColor({}, 'background'); // For button text color
 
   const handleCreateLeague = async () => {
     if (!leagueName.trim()) {
@@ -44,16 +52,17 @@ const CreateLeaguePage = () => {
 
   return (
     <PageLayout>
-      <View style={styles.contentContainer}>
-        <Text style={styles.title}>Create a New League</Text>
+      <View style={[styles.contentContainer, { backgroundColor: backgroundColor }]}>
+        <Text style={[styles.title, { color: textColor }]}>Create a New League</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { backgroundColor: backgroundColor, borderColor: borderColor, color: textColor }]}
           placeholder="League Name"
+          placeholderTextColor={borderColor} // Using border color for placeholder, can be changed
           value={leagueName}
           onChangeText={setLeagueName}
         />
-        <TouchableOpacity style={styles.button} onPress={handleCreateLeague}>
-          <Text style={styles.buttonText}>Create League</Text>
+        <TouchableOpacity style={[styles.button, { backgroundColor: buttonBgColor }]} onPress={handleCreateLeague}>
+          <Text style={[styles.buttonText, { color: buttonTextColor }]}>Create League</Text>
         </TouchableOpacity>
       </View>
     </PageLayout>
@@ -75,15 +84,12 @@ const styles = StyleSheet.create({
   input: {
     width: '80%',
     height: 50,
-    backgroundColor: 'white',
     borderRadius: 25,
     padding: 15,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#ccc',
   },
   button: {
-    backgroundColor: '#fb5b5a',
     borderRadius: 25,
     height: 50,
     alignItems: 'center',
@@ -91,7 +97,6 @@ const styles = StyleSheet.create({
     width: '40%',
   },
   buttonText: {
-    color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
   },

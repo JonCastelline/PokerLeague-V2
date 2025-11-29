@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, TextInput } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -6,6 +6,9 @@ import Toast from 'react-native-toast-message';
 import { useAuth } from '../../context/AuthContext';
 import * as apiActions from '../../src/api';
 import SafePicker from '../../components/SafePicker';
+import { useThemeColor } from '../../hooks/useThemeColor';
+import Colors from '../../constants/Colors';
+import { useColorScheme } from '../../hooks/useColorScheme';
 
 const SecurityQuestionsScreen = () => {
   const { api } = useAuth();
@@ -19,6 +22,70 @@ const SecurityQuestionsScreen = () => {
   const [areAnswersVisible, setAreAnswersVisible] = useState([false, false, false]);
   const PLACEHOLDER_ANSWER = '********';
 
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme || 'light'];
+
+  const backgroundColor = useThemeColor({}, 'background');
+  const textColor = useThemeColor({}, 'text');
+  const primaryButtonColor = useThemeColor({ light: colors.tint, dark: colors.tint }, 'background');
+  const secondaryTextColor = useThemeColor({ light: 'grey', dark: '#bbbbbb' }, 'background');
+  const borderColor = useThemeColor({ light: '#ddd', dark: '#555' }, 'background');
+  const activityIndicatorColor = useThemeColor({ light: '#0000ff', dark: '#4285F4' }, 'background');
+  const cardBackgroundColor = useThemeColor({}, 'cardBackground');
+
+  const styles = useMemo(() => StyleSheet.create({
+    container: {
+      flex: 1,
+      padding: 20,
+      backgroundColor: backgroundColor,
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      marginBottom: 20,
+      color: textColor,
+    },
+    questionContainer: {
+      marginBottom: 20,
+    },
+    inputContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: borderColor,
+      borderRadius: 5,
+      backgroundColor: cardBackgroundColor,
+    },
+    input: {
+      flex: 1,
+      padding: 10,
+      fontSize: 16,
+      color: textColor,
+    },
+    icon: {
+      padding: 10,
+    },
+    button: {
+      backgroundColor: primaryButtonColor,
+      padding: 10,
+      borderRadius: 5,
+      alignItems: 'center',
+      alignSelf: 'center',
+      marginTop: 10,
+    },
+    buttonText: {
+      color: 'white', // Assuming button text is always white for contrast
+      fontWeight: 'bold',
+      fontSize: 16,
+    },
+    picker: {
+      width: '100%',
+      backgroundColor: cardBackgroundColor,
+      marginBottom: 10,
+      color: textColor,
+    },
+  }), [backgroundColor, textColor, primaryButtonColor, secondaryTextColor, borderColor, activityIndicatorColor, cardBackgroundColor]);
+
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
@@ -27,7 +94,7 @@ const SecurityQuestionsScreen = () => {
         api(apiActions.getMySecurityQuestions),
       ]);
 
-      setAllQuestions(allQuestionsData);
+      setAllQuestions(allQuestionsData || []);
 
       const populatedQuestions = [];
       for (let i = 0; i < 3; i++) {
@@ -119,7 +186,7 @@ const SecurityQuestionsScreen = () => {
   };
 
   if (loading) {
-    return <ActivityIndicator size="large" color="#0000ff" />;
+    return <ActivityIndicator size="large" color={activityIndicatorColor} />;
   }
 
   return (
@@ -131,7 +198,7 @@ const SecurityQuestionsScreen = () => {
             selectedValue={selectedQuestions[index].questionId}
             onValueChange={(itemValue) => handleQuestionChange(itemValue, index)}
             style={styles.picker}
-            dropdownIconColor="black"
+            dropdownIconColor={textColor}
           >
             <SafePicker.Item label="Select a question..." value={null}/>
             {allQuestions.map(q => (
@@ -139,17 +206,16 @@ const SecurityQuestionsScreen = () => {
             ))}
           </SafePicker>
           <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              placeholder="Your Answer"
-              placeholderTextColor="grey"
-              value={selectedQuestions[index].answer}
-              onFocus={() => handleAnswerFocus(index)}
-              onChangeText={(text) => handleAnswerChange(text, index)}
-              secureTextEntry={!areAnswersVisible[index]}
-            />
-            <TouchableOpacity onPress={() => toggleAnswerVisibility(index)} style={styles.icon}>
-              <MaterialCommunityIcons name={areAnswersVisible[index] ? 'eye-off' : 'eye'} size={24} color="grey" />
+                          <TextInput
+                            style={styles.input}
+                            placeholder="Your Answer"
+                            placeholderTextColor={secondaryTextColor}
+                            value={selectedQuestions[index].answer}
+                            onFocus={() => handleAnswerFocus(index)}
+                            onChangeText={(text) => handleAnswerChange(text, index)}
+                            secureTextEntry={!areAnswersVisible[index]}
+                          />            <TouchableOpacity onPress={() => toggleAnswerVisibility(index)} style={styles.icon}>
+              <MaterialCommunityIcons name={areAnswersVisible[index] ? 'eye-off' : 'eye'} size={24} color={secondaryTextColor} />
             </TouchableOpacity>
           </View>
         </View>
@@ -160,57 +226,5 @@ const SecurityQuestionsScreen = () => {
     </KeyboardAwareScrollView>
   );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        padding: 20,
-        backgroundColor: '#f5f5f5',
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginBottom: 20,
-    },
-    questionContainer: {
-        marginBottom: 20,
-    },
-    inputContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#ddd',
-        borderRadius: 5,
-        backgroundColor: '#fff',
-    },
-    input: {
-        flex: 1,
-        padding: 10,
-        fontSize: 16,
-        color: 'black',
-    },
-    icon: {
-        padding: 10,
-    },
-    button: {
-        backgroundColor: '#fb5b5a',
-        padding: 10,
-        borderRadius: 5,
-        alignItems: 'center',
-        alignSelf: 'center',
-        marginTop: 10,
-    },
-    buttonText: {
-        color: 'white',
-        fontWeight: 'bold',
-        fontSize: 16,
-    },
-    picker: {
-        width: '100%',
-        backgroundColor: 'white',
-        marginBottom: 10,
-        color: 'black',
-    },
-});
 
 export default SecurityQuestionsScreen;

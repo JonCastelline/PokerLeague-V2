@@ -4,6 +4,9 @@ import { useRouter } from 'expo-router';
 import { useLeague } from '../context/LeagueContext';
 import { useAuth } from '../context/AuthContext';
 import * as Animatable from 'react-native-animatable';
+import { useThemeColor } from '../hooks/useThemeColor';
+import Colors from '../constants/Colors';
+import { useColorScheme } from '../hooks/useColorScheme';
 
 const AppMenu = () => {
   const [modalVisible, setModalVisible] = useState(false);
@@ -11,6 +14,53 @@ const AppMenu = () => {
   const { selectedLeagueId, currentUserMembership } = useLeague();
   const { signOut } = useAuth();
   const animatableRef = useRef(null);
+
+  const styles = React.useMemo(() => StyleSheet.create({
+    menuIcon: {
+      fontSize: 30,
+      paddingLeft: 10, // Give it some space from the edge
+      color: menuIconColor,
+    },
+    modalOverlay: {
+      flex: 1,
+      justifyContent: 'flex-start', // Align to the top
+      alignItems: 'flex-start', // Align to the left
+      backgroundColor: modalOverlayBackgroundColor, // Semi-transparent background
+    },
+    modalView: {
+      margin: 10, // Margin from the top-left corner
+      marginTop: 50, // Adjust for status bar
+      backgroundColor: modalViewBackgroundColor,
+      borderRadius: 10,
+      padding: 20,
+      alignItems: 'flex-start',
+      shadowColor: shadowColor,
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.25,
+      shadowRadius: 4,
+      elevation: 5,
+    },
+    menuItem: {
+      paddingVertical: 10,
+      width: '100%',
+    },
+    menuItemText: {
+      fontSize: 18,
+      color: menuItemTextColor,
+    },
+  }), [menuIconColor, modalOverlayBackgroundColor, modalViewBackgroundColor, shadowColor, menuItemTextColor]);
+
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme || 'light'];
+
+  const menuIconColor = useThemeColor({}, 'text');
+  const modalOverlayBackgroundColor = useThemeColor({ light: 'rgba(0,0,0,0.5)', dark: 'rgba(255,255,255,0.5)' }, 'background');
+  const modalViewBackgroundColor = useThemeColor({}, 'cardBackground');
+  const shadowColor = useThemeColor({ light: '#000', dark: '#fff' }, 'background');
+  const menuItemTextColor = useThemeColor({}, 'text');
 
   if (!selectedLeagueId) {
     return null;

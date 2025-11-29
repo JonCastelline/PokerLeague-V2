@@ -3,6 +3,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Switch, TextInput, Image } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import { useColorScheme } from '../../hooks/useColorScheme';
 import { useAuth } from '../../context/AuthContext';
 import { useLeague } from '../../context/LeagueContext';
 import { GameProvider, useGame } from '../../context/GameContext';
@@ -10,6 +11,8 @@ import * as apiActions from '../../src/api';
 import PageLayout from '../../components/PageLayout';
 import Timer from '../../components/Timer';
 import SafePicker from '../../components/SafePicker';
+import { useThemeColor } from '../../hooks/useThemeColor';
+import Colors from '../../constants/Colors';
 
 
 const PlayPage = (props) => {
@@ -23,6 +26,25 @@ const PlayPage = (props) => {
     handleStartCasualGame,
   } = props;
 
+  // Theme-aware colors
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme || 'light'];
+
+  const backgroundColor = useThemeColor({}, 'background');
+  const textColor = useThemeColor({}, 'text');
+  const primaryButtonColor = useThemeColor({ light: colors.tint, dark: colors.tint }, 'background'); // Assuming tint is the primary color
+  const secondaryBackgroundColor = useThemeColor({ light: '#e0e0e0', dark: '#444444' }, 'background');
+  const borderColor = useThemeColor({ light: '#ccc', dark: '#555' }, 'background');
+  const errorColor = useThemeColor({ light: 'red', dark: '#ff6666' }, 'background');
+  const disabledButtonColor = useThemeColor({ light: '#ccc', dark: '#555' }, 'background');
+  const gameOverColor = useThemeColor({ light: '#A30000', dark: '#FF4444' }, 'background');
+  const cancelButtonColor = useThemeColor({ light: '#6c757d', dark: '#888888' }, 'background');
+  const playerItemBackgroundColor = useThemeColor({}, 'cardBackground');
+  const editItemBackgroundColor = useThemeColor({}, 'cardBackground');
+  const shadowColor = useThemeColor({ light: '#000', dark: '#fff' }, 'background');
+
+
+
   const { currentUserMembership } = useLeague();
   const { gameState, setGameState, isActionLoading, isTimerFinished, setIsTimerFinished, handleAction, startPolling, stopPolling, fetchGameState, isCasualGame } = useGame();
 
@@ -34,6 +56,233 @@ const PlayPage = (props) => {
   const { loading, allPlayers, selectedPlayerIds, activeSeason, activeSeasonSettings, allGames, noActiveSeason, selectedPlayerToEliminate } = setupData;
 
   const isAdmin = currentUserMembership?.role === 'ADMIN' || currentUserMembership?.isOwner;
+
+  const styles = useMemo(() => StyleSheet.create({
+    noSeasonContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+    },
+    noSeasonText: {
+      fontSize: 18,
+      textAlign: 'center',
+      marginBottom: 10,
+      color: textColor,
+    },
+    container: {
+      flex: 1,
+      padding: 20,
+      backgroundColor: backgroundColor,
+    },
+    setupContainer: {
+      padding: 20,
+      alignItems: 'center',
+      backgroundColor: backgroundColor,
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      textAlign: 'center',
+      marginBottom: 20,
+      color: textColor,
+    },
+    promptText: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      textAlign: 'center',
+      marginVertical: 10,
+      color: errorColor,
+    },
+    playersContainer: {
+      marginBottom: 20,
+    },
+    subtitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      marginBottom: 10,
+      color: textColor,
+    },
+    playerItem: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: 10,
+      borderBottomWidth: 1,
+      borderBottomColor: borderColor,
+    },
+    playerDisplayName: {
+      flex: 2,
+      color: textColor,
+    },
+    playerStatsContainer: {
+      flex: 1,
+      alignItems: 'flex-end',
+    },
+    playerStatLine: {
+      textAlign: 'right',
+      color: textColor,
+    },
+    selectedPlayerItem: {
+      backgroundColor: secondaryBackgroundColor,
+    },
+    playerSetupItem: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: 10,
+      borderBottomWidth: 1,
+      borderBottomColor: borderColor,
+    },
+    buttonContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      marginBottom: 20,
+    },
+    button: {
+      backgroundColor: primaryButtonColor,
+      padding: 15,
+      borderRadius: 5,
+      marginHorizontal: 10,
+    },
+    buttonText: {
+      color: 'white', // Assuming button text is always white for contrast
+      fontWeight: 'bold',
+    },
+    disabledButton: {
+      backgroundColor: disabledButtonColor,
+    },
+    errorText: {
+      color: errorColor,
+      textAlign: 'center',
+      marginTop: 5,
+      marginBottom: 5,
+    },
+    bountyIndicator: {
+      fontSize: 16,
+      marginLeft: 5,
+      color: textColor,
+    },
+    picker: {
+      width: 225,
+      marginBottom: 20,
+      backgroundColor: playerItemBackgroundColor, // Use card background for picker
+      color: textColor,
+    },
+    dropdownIconColor: {
+      color: textColor, // Set dropdown icon color based on theme
+    },
+    gameOverText: {
+      fontSize: 30,
+      fontWeight: 'bold',
+      textAlign: 'center',
+      marginVertical: 20,
+      color: gameOverColor,
+    },
+    reviewPlayerItem: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 15,
+      borderBottomWidth: 1,
+      borderBottomColor: borderColor,
+    },
+    reviewPlayerName: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      flex: 1,
+      color: textColor,
+    },
+    reviewPlayerStatsContainer: {
+      flex: 1,
+      alignItems: 'flex-start',
+    },
+    reviewPlayerStat: {
+      fontSize: 16,
+      color: textColor,
+    },
+    setupStartButton: {
+      marginTop: 20,
+      marginBottom: 20,
+    },
+    casualGameHelpIcon: {
+      marginLeft: 10,
+      color: textColor, // Assuming help icon should match text color
+    },
+    centeredButtonContainer: {
+      width: '100%',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    editPlayerItem: {
+      backgroundColor: editItemBackgroundColor,
+      padding: 15,
+      borderRadius: 10,
+      marginBottom: 10,
+      shadowColor: shadowColor,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.2,
+      shadowRadius: 1.41,
+      elevation: 2,
+    },
+    editPlayerName: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: textColor,
+    },
+    editPlayerStatsContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-around',
+      marginTop: 15,
+    },
+    statGroup: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: borderColor,
+      padding: 8,
+      borderRadius: 5,
+      width: 45,
+      textAlign: 'center',
+      color: textColor,
+      backgroundColor: backgroundColor,
+    },
+    inputError: {
+      borderColor: errorColor,
+    },
+    inputContainer: {
+      alignItems: 'center',
+    },
+    cancelButton: {
+      backgroundColor: cancelButtonColor,
+    },
+    playerIcon: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      marginRight: 10,
+      backgroundColor: secondaryBackgroundColor, // Placeholder background for icons
+    },
+    editScreenContainer: {
+      padding: 20,
+      width: '100%',
+      backgroundColor: backgroundColor,
+    },
+    statLabel: {
+      marginRight: 5,
+      color: textColor,
+    },
+    casualGameRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 10,
+      marginBottom: 15,
+    },
+  }), [backgroundColor, textColor, primaryButtonColor, secondaryBackgroundColor, borderColor, errorColor, disabledButtonColor, gameOverColor, cancelButtonColor, playerItemBackgroundColor, editItemBackgroundColor, shadowColor]);
 
   const handlePickerValueChange = useCallback((itemValue) => {
     setSelectedGameId(itemValue);
@@ -47,12 +296,12 @@ const PlayPage = (props) => {
           key={game.id}
           label={`${game.gameName} (${new Date(game.gameDateTime).toLocaleDateString()}) - ${game.gameStatus || 'SCHEDULED'}`}
           value={game.id}
-          style={{ color: 'black' }}
+          style={{ color: textColor }}
         />
       ));
     items.push(<SafePicker.Item key="casual" label="Casual Game" value="casual" />);
     return items;
-  }, [allGames]);
+  }, [allGames, textColor]);
 
   useEffect(() => {
     if (mode === 'setup') {
@@ -260,7 +509,7 @@ const PlayPage = (props) => {
   };
 
   if (loading && !gameState && mode !== 'setup') {
-    return <PageLayout><ActivityIndicator size="large" color="#fb5b5a" /></PageLayout>;
+    return <PageLayout><ActivityIndicator size="large" color={primaryButtonColor} /></PageLayout>;
   }
 
   if (error) {
@@ -289,14 +538,14 @@ const PlayPage = (props) => {
                       selectedValue={selectedGameId ?? 'casual'}
                       onValueChange={handlePickerValueChange}
                       style={styles.picker}
-                      dropdownIconColor="black"
+                      dropdownIconColor={textColor}
                     >
                       {pickerItems}
                     </SafePicker>
               {selectedGame && (selectedGame.gameStatus === 'IN_PROGRESS' || selectedGame.gameStatus === 'PAUSED') ? (
                 <>
                     {loading && !gameState ? (
-                        <ActivityIndicator size="large" color="#fb5b5a" />
+                        <ActivityIndicator size="large" color={primaryButtonColor} />
                     ) : (
                         <>
                             <Text style={styles.title}>Players in Game</Text>
@@ -541,7 +790,7 @@ const PlayPage = (props) => {
               )}
             </>
           ) : (
-            <ActivityIndicator size="large" color="#fb5b5a" style={{ marginTop: 20 }} />
+            <ActivityIndicator size="large" color={primaryButtonColor} style={{ marginTop: 20 }} />
           )}
         </KeyboardAwareScrollView>
       </PageLayout>
@@ -656,217 +905,6 @@ const PlayPage = (props) => {
     </PageLayout>
   );
 };
-
-const styles = StyleSheet.create({
-  noSeasonContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  noSeasonText: {
-    fontSize: 18,
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  container: {
-    padding: 20,
-  },
-  setupContainer: {
-    padding: 20,
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  promptText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginVertical: 10,
-    color: '#fb5b5a',
-  },
-  playersContainer: {
-    marginBottom: 20,
-  },
-  subtitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  playerItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
-  },
-  playerDisplayName: {
-    flex: 2,
-  },
-  playerStatsContainer: {
-    flex: 1,
-    alignItems: 'flex-end',
-  },
-  playerStatLine: {
-    textAlign: 'right',
-  },
-  selectedPlayerItem: {
-    backgroundColor: '#e0e0e0',
-  },
-  playerSetupItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 20,
-  },
-  button: {
-    backgroundColor: '#fb5b5a',
-    padding: 15,
-    borderRadius: 5,
-    marginHorizontal: 10,
-  },
-  buttonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  disabledButton: {
-    backgroundColor: '#ccc',
-  },
-  errorText: {
-    color: 'red',
-    textAlign: 'center',
-    marginTop: 5,
-    marginBottom: 5,
-  },
-  bountyIndicator: {
-    fontSize: 16,
-    marginLeft: 5,
-  },
-  picker: {
-    width: 225,
-    marginBottom: 20,
-    backgroundColor: 'white',
-    color: 'black',
-    dropdownIconColor: 'black',
-  },
-  gameOverText: {
-    fontSize: 30,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginVertical: 20,
-    color: '#A30000',
-  },
-  reviewPlayerItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
-  },
-  reviewPlayerName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    flex: 1,
-  },
-  reviewPlayerStatsContainer: {
-    flex: 1,
-    alignItems: 'flex-start',
-  },
-  reviewPlayerStat: {
-    fontSize: 16,
-  },
-  setupStartButton: {
-    marginTop: 20,
-    marginBottom: 20,
-  },
-  casualGameHelpIcon: {
-    marginLeft: 10, // Space between button and icon
-  },
-  centeredButtonContainer: {
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  editPlayerItem: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.41,
-    elevation: 2,
-  },
-  editPlayerName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  editPlayerStatsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    marginTop: 15,
-  },
-  statGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 8,
-    borderRadius: 5,
-    width: 45,
-    textAlign: 'center',
-  },
-  inputError: {
-    borderColor: 'red',
-  },
-  inputContainer: {
-    alignItems: 'center',
-  },
-  cancelButton: {
-    backgroundColor: '#6c757d',
-  },
-  playerIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    marginRight: 10,
-  },
-  editScreenContainer: {
-    padding: 20,
-    width: '100%',
-  },
-  statLabel: {
-    marginRight: 5,
-  },
-  casualGameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center', // Center the entire row
-
-    marginTop: 10, // Match actionButton's marginTop
-    marginBottom: 15, // Match actionButton's marginBottom
-  },
-  casualGameHelpIcon: {
-    marginLeft: 10, // Space between button and icon
-  },
-});
 
 const PlayPageWrapper = (props) => {
   const { api, token } = useAuth();

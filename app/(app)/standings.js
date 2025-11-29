@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import SafePicker from '../../components/SafePicker';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, Image, TouchableOpacity } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
@@ -9,6 +9,9 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
+import { useThemeColor } from '../../hooks/useThemeColor';
+import Colors from '../../constants/Colors';
+import { useColorScheme } from '../../hooks/useColorScheme';
 
 
 const StandingsPage = () => {
@@ -21,6 +24,154 @@ const StandingsPage = () => {
   const [exporting, setExporting] = useState(false);
   const { api, token } = useAuth();
   const { currentLeague } = useLeague();
+
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme || 'light'];
+
+  const backgroundColor = useThemeColor({}, 'background');
+  const textColor = useThemeColor({}, 'text');
+  const primaryButtonColor = useThemeColor({ light: colors.tint, dark: colors.tint }, 'background');
+  const darkTextColor = useThemeColor({ light: '#333', dark: '#ccc' }, 'background');
+  const tableRowBorderColor = useThemeColor({ light: '#eee', dark: '#444' }, 'background');
+  const evenRowBackgroundColor = useThemeColor({ light: '#f9f9f9', dark: '#333333' }, 'background');
+  const oddRowBackgroundColor = useThemeColor({ light: '#ffffff', dark: '#222222' }, 'background');
+  const errorColor = useThemeColor({ light: 'red', dark: '#ff6666' }, 'background');
+  const pickerBorderColor = useThemeColor({ light: '#ccc', dark: '#555' }, 'background');
+  const infoButtonColor = useThemeColor({ light: '#007bff', dark: '#52a3ff' }, 'background');
+
+  const styles = useMemo(() => StyleSheet.create({
+    container: {
+      flex: 1,
+      padding: 20,
+      backgroundColor: backgroundColor,
+    },
+    centered: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: backgroundColor,
+    },
+    centeredMessage: {
+      flexGrow: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: backgroundColor,
+    },
+    title: {
+      fontSize: 32,
+      fontWeight: 'bold',
+      marginBottom: 20,
+      textAlign: 'center',
+      color: darkTextColor,
+    },
+    tableHeader: {
+      flexDirection: 'row',
+      backgroundColor: primaryButtonColor,
+      paddingVertical: 12,
+      paddingHorizontal: 8,
+      borderTopLeftRadius: 8,
+      borderTopRightRadius: 8,
+    },
+    headerCell: {
+      flex: 1,
+      fontWeight: 'bold',
+      textAlign: 'center',
+      color: 'white', // Assuming header text is always white for contrast
+      fontSize: 14,
+    },
+    tableRow: {
+      flexDirection: 'row',
+      width: '100%',
+      backgroundColor: oddRowBackgroundColor, // Default to odd row background
+      borderBottomWidth: 1,
+      borderBottomColor: tableRowBorderColor,
+      paddingVertical: 12,
+      paddingHorizontal: 8,
+    },
+    rankCell: {
+      flex: 0.6,
+      textAlign: 'center',
+      color: textColor,
+    },
+    playerCell: {
+      flex: 2.5,
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    placePointsCell: {
+      flex: 1.2,
+      textAlign: 'center',
+      color: textColor,
+    },
+    statCell: {
+      flex: 0.8,
+      textAlign: 'center',
+      color: textColor,
+    },
+    totalCell: {
+      flex: 0.9,
+      textAlign: 'center',
+      color: textColor,
+    },
+    playerIcon: {
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      marginRight: 4,
+      backgroundColor: evenRowBackgroundColor, // Placeholder background for icons
+    },
+    playerName: {
+      fontSize: 16,
+      color: darkTextColor,
+    },
+    centeredCellContent: {
+      textAlign: 'center',
+    },
+    leftAlignedCellContent: {
+      // This is now handled by the cell's flex properties
+    },
+    evenRow: {
+      backgroundColor: evenRowBackgroundColor,
+    },
+    oddRow: {
+      backgroundColor: oddRowBackgroundColor,
+    },
+    errorText: {
+      color: errorColor,
+      fontSize: 16,
+    },
+    pickerContainer: {
+      marginBottom: 10,
+      backgroundColor: oddRowBackgroundColor,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: pickerBorderColor,
+    },
+    picker: {
+      height: 50,
+      width: '100%',
+      color: textColor,
+    },
+    footerContainer: {
+      marginTop: 20,
+      alignItems: 'center',
+    },
+    exportButton: {
+      backgroundColor: infoButtonColor,
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      borderRadius: 8,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    exportButtonText: {
+      color: 'white',
+      marginLeft: 10,
+      fontWeight: 'bold',
+      fontSize: 16,
+    },
+  }), [backgroundColor, textColor, primaryButtonColor, darkTextColor, tableRowBorderColor, evenRowBackgroundColor, oddRowBackgroundColor, errorColor, pickerBorderColor, infoButtonColor]);
 
   useEffect(() => {
     const fetchAllData = async () => {
@@ -65,7 +216,7 @@ const StandingsPage = () => {
             }).sort((a, b) => new Date(a.startDate) - new Date(b.startDate)); // Sort by oldest startDate (next to start)
 
             if (upcomingSeasons.length > 0) {
-                defaultSeasonId = upcomingSecoming[0].id;
+                defaultSeasonId = upcomingSeasons[0].id;
             } else if (nonCasualSeasons.length > 0) {
                 // 3. If no active or upcoming, default to the latest season by end date
                 const sortedByEndDate = [...nonCasualSeasons].sort((a, b) => new Date(b.endDate) - new Date(a.endDate));
@@ -192,7 +343,7 @@ const StandingsPage = () => {
             selectedValue={selectedSeasonId}
             style={styles.picker}
             onValueChange={(itemValue) => setSelectedSeasonId(itemValue)}
-            dropdownIconColor="black"
+            dropdownIconColor={textColor}
           >
             {allSeasons.map(season => (
               <SafePicker.Item key={season.id} label={season.seasonName} value={season.id} />
@@ -227,9 +378,9 @@ const StandingsPage = () => {
           disabled={exporting || loading}
         >
           {exporting ? (
-            <ActivityIndicator size="small" color="#fff" />
+            <ActivityIndicator size="small" color="white" />
           ) : (
-            <Ionicons name="download-outline" size={24} color="#fff" />
+            <Ionicons name="download-outline" size={24} color="white" />
           )}
           <Text style={styles.exportButtonText}>Export CSV</Text>
         </TouchableOpacity>
@@ -241,7 +392,7 @@ const StandingsPage = () => {
     return (
       <PageLayout>
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#fb5b5a" />
+          <ActivityIndicator size="large" color={primaryButtonColor} />
           <Text>Loading Standings...</Text>
         </View>
       </PageLayout>
@@ -288,131 +439,5 @@ const StandingsPage = () => {
     </PageLayout>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  centeredMessage: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
-    color: '#333',
-  },
-  tableHeader: {
-    flexDirection: 'row',
-    backgroundColor: '#fb5b5a',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
-  },
-  headerCell: {
-    flex: 1,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    color: 'white',
-    fontSize: 14,
-  },
-  tableRow: {
-    flexDirection: 'row',
-    width: '100%',
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-  },
-  rankCell: {
-    flex: 0.6,
-    textAlign: 'center',
-  },
-  playerCell: {
-    flex: 2.5,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  placePointsCell: {
-    flex: 1.2,
-    textAlign: 'center',
-  },
-  statCell: {
-    flex: 0.8,
-    textAlign: 'center',
-  },
-  totalCell: {
-    flex: 0.9,
-    textAlign: 'center',
-  },
-  playerIcon: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    marginRight: 4,
-  },
-  playerName: {
-    fontSize: 16,
-    color: '#333',
-  },
-  centeredCellContent: {
-    textAlign: 'center',
-  },
-  leftAlignedCellContent: {
-    // This is now handled by the cell's flex properties
-  },
-  evenRow: {
-    backgroundColor: '#f9f9f9',
-  },
-  oddRow: {
-    backgroundColor: '#ffffff',
-  },
-  errorText: {
-    color: 'red',
-    fontSize: 16,
-  },
-  pickerContainer: {
-    marginBottom: 10,
-    backgroundColor: 'white',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ccc',
-  },
-  picker: {
-    height: 50,
-    width: '100%',
-    color: 'black',
-  },
-  footerContainer: {
-    marginTop: 20,
-    alignItems: 'center',
-  },
-  exportButton: {
-    backgroundColor: '#007bff',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  exportButtonText: {
-    color: '#fff',
-    marginLeft: 10,
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-});
-
+  
 export default StandingsPage;

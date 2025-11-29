@@ -7,6 +7,7 @@ import { useLeague } from '../../context/LeagueContext';
 import * as apiActions from '../../src/api';
 import PageLayout from '../../components/PageLayout';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import { useThemeColor } from '../../hooks/useThemeColor';
 
 const JoinLeaguePage = () => {
   const [inviteCode, setInviteCode] = useState('');
@@ -15,6 +16,111 @@ const JoinLeaguePage = () => {
   const { api, signIn, user } = useAuth();
   const { reloadLeagues, switchLeague, reloadHomeContent } = useLeague();
   const router = useRouter();
+
+  // Themed colors
+  const textColor = useThemeColor({}, 'text');
+  const backgroundColor = useThemeColor({}, 'background');
+  const borderColor = useThemeColor({}, 'icon');
+  const buttonBgColor = useThemeColor({}, 'tint');
+  const buttonTextColor = useThemeColor({}, 'background');
+  const mutedTextColor = useThemeColor({}, 'icon');
+  const activityIndicatorColor = useThemeColor({}, 'tint');
+  const acceptButtonBgColor = useThemeColor({ light: '#28a745', dark: '#218838' }, 'background');
+  const inviteItemBgColor = useThemeColor({ light: '#f0f0f0', dark: '#1c1c1e' }, 'background');
+
+  const styles = useMemo(() => StyleSheet.create({
+    contentContainer: {
+        alignItems: 'center',
+        padding: 20,
+        width: '100%',
+        backgroundColor: backgroundColor,
+    },
+    title: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        textAlign: 'center',
+        marginBottom: 20,
+        color: textColor,
+    },
+    sectionContainer: {
+        width: '90%',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    subtitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 10,
+        color: textColor,
+    },
+    input: {
+        width: '100%',
+        height: 50,
+        borderRadius: 25,
+        padding: 15,
+        marginBottom: 20,
+        borderWidth: 1,
+        textAlign: 'center',
+        backgroundColor: backgroundColor,
+        borderColor: borderColor,
+        color: textColor,
+    },
+    button: {
+        padding: 10,
+        borderRadius: 25,
+        alignItems: 'center',
+        alignSelf: 'center',
+        marginTop: 10,
+        backgroundColor: buttonBgColor,
+    },
+    buttonText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: buttonTextColor,
+    },
+    separator: {
+        height: 1,
+        marginVertical: 20,
+        width: '90%',
+        backgroundColor: borderColor,
+    },
+    noInvitesText: {
+        textAlign: 'center',
+        fontStyle: 'italic',
+        color: mutedTextColor,
+    },
+    inviteItemContainer: {
+        padding: 15,
+        borderRadius: 10,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 10,
+        width: '100%',
+        backgroundColor: inviteItemBgColor,
+    },
+    inviteLeagueName: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: textColor,
+    },
+    inviteClaimText: {
+        fontSize: 14,
+        color: mutedTextColor,
+    },
+    acceptButton: {
+        paddingVertical: 8,
+        paddingHorizontal: 15,
+        borderRadius: 5,
+        marginLeft: 10,
+        backgroundColor: acceptButtonBgColor,
+    },
+    acceptButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
+    },
+  }), [textColor, backgroundColor, borderColor, buttonBgColor, buttonTextColor, mutedTextColor, activityIndicatorColor, acceptButtonBgColor, inviteItemBgColor]);
+
 
   const fetchInvites = useCallback(async () => {
     setLoading(true);
@@ -71,7 +177,7 @@ const JoinLeaguePage = () => {
     }
   };
 
-  const renderInviteItem = ({ item }) => (
+  const InviteItem = ({ item }) => (
     <View style={styles.inviteItemContainer}>
       <View style={{ flex: 1 }}>
         <Text style={styles.inviteLeagueName}>{item.leagueName}</Text>
@@ -84,7 +190,7 @@ const JoinLeaguePage = () => {
   );
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: backgroundColor }}>
       <PageLayout noScroll>
         <KeyboardAwareScrollView contentContainerStyle={styles.contentContainer}>
           <Text style={styles.title}>Join a League</Text>
@@ -92,12 +198,12 @@ const JoinLeaguePage = () => {
           <View style={styles.sectionContainer}>
             <Text style={styles.subtitle}>Your Invitations</Text>
             {loading ? (
-              <ActivityIndicator size="large" color="#fb5b5a" />
+              <ActivityIndicator size="large" color={activityIndicatorColor} />
             ) : invites.length > 0 ? (
               <FlatList
                 scrollEnabled={false}
                 data={invites}
-                renderItem={renderInviteItem}
+                renderItem={({ item }) => <InviteItem item={item} />}
                 keyExtractor={(item) => item.inviteId.toString()}
                 style={{ width: '100%' }}
               />
@@ -113,6 +219,7 @@ const JoinLeaguePage = () => {
             <TextInput
               style={styles.input}
               placeholder="Enter Invite Code"
+              placeholderTextColor={mutedTextColor}
               value={inviteCode}
               onChangeText={setInviteCode}
               autoCapitalize="characters"
@@ -126,93 +233,5 @@ const JoinLeaguePage = () => {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  contentContainer: {
-    alignItems: 'center',
-    padding: 20,
-    width: '100%',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  sectionContainer: {
-    width: '90%',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  subtitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  input: {
-    width: '100%',
-    height: 50,
-    backgroundColor: 'white',
-    borderRadius: 25,
-    padding: 15,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    textAlign: 'center',
-  },
-  button: {
-    backgroundColor: '#fb5b5a',
-        padding: 10,
-        borderRadius: 25,
-        alignItems: 'center',
-        alignSelf: 'center',
-        marginTop: 10,
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  separator: {
-    height: 1,
-    backgroundColor: '#ddd',
-    marginVertical: 20,
-    width: '90%',
-  },
-  noInvitesText: {
-    textAlign: 'center',
-    color: '#666',
-    fontStyle: 'italic',
-  },
-  inviteItemContainer: {
-    backgroundColor: '#f0f0f0',
-    padding: 15,
-    borderRadius: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-    width: '100%',
-  },
-  inviteLeagueName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  inviteClaimText: {
-    fontSize: 14,
-    color: '#333',
-  },
-  acceptButton: {
-    backgroundColor: '#28a745',
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 5,
-    marginLeft: 10,
-  },
-  acceptButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-});
 
 export default JoinLeaguePage;
