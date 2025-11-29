@@ -188,7 +188,6 @@ const StandingsPage = () => {
     <>
       <Text style={styles.title}>Standings</Text>
       {allSeasons.length > 0 && selectedSeasonId !== null && (
-        <View style={styles.pickerContainer}>
           <SafePicker
             selectedValue={selectedSeasonId}
             style={styles.picker}
@@ -199,7 +198,6 @@ const StandingsPage = () => {
               <SafePicker.Item key={season.id} label={season.seasonName} value={season.id} />
             ))}
           </SafePicker>
-        </View>
       )}
     </>
   );
@@ -383,17 +381,11 @@ const styles = StyleSheet.create({
     color: 'red',
     fontSize: 16,
   },
-  pickerContainer: {
-    marginBottom: 10,
-    backgroundColor: 'white',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ccc',
-  },
   picker: {
     height: 50,
     width: '100%',
     color: 'black',
+    marginBottom: 10,
   },
   footerContainer: {
     marginTop: 20,
