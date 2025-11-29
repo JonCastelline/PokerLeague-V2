@@ -135,8 +135,9 @@ const StandingsPage = () => {
     setExporting(true);
     try {
       const selectedSeason = allSeasons.find(s => s.id == selectedSeasonId);
+      const leagueName = currentLeague ? currentLeague.leagueName.replace(/[^a-z0-9]/gi, '_').toLowerCase() : 'league';
       const seasonName = selectedSeason ? selectedSeason.seasonName.replace(/[^a-z0-9]/gi, '_').toLowerCase() : `season_${selectedSeasonId}`;
-      const filename = `standings-${seasonName}.csv`;
+      const filename = `standings-${leagueName}-${seasonName}.csv`;
 
       const csvData = await api(apiActions.exportStandingsCsv, selectedSeasonId, token);
       const fileUri = FileSystem.cacheDirectory + filename;
