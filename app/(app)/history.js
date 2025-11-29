@@ -147,8 +147,9 @@ const HistoryPage = () => {
     setExporting(true);
     try {
       const selectedSeason = seasons.find(s => s.id == selectedSeasonId);
+      const leagueName = currentLeague ? currentLeague.leagueName.replace(/[^a-z0-9]/gi, '_').toLowerCase() : 'league';
       const seasonName = selectedSeason ? selectedSeason.seasonName.replace(/[^a-z0-9]/gi, '_').toLowerCase() : `season_${selectedSeasonId}`;
-      const filename = `game-history-${seasonName}.csv`;
+      const filename = `game-history-${leagueName}-${seasonName}.csv`;
 
       const csvData = await api(apiActions.exportGameHistoryCsv, selectedSeasonId, token);
       const fileUri = FileSystem.cacheDirectory + filename;
