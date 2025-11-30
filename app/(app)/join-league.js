@@ -66,8 +66,20 @@ const JoinLeaguePage = () => {
       });
       router.replace({ pathname: '/(app)/home', params: { leagueId: data.id } });
     } catch (error) {
-      console.error(error);
-      Toast.show({ type: 'error', text1: 'Error', text2: error.message });
+      let errorMessage = error.message;
+      switch (true) {
+        case errorMessage.includes('Invalid invite code'):
+         errorMessage = 'Invalid invite code.';
+         break;
+        case errorMessage.includes('Player not found'):
+         errorMessage = 'Player not found.';
+         break;
+        case error.message.includes('Player is already a member of this league'):
+         errorMessage = 'You are already a member of this league.';
+         break;
+        default: //keep error.message
+      }
+      Toast.show({ type: 'error', text1: 'Error', text2: errorMessage });
     }
   };
 
