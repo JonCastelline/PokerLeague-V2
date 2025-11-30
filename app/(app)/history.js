@@ -63,17 +63,17 @@ const HistoryPage = () => {
 
             if (sortedData.length > 0) {
               const today = new Date();
-              today.setHours(0, 0, 0, 0); // Normalize today to start of day
+              const todayUTC = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
 
               let initialSeason = null;
 
               // 1. Find a season that is currently active
               const activeSeasons = sortedData.filter(s => {
                 const startDate = new Date(s.startDate);
-                startDate.setHours(0, 0, 0, 0);
                 const endDate = new Date(s.endDate);
-                endDate.setHours(23, 59, 59, 999); // Normalize endDate to end of day
-                return today >= startDate && today <= endDate;
+                const startUTC = Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate());
+                const endUTC = Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth(), endDate.getUTCDate(), 23, 59, 59, 999);
+                return todayUTC >= startUTC && todayUTC <= endUTC;
               });
 
               if (activeSeasons.length > 0) {
@@ -85,8 +85,8 @@ const HistoryPage = () => {
               if (!initialSeason) {
                 const endedSeasons = sortedData.filter(s => {
                   const endDate = new Date(s.endDate);
-                  endDate.setHours(23, 59, 59, 999);
-                  return endDate < today;
+                  const endUTC = Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth(), endDate.getUTCDate(), 23, 59, 59, 999);
+                  return endUTC < todayUTC;
                 });
 
                 if (endedSeasons.length > 0) {

@@ -49,8 +49,8 @@ const StandingsPage = () => {
         const currentlyActiveSeasons = nonCasualSeasons.filter(season => {
             const startDate = new Date(season.startDate);
             const endDate = new Date(season.endDate);
-            const startUTC = Date.UTC(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
-            const endUTC = Date.UTC(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+            const startUTC = Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate());
+            const endUTC = Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth(), endDate.getUTCDate(), 23, 59, 59, 999);
             return todayUTC >= startUTC && todayUTC <= endUTC;
         }).sort((a, b) => new Date(b.startDate) - new Date(a.startDate)); // Sort by newest startDate
 
@@ -60,7 +60,7 @@ const StandingsPage = () => {
             // 2. If no season is currently active, look for the next upcoming season
             const upcomingSeasons = nonCasualSeasons.filter(season => {
                 const endDate = new Date(season.endDate);
-                const endUTC = Date.UTC(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+                const endUTC = Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth(), endDate.getUTCDate(), 23, 59, 59, 999);
                 return todayUTC < endUTC; // Season has not ended yet
             }).sort((a, b) => new Date(a.startDate) - new Date(b.startDate)); // Sort by oldest startDate (next to start)
 
