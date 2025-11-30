@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Switch, TextInput, Image } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
@@ -21,11 +22,11 @@ const PlayPage = (props) => {
     error,
     fetchInitialData,
     handleStartCasualGame,
+    router,
   } = props;
 
   const { currentUserMembership } = useLeague();
   const { gameState, setGameState, isActionLoading, isTimerFinished, setIsTimerFinished, handleAction, startPolling, stopPolling, fetchGameState, isCasualGame } = useGame();
-
   const [editableGameState, setEditableGameState] = useState(null);
   const [mode, setMode] = useState('setup'); // 'setup', 'play', 'review', 'eliminate_select_player', 'eliminate_select_killer', 'edit'
   const [validationErrors, setValidationErrors] = useState({});
@@ -259,6 +260,10 @@ const PlayPage = (props) => {
     });
   };
 
+  if (loading) {
+    return <PageLayout><ActivityIndicator size="large" color="#fb5b5a" /></PageLayout>;
+  }
+
   if (loading && !gameState && mode !== 'setup') {
     return <PageLayout><ActivityIndicator size="large" color="#fb5b5a" /></PageLayout>;
   }
@@ -279,6 +284,32 @@ const PlayPage = (props) => {
   }
 
     if (mode === 'setup') {
+        if (loading) {
+            return <PageLayout><ActivityIndicator size="large" color="#fb5b5a" /></PageLayout>;
+        }
+
+        if (isAdmin && allPlayers.length <= 1) {
+            return (
+                <PageLayout>
+                    <View style={styles.centeredMessage}>
+                        <Text style={styles.title}>Add Players to Get Started</Text>
+                        <Text style={styles.emptyStateSubtitle}>
+                            Your league needs at least two players to start a game.
+                        </Text>
+                        <Text style={styles.bodyText}>
+                            Go to League Settings to invite players using your league's invite code or to add unregistered players manually.
+                        </Text>
+                        <TouchableOpacity
+                            style={styles.actionButton}
+                            onPress={() => router.replace('/(app)/league-settings')}
+                        >
+                            <Text style={styles.buttonText}>Go to League Settings</Text>
+                        </TouchableOpacity>
+                    </View>
+                </PageLayout>
+            );
+        }
+
         const selectedGame = allGames.find(g => g.id === selectedGameId);
 
         return (
@@ -866,6 +897,35 @@ const styles = StyleSheet.create({
   casualGameHelpIcon: {
     marginLeft: 10, // Space between button and icon
   },
+  centeredMessage: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  emptyStateSubtitle: {
+      fontSize: 18,
+      textAlign: 'center',
+      color: '#666',
+      marginBottom: 20,
+  },
+  bodyText: {
+      fontSize: 16,
+      textAlign: 'center',
+      color: '#333',
+      marginBottom: 30,
+  },
+  actionButton: {
+      backgroundColor: '#fb5b5a',
+      paddingVertical: 12,
+      paddingHorizontal: 30,
+      borderRadius: 25,
+      elevation: 3,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+  },
 });
 
 const PlayPageWrapper = (props) => {
@@ -989,6 +1049,8 @@ const PlayPageWrapper = (props) => {
     }
   }, [selectedLeagueId, setupData.casualSeasonSettings]);
 
+  const router = useRouter();
+
   useFocusEffect(
     useCallback(() => {
       return () => {
@@ -1011,6 +1073,7 @@ const PlayPageWrapper = (props) => {
   return (
     <GameProvider isCasualGame={isCasualGame}>
       <PlayPage
+        router={router}
         selectedGameId={selectedGameId}
         setSelectedGameId={setSelectedGameId}
         setupData={setupData}

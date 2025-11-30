@@ -185,7 +185,14 @@ import * as Clipboard from 'expo-clipboard';
                    ) : (
                      // Pass the component's markdownStyles to the Markdown component
                      <Markdown style={markdownStyles} rules={markdownRules}>
-                       {leagueHomeContent?.content || 'Welcome to your league! Admins can edit this message.'}
+                       {leagueHomeContent?.content || `# Welcome to Your League!
+
+To get started and make the most of your Poker League experience, we recommend the following initial steps:
+
+*   **Establish Your First Season:** Navigate to the **Season** page to define the periods for your competitive play (e.g., "Spring 2025").
+*   **Schedule Games:** Once a season is active, go to the **Season** page to create specific poker sessions.
+*   **Invite Players:** Head over to **League** to manage your members, invite new players using your league's unique code, or add unregistered players.
+*   **Personalize This Page:** Tailor this welcome message to suit your league's unique style and information needs by enabling 'Edit Content' below.`}
                      </Markdown>
                    )}
                  </View>

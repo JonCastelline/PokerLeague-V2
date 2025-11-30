@@ -189,7 +189,6 @@ const HistoryPage = () => {
   const ListHeader = useCallback(() => (
     <>
         <Text style={styles.title}>Game History</Text>
-        <View style={styles.pickerContainer}>
             <SafePicker
                 selectedValue={selectedSeasonId}
                 onValueChange={(itemValue) => setSelectedSeasonId(itemValue)}
@@ -201,7 +200,6 @@ const HistoryPage = () => {
                     <SafePicker.Item key={s.id} label={s.seasonName} value={s.id}/>
                 ))}
             </SafePicker>
-        </View>
         {isLoading && <ActivityIndicator size="large" color="#0000ff" />}
     </>
   ), [selectedSeasonId, seasons, isLoading]);
@@ -272,17 +270,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     textAlign: 'center',
   },
-  pickerContainer: {
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    backgroundColor: 'white',
-    color: 'black',
-  },
   picker: {
     width: '100%',
     color: 'black',
+    marginBottom: 10,
   },
   footerContainer: {
     marginTop: 20,
