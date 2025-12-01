@@ -34,10 +34,13 @@ const PlayPage = (props) => {
 
   const { loading, allPlayers, selectedPlayerIds, activeSeason, activeSeasonSettings, allGames, noActiveSeason, selectedPlayerToEliminate } = setupData;
 
-  const isAdmin = currentUserMembership?.role === 'ADMIN' || currentUserMembership?.isOwner;
-
-  const handlePickerValueChange = useCallback((itemValue) => {
-    setSelectedGameId(itemValue);
+    const isAdmin = currentUserMembership?.role === 'ADMIN' || currentUserMembership?.isOwner;
+  
+    const selectablePlayers = useMemo(() => {
+      return isCasualGame ? allPlayers : allPlayers.filter(p => p.isActive);
+      }, [isCasualGame, allPlayers]);
+    
+    const handlePickerValueChange = useCallback((itemValue) => {    setSelectedGameId(itemValue);
   }, [setSelectedGameId]);
 
   const pickerItems = useMemo(() => {
@@ -353,7 +356,7 @@ const PlayPage = (props) => {
                     <>
                       <Text style={styles.title}>Select Players</Text>
                       <View style={{width: '100%'}}>
-                        {allPlayers.map(player => (
+                        {selectablePlayers.map(player => (
                             <View key={player.id} style={styles.playerSetupItem}>
                                 <View style={{flexDirection: 'row', alignItems: 'center', flex: 1}}>
                                     {player.iconUrl ? <Image source={{ uri: player.iconUrl }} style={styles.playerIcon} /> : <View style={styles.playerIcon} />}
