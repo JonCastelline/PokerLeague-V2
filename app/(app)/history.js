@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import SafePicker from '../../components/SafePicker';
@@ -14,19 +14,29 @@ import Toast from 'react-native-toast-message';
 
 const HistoryPage = () => {
   const { api, token } = useAuth();
-  const { currentLeague, activeSeason } = useLeague();
+  const { activeSeason, allSeasons: seasons } = useLeague();
   const router = useRouter();
 
-  const [seasons, setSeasons] = useState([]);
+  const displaySeasons = useMemo(() => {
+    return seasons.filter(season => season.seasonName !== "Casual Games");
+  }, [seasons]);
+
   const [selectedSeasonId, setSelectedSeasonId] = useState(null);
   const [games, setGames] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [exporting, setExporting] = useState(false);
 
+  useEffect(() => {
+    if (activeSeason && !selectedSeasonId) {
+      setSelectedSeasonId(activeSeason.id);
+    }
+  }, [activeSeason, selectedSeasonId]);
+
   const fetchGames = useCallback(async (seasonId) => {
     if (!seasonId) {
       setGames([]);
+      setIsLoading(false);
       return;
     }
     setIsLoading(true);
@@ -46,92 +56,8 @@ const HistoryPage = () => {
     }
   }, [api]);
 
-  const isInitialMount = useRef(true);
-
-  useFocusEffect(
-    useCallback(() => {
-      isInitialMount.current = true; // Reset on focus
-      const loadInitialData = async () => {
-        if (currentLeague?.id) {
-          setIsLoading(true);
-          setError(null);
-          try {
-            const seasonsData = await api(getSeasons, currentLeague.id);
-            const nonCasualSeasons = seasonsData.filter(s => !s.isCasual);
-            const sortedData = [...nonCasualSeasons].sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
-            setSeasons(sortedData);
-
-            if (sortedData.length > 0) {
-              const today = new Date();
-              const todayUTC = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
-
-              let initialSeason = null;
-
-              // 1. Find a season that is currently active
-              const activeSeasons = sortedData.filter(s => {
-                const startDate = new Date(s.startDate);
-                const endDate = new Date(s.endDate);
-                const startUTC = Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate());
-                const endUTC = Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth(), endDate.getUTCDate(), 23, 59, 59, 999);
-                return todayUTC >= startUTC && todayUTC <= endUTC;
-              });
-
-              if (activeSeasons.length > 0) {
-                // If multiple active seasons, pick the one with the most recent end date
-                initialSeason = activeSeasons.sort((a, b) => new Date(b.endDate) - new Date(a.endDate))[0];
-              }
-
-              // 3. If no active season found, find the most recently ended season
-              if (!initialSeason) {
-                const endedSeasons = sortedData.filter(s => {
-                  const endDate = new Date(s.endDate);
-                  const endUTC = Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth(), endDate.getUTCDate(), 23, 59, 59, 999);
-                  return endUTC < todayUTC;
-                });
-
-                if (endedSeasons.length > 0) {
-                  // Pick the one with the most recent end date
-                  initialSeason = endedSeasons.sort((a, b) => new Date(b.endDate) - new Date(a.endDate))[0];
-                }
-              }
-
-              // 4. If still no initial season, default to the first in the sorted list
-              if (!initialSeason && sortedData.length > 0) {
-                initialSeason = sortedData[0];
-              }
-
-              if (initialSeason) {
-                setSelectedSeasonId(initialSeason.id);
-                await fetchGames(initialSeason.id);
-              } else {
-                setSelectedSeasonId(null);
-                setGames([]);
-                setIsLoading(false);
-              }
-            } else {
-                setSelectedSeasonId(null);
-                setGames([]);
-                setIsLoading(false);
-            }
-          } catch (err) {
-            console.error("Failed to fetch seasons:", err);
-            setError("Failed to load seasons.");
-            setIsLoading(false);
-          }
-        }
-      };
-
-      loadInitialData();
-    }, [currentLeague?.id, api, fetchGames])
-  );
-
   useEffect(() => {
-    // This effect runs only when the user manually changes the season in the picker
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-    } else if (selectedSeasonId) {
-      fetchGames(selectedSeasonId);
-    }
+    fetchGames(selectedSeasonId);
   }, [selectedSeasonId, fetchGames]);
 
   const handleExportCsv = async () => {
@@ -196,13 +122,13 @@ const HistoryPage = () => {
                 mode="dialog"
                 dropdownIconColor="black"
             >
-                {seasons.map(s => (
+                {displaySeasons.map(s => (
                     <SafePicker.Item key={s.id} label={s.seasonName} value={s.id}/>
                 ))}
             </SafePicker>
         {isLoading && <ActivityIndicator size="large" color="#0000ff" />}
     </>
-  ), [selectedSeasonId, seasons, isLoading]);
+  ), [selectedSeasonId, displaySeasons, isLoading]);
 
   const ListEmpty = useCallback(() => (
     <View style={styles.emptyContainer}>

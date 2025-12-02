@@ -17,6 +17,7 @@ export const LeagueProvider = React.memo(({ children }) => {
         loadingCurrentUserMembership: true,
         activeSeason: null,
         loadingSeason: true,
+        allSeasons: [],
     });
 
     const {
@@ -30,6 +31,7 @@ export const LeagueProvider = React.memo(({ children }) => {
         loadingCurrentUserMembership,
         activeSeason,
         loadingSeason,
+        allSeasons,
     } = leagueState;
   
     const reloadLeagues = useCallback(async () => {
@@ -87,6 +89,7 @@ export const LeagueProvider = React.memo(({ children }) => {
                     loadingContent: false,
                     loadingCurrentUserMembership: false,
                     loadingSeason: false,
+                    allSeasons: [],
                 }));
                 return;
             }
@@ -99,7 +102,7 @@ export const LeagueProvider = React.memo(({ children }) => {
             }));
     
             try {
-                const [membership, allSeasons, content] = await Promise.all([
+                const [membership, fetchedSeasons, content] = await Promise.all([
                     api(apiActions.getCurrentUserMembership, selectedLeagueId),
                     api(apiActions.getSeasons, selectedLeagueId),
                     api(apiActions.getLeagueHomeContent, selectedLeagueId).catch(e => {
@@ -108,34 +111,57 @@ export const LeagueProvider = React.memo(({ children }) => {
                     }),
                 ]);
 
+                // This logic determines the primary "active" season to display by default across the app.
+                // It prioritizes a truly active season (whose dates bracket the current day).
+                // If no season is currently active, it falls back to the most recently ended season.
+                // This approach ensures that relevant season data is always displayed, even if a season has
+                // just passed its official end date, which is useful for situations like playing a delayed game.
+                let determinedSeason = null;
+
                 const today = new Date();
+                today.setUTCHours(0, 0, 0, 0); // Normalize today to the start of the UTC day
 
-                const activeSeasons = allSeasons
-                    .filter(s => {
-                        if (s.isFinalized) {
-                            return false;
-                        }
-                        const startDate = new Date(s.startDate);
-                        const endDate = new Date(s.endDate);
-                        
-                        const startUTC = Date.UTC(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
-                        const endUTC = Date.UTC(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
-                        const todayUTC = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+                // 1. Find a season that is currently active
+                const activeSeasons = fetchedSeasons.filter(s => {
+                    const startParts = s.startDate.split('-').map(part => parseInt(part, 10));
+                    const startDate = new Date(Date.UTC(startParts[0], startParts[1] - 1, startParts[2]));
 
-                        return todayUTC >= startUTC && todayUTC <= endUTC;
-                    })
-                    .sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
+                    const endParts = s.endDate.split('-').map(part => parseInt(part, 10));
+                    const endDate = new Date(Date.UTC(endParts[0], endParts[1] - 1, endParts[2]));
+                    endDate.setUTCHours(23, 59, 59, 999);
 
-                const activeSeason = activeSeasons.length > 0 ? activeSeasons[0] : null;
+                    return !s.isFinalized && !s.isCasual && today >= startDate && today <= endDate;
+                });
+
+                if (activeSeasons.length > 0) {
+                    // If multiple active seasons, pick the one with the most recent start date
+                    determinedSeason = activeSeasons.sort((a, b) => new Date(b.startDate) - new Date(a.startDate))[0];
+                }
+
+                // 2. If no active season, find the most recently ended one
+                if (!determinedSeason) {
+                    const endedSeasons = fetchedSeasons.filter(s => {
+                        const endParts = s.endDate.split('-').map(part => parseInt(part, 10));
+                        const endDate = new Date(Date.UTC(endParts[0], endParts[1] - 1, endParts[2]));
+                        endDate.setUTCHours(23, 59, 59, 999);
+                        return !s.isFinalized && endDate < today;
+                    });
+
+                    if (endedSeasons.length > 0) {
+                        // Pick the one with the most recent end date
+                        determinedSeason = endedSeasons.sort((a, b) => new Date(b.endDate) - new Date(a.endDate))[0];
+                    }
+                }
     
                 setLeagueState(prev => ({
                     ...prev,
                     currentUserMembership: membership,
-                    activeSeason: activeSeason,
+                    activeSeason: determinedSeason,
                     leagueHomeContent: content,
                     loadingContent: false,
                     loadingCurrentUserMembership: false,
                     loadingSeason: false,
+                    allSeasons: fetchedSeasons,
                 }));
     
             } catch (error) {
@@ -146,6 +172,7 @@ export const LeagueProvider = React.memo(({ children }) => {
                         loadingContent: false,
                         loadingCurrentUserMembership: false,
                         loadingSeason: false,
+                        allSeasons: [],
                     }));
                 }
             }
@@ -234,6 +261,7 @@ export const LeagueProvider = React.memo(({ children }) => {
     reloadCurrentUserMembership,
     activeSeason,
     loadingSeason,
+    allSeasons,
   }), [
     leagues,
     selectedLeagueId,
@@ -251,6 +279,7 @@ export const LeagueProvider = React.memo(({ children }) => {
     reloadCurrentUserMembership,
     activeSeason,
     loadingSeason,
+    allSeasons,
   ]);
 
   return (
