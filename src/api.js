@@ -198,8 +198,12 @@ export const getLeagueHomeContent = (leagueId, token) => {
   return apiFetch(`/api/leagues/${leagueId}/home-content`, { token });
 };
 
-export const getPlayPageData = (leagueId, token) => {
-  return apiFetch(`/api/leagues/${leagueId}/play-page-data`, { token });
+export const getPlayPageData = (leagueId, seasonId, token) => {
+  let url = `/api/leagues/${leagueId}/play-page-data`;
+  if (seasonId) {
+    url += `?seasonId=${seasonId}`;
+  }
+  return apiFetch(url, { token });
 };
 
 export const getSeasonSettingsPageData = (leagueId, selectedSeasonId, token) => {

@@ -20,7 +20,6 @@ const PlayPage = (props) => {
     setupData,
     setSetupData,
     error,
-    fetchInitialData,
     handleStartCasualGame,
     router,
   } = props;
@@ -57,13 +56,6 @@ const PlayPage = (props) => {
     items.push(<SafePicker.Item key="casual" label="Casual Game" value="casual" />);
     return items;
   }, [allGames]);
-
-  useEffect(() => {
-    if (mode === 'setup') {
-      fetchInitialData();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode]);
 
   const nonCompletedGames = allGames.filter(game => game.gameStatus !== 'COMPLETED');
   const onlyCasualGameAvailable = nonCompletedGames.length === 0;
@@ -932,8 +924,8 @@ const styles = StyleSheet.create({
 });
 
 const PlayPageWrapper = (props) => {
-  const { api, token } = useAuth();
-  const { selectedLeagueId } = useLeague();
+  const { api } = useAuth();
+  const { selectedLeagueId, activeSeason, loadingSeason } = useLeague();
   const [selectedGameId, setSelectedGameId] = useState(null);
   const [error, setError] = useState(null);
   const [setupData, setSetupData] = useState({
@@ -949,62 +941,58 @@ const PlayPageWrapper = (props) => {
 
   const isCasualGame = selectedGameId === 'casual';
 
-  const handleApiError = (e) => {
-    if (e.message !== '401') {
-      setError(e.message);
-    }
-  };
+  useEffect(() => {
+    const loadPlayPageData = async () => {
+      if (!selectedLeagueId) {
+        setSetupData(prev => ({ ...prev, loading: false }));
+        return;
+      }
+      
+      // Use the loading state from the context to wait for season determination
+      if (loadingSeason) {
+        setSetupData(prev => ({ ...prev, loading: true }));
+        return;
+      }
 
-  const fetchInitialData = useCallback(async () => {
-    if (!selectedLeagueId) return;
+      try {
+        const seasonToFetch = activeSeason?.id;
+        const playPageData = await api(apiActions.getPlayPageData, selectedLeagueId, seasonToFetch);
 
-    const newSetupData = {
-        loading: true,
-        allPlayers: [],
-        selectedPlayerIds: new Set(),
-        activeSeason: null,
-        activeSeasonSettings: null,
-        allGames: [],
-        noActiveSeason: false,
-        selectedPlayerToEliminate: null,
-        casualSeasonSettings: null,
+        const newSetupData = {
+          loading: false,
+          allPlayers: playPageData.members || [],
+          selectedPlayerIds: new Set((playPageData.members || []).filter(m => m.isActive).map(m => m.id)),
+          activeSeason: playPageData.activeSeason,
+          activeSeasonSettings: playPageData.activeSeasonSettings,
+          allGames: playPageData.activeSeasonGames || [],
+          noActiveSeason: !playPageData.activeSeason,
+          selectedPlayerToEliminate: null,
+          casualSeasonSettings: playPageData.casualSeasonSettings,
+        };
+
+        if (playPageData.activeSeason) {
+          const nonCompletedGames = (playPageData.activeSeasonGames || []).filter(game => game.gameStatus !== 'COMPLETED');
+          let defaultGame = nonCompletedGames.find(game => game.gameStatus === 'IN_PROGRESS' || game.gameStatus === 'PAUSED');
+          if (!defaultGame && nonCompletedGames.length > 0) {
+            defaultGame = nonCompletedGames[0];
+          }
+          setSelectedGameId(defaultGame ? defaultGame.id : 'casual');
+        } else {
+          setSelectedGameId('casual');
+        }
+
+        setSetupData(newSetupData);
+
+      } catch (e) {
+        if (e.message !== '401') {
+          setError(e.message);
+        }
+        setSetupData(prev => ({ ...prev, loading: false }));
+      }
     };
 
-        try {
-            const playPageData = await api(apiActions.getPlayPageData, selectedLeagueId);
-    
-            const members = playPageData.members;
-            newSetupData.allPlayers = members;
-            newSetupData.selectedPlayerIds = new Set(members.filter(m => m.isActive).map(m => m.id));
-    
-            if (playPageData && playPageData.activeSeason) {
-                newSetupData.activeSeason = playPageData.activeSeason;
-                newSetupData.activeSeasonSettings = playPageData.activeSeasonSettings;
-                newSetupData.allGames = playPageData.activeSeasonGames;
-            const nonCompletedGames = playPageData.activeSeasonGames.filter(game => game.gameStatus !== 'COMPLETED');
-            let defaultGame = nonCompletedGames.find(game => game.gameStatus === 'IN_PROGRESS' || game.gameStatus === 'PAUSED');
-            if (!defaultGame && nonCompletedGames.length > 0) {
-                defaultGame = nonCompletedGames[0];
-            }
-            
-            if (defaultGame) {
-                setSelectedGameId(defaultGame.id);
-            } else {
-                setSelectedGameId('casual');
-            }
-        } else {
-            newSetupData.noActiveSeason = true;
-            setSelectedGameId('casual');
-        }
-        // Assign casualSeasonSettings unconditionally
-        newSetupData.casualSeasonSettings = playPageData.casualSeasonSettings;
-    } catch (e) {
-        handleApiError(e);
-    } finally {
-        newSetupData.loading = false;
-        setSetupData(newSetupData);
-    }
-  }, [selectedLeagueId, api, setSelectedGameId]);
+    loadPlayPageData();
+  }, [selectedLeagueId, activeSeason, loadingSeason, api]);
 
   const handleStartCasualGame = useCallback(async (allPlayers, selectedPlayerIds) => {
     if (!selectedLeagueId) return null;
@@ -1082,7 +1070,6 @@ const PlayPageWrapper = (props) => {
         setupData={setupData}
         setSetupData={setSetupData}
         error={error}
-        fetchInitialData={fetchInitialData}
         handleStartCasualGame={handleStartCasualGame}
       />
     </GameProvider>

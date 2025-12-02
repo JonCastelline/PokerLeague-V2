@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import SafePicker from '../../components/SafePicker';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, Image, TouchableOpacity } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
@@ -13,91 +13,32 @@ import Toast from 'react-native-toast-message';
 
 const StandingsPage = () => {
   const [standings, setStandings] = useState([]);
-  const [allSeasons, setAllSeasons] = useState([]);
   const [selectedSeasonId, setSelectedSeasonId] = useState(null);
   const [seasonSettings, setSeasonSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [exporting, setExporting] = useState(false);
   const { api, token } = useAuth();
-  const { currentLeague } = useLeague();
+  const { currentLeague, allSeasons, activeSeason } = useLeague();
+
+  const displaySeasons = useMemo(() => {
+    return allSeasons.filter(season => season.seasonName !== "Casual Games");
+  }, [allSeasons]);
 
   useEffect(() => {
-    const fetchAllData = async () => {
-      if (!currentLeague) {
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-
-      try {
-        // 1. Fetch all seasons
-        const seasonsData = await api(apiActions.getSeasons, currentLeague.id);
-        const filteredSeasonsData = seasonsData.filter(season => season.seasonName !== "Casual Games");
-        const sortedSeasonsData = [...filteredSeasonsData].sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
-        setAllSeasons(sortedSeasonsData);
-
-        let defaultSeasonId = null;
-        const today = new Date();
-        const todayUTC = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
-
-        const nonCasualSeasons = filteredSeasonsData;
-
-        // 1. Find currently active season (today between start and end)
-        const currentlyActiveSeasons = nonCasualSeasons.filter(season => {
-            const startDate = new Date(season.startDate);
-            const endDate = new Date(season.endDate);
-            const startUTC = Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate());
-            const endUTC = Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth(), endDate.getUTCDate(), 23, 59, 59, 999);
-            return todayUTC >= startUTC && todayUTC <= endUTC;
-        }).sort((a, b) => new Date(b.startDate) - new Date(a.startDate)); // Sort by newest startDate
-
-        if (currentlyActiveSeasons.length > 0) {
-            defaultSeasonId = currentlyActiveSeasons[0].id;
-        } else {
-            // 2. If no season is currently active, look for the next upcoming season
-            const upcomingSeasons = nonCasualSeasons.filter(season => {
-                const endDate = new Date(season.endDate);
-                const endUTC = Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth(), endDate.getUTCDate(), 23, 59, 59, 999);
-                return todayUTC < endUTC; // Season has not ended yet
-            }).sort((a, b) => new Date(a.startDate) - new Date(b.startDate)); // Sort by oldest startDate (next to start)
-
-            if (upcomingSeasons.length > 0) {
-                defaultSeasonId = upcomingSecoming[0].id;
-            } else if (nonCasualSeasons.length > 0) {
-                // 3. If no active or upcoming, default to the latest season by end date
-                const sortedByEndDate = [...nonCasualSeasons].sort((a, b) => new Date(b.endDate) - new Date(a.endDate));
-                defaultSeasonId = sortedByEndDate[0].id;
-            }
-        }
-
-        setSelectedSeasonId(defaultSeasonId);
-
-        // 2. Fetch standings and season settings for the default/selected season
-        if (defaultSeasonId) {
-          const standingsData = await api(apiActions.getStandings, defaultSeasonId);
-          setStandings(standingsData);
-
-          const settingsData = await api(apiActions.getSeasonSettings, defaultSeasonId);
-          setSeasonSettings(settingsData);
-        }
-
-      } catch (e) {
-        console.error("Failed to fetch data:", e);
-        setError(e.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAllData();
-  }, [api, currentLeague]); // Re-run when token or currentLeague changes
+    // Initialize selectedSeasonId with the active season from context if it's not already set
+    if (activeSeason && !selectedSeasonId) {
+      setSelectedSeasonId(activeSeason.id);
+    }
+  }, [activeSeason, selectedSeasonId]);
 
   useEffect(() => {
     const fetchStandingsAndSettings = async () => {
       if (!selectedSeasonId) {
+        // If there's no selected season (e.g., no seasons in the league), don't fetch
+        setStandings([]);
+        setSeasonSettings(null);
+        setLoading(false);
         return;
       }
 
@@ -187,14 +128,14 @@ const StandingsPage = () => {
   const renderPageHeader = () => (
     <>
       <Text style={styles.title}>Standings</Text>
-      {allSeasons.length > 0 && selectedSeasonId !== null && (
+      {displaySeasons.length > 0 && selectedSeasonId !== null && (
           <SafePicker
             selectedValue={selectedSeasonId}
             style={styles.picker}
             onValueChange={(itemValue) => setSelectedSeasonId(itemValue)}
             dropdownIconColor="black"
           >
-            {allSeasons.map(season => (
+            {displaySeasons.map(season => (
               <SafePicker.Item key={season.id} label={season.seasonName} value={season.id} />
             ))}
           </SafePicker>
