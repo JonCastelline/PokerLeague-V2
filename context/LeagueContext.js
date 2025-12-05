@@ -196,12 +196,11 @@ export const LeagueProvider = React.memo(({ children }) => {
       const data = await api(apiActions.refreshInviteCode, leagueId);
       if (data) {
         setLeagueState(prev => ({ ...prev, inviteCode: data.inviteCode }));
-        await reloadLeagues();
       }
     } catch (error) {
       console.error('Failed to refresh invite code:', error);
     }
-  }, [api, reloadLeagues]);
+  }, [api]);
 
   const currentLeague = useMemo(() => 
     Array.isArray(leagues) ? leagues.find(l => l.id === selectedLeagueId) : undefined,
@@ -243,6 +242,10 @@ export const LeagueProvider = React.memo(({ children }) => {
     }
   }, [selectedLeagueId, api]);
 
+  const setInviteCode = useCallback((newInviteCode) => {
+    setLeagueState(prev => ({ ...prev, inviteCode: newInviteCode }));
+  }, []);
+
   const value = useMemo(() => ({
     leagues,
     selectedLeagueId,
@@ -256,7 +259,7 @@ export const LeagueProvider = React.memo(({ children }) => {
     refreshInviteCode,
     reloadLeagues,
     inviteCode,
-    setInviteCode: (newInviteCode) => setLeagueState(prev => ({ ...prev, inviteCode: newInviteCode })),
+    setInviteCode,
     reloadHomeContent,
     reloadCurrentUserMembership,
     activeSeason,
@@ -275,6 +278,7 @@ export const LeagueProvider = React.memo(({ children }) => {
     refreshInviteCode,
     reloadLeagues,
     inviteCode,
+    setInviteCode,
     reloadHomeContent,
     reloadCurrentUserMembership,
     activeSeason,

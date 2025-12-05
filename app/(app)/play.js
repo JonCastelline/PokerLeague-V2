@@ -781,11 +781,10 @@ const styles = StyleSheet.create({
     marginLeft: 5,
   },
   picker: {
-    width: 225,
+    width: '100%',
+    height: 50,
     marginBottom: 20,
     backgroundColor: 'white',
-    color: 'black',
-    dropdownIconColor: 'black',
   },
   gameOverText: {
     fontSize: 30,

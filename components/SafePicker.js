@@ -13,6 +13,21 @@ const SafePicker = React.memo(({ selectedValue, onValueChange, children, style, 
   // Find the default option based on selectedValue
   const defaultOption = data.find(item => item.key === String(selectedValue));
 
+  // Dynamically calculate dropdown height
+  const itemsCount = data.length;
+  const itemHeight = 45; // Estimated height of a single item in pixels
+  const dynamicDropdownStyle = {};
+
+  if (itemsCount > 0) {
+    if (itemsCount <= 5) {
+      // For 5 or fewer items, set the height explicitly to fit content
+      dynamicDropdownStyle.height = itemsCount * itemHeight;
+    } else {
+      // For more than 5 items, use maxHeight to make it scrollable
+      dynamicDropdownStyle.maxHeight = 200;
+    }
+  }
+
   return (
     <SelectList
       setSelected={(val) => onValueChange(val)}
@@ -21,7 +36,7 @@ const SafePicker = React.memo(({ selectedValue, onValueChange, children, style, 
       boxStyles={style} // Pass the style prop to boxStyles
       inputStyles={{ color: 'black' }} // Default input text color
       dropdownTextStyles={{ color: 'black' }} // Default dropdown item text color
-      dropdownStyles={dropdownListStyle || { maxHeight: 200 }} // Make dropdownStyles configurable, with a default maxHeight
+      dropdownStyles={{ ...dynamicDropdownStyle, ...dropdownListStyle }} // Merge with passed styles
       search={false} // Disable search by default
       {...rest}
     />
