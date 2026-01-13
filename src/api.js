@@ -199,11 +199,7 @@ export const getLeagueHomeContent = (leagueId, token) => {
 };
 
 export const getPlayPageData = (leagueId, seasonId, token) => {
-  let url = `/api/leagues/${leagueId}/play-page-data`;
-  if (seasonId) {
-    url += `?seasonId=${seasonId}`;
-  }
-  return apiFetch(url, { token });
+  return apiFetch(`/api/leagues/${leagueId}/play-page-data`, { token });
 };
 
 export const getSeasonSettingsPageData = (leagueId, selectedSeasonId, token) => {
